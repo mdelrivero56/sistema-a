@@ -830,11 +830,13 @@ button.avatar{font:inherit;font-weight:700}
 
 <header class="topbar" id="topbar" role="banner">
   <a class="brand" href="#/" id="brand"></a>
-  <nav class="tnav" id="sidenav" aria-label="Secciones"></nav>
   <label class="searchbox"><svg class="g" viewBox="0 0 24 24" aria-hidden="true"><use href="#g-search"/></svg><span class="sr">Buscar sistemas</span><input id="qs" type="search" placeholder="Buscar…" autocomplete="off"><kbd aria-hidden="true">/</kbd></label>
   <div class="tright"><span id="tbell"></span><div id="sidefoot"></div></div>
 </header>
 <div class="app" id="app">
+  <aside class="sidebar" id="sidebar" aria-label="Panel lateral">
+    <nav class="sidenav" id="sidenav" aria-label="Secciones"></nav>
+  </aside>
   <div class="col">
     <main id="view" tabindex="-1"><div class="loading"><div class="spin" role="status" aria-label="Cargando"></div></div></main>
     <footer class="foot" id="foot"></footer>
@@ -2106,16 +2108,16 @@ function renderChrome(a) {
   const catActiva = a === "categoria" ? hashParts()[1] : null;
   const cats = S.cat.categorias.filter((k) => vis().some((s) => s.categorias.includes(k.id)));
   const nSol = misSols().length;
-  $("#sidenav").innerHTML = [
-    ["", "hoy", "Descubrir", ""],
-    ["sistemas", "capas", "Sistemas", ""],
-    ["categorias", "grid", "Categorías", ""],
-    ["solicitudes", "send", S.super ? "Solicitudes" : "Mis solicitudes", nSol && !S.super ? `<em class="tcount">${nSol}</em>` : ""],
-    ["ayuda", "info", "Cómo solicitar", ""]
-  ].map(([k, g, t, extra]) => `<a href="#/${k}"${cur(k)} title="${esc(t)}">${glifo(g)}<span class="tx">${esc(t)}</span>${extra}</a>`).join("");
+  const link = (k, g, t, extra = "", on = act === k) => `<a href="#/${k}"${on ? ' aria-current="page"' : ""} title="${esc(t)}">${glifo(g)}<span class="tx">${esc(t)}</span>${extra}</a>`;
+  const subCats = cats.length ? `<div class="sn-cats" role="list" aria-label="Categorías">${cats.map((k) => `<a role="listitem" href="#/categoria/${enc(k.id)}"${catActiva === k.id ? ' aria-current="page"' : ""} title="${esc(k.nombre)}" style="${colorVars(k.color)}"><span class="cdot">${glifo(k.glifo)}</span><span class="tx">${esc(k.nombre)}</span></a>`).join("")}</div>` : "";
+  $("#sidenav").innerHTML = `<h6>Menú</h6>`
+    + link("sistemas", "capas", "Sistemas")
+    + link("categorias", "grid", "Categorías", "", act === "categorias" && !catActiva) + subCats
+    + link("solicitudes", "send", "Solicitudes", nSol && !S.super ? `<em class="tcount">${nSol}</em>` : "")
+    + link("ayuda", "info", "Cómo solicitar")
+    + (S.admin ? `<a class="sn-admin" href="#/admin"${cur("admin")} title="Administración">${glifo("ajustes")}<span class="tx">Administración</span></a>` : "");
   $("#sidefoot").innerHTML =
-    (S.admin ? `<a class="tbtn" href="#/admin"${cur("admin")} title="Administración" aria-label="Administración">${glifo("ajustes")}<span class="tx">Administración</span></a>` : "")
-    + (S.user
+    (S.user
       ? `<button class="tacct" data-act="mi-cuenta" aria-label="Mi cuenta"><span class="uav">${fotoHtml(S.user, iniciales(S.user.nombre))}</span><span class="ut tx"><b>${esc(S.user.nombre)}</b><small>${esc(ROLES[rolDe(S.user.rol)])}</small></span></button>`
       : `<button class="tlogin" data-act="mi-cuenta">${glifo("user")}<span class="l-lg">Iniciar sesión</span><span class="l-sm">Entrar</span></button>`);
   const tabs = [["", "hoy", "Descubrir"], ["sistemas", "capas", "Sistemas"], ["categorias", "grid", "Categorías"], ["solicitudes", "send", "Solicitudes"], ["buscar", "search", "Buscar"]];
@@ -4484,6 +4486,56 @@ a.hh-go:hover{background:#fff;text-decoration:none}
 .nv-mini-c{margin-bottom:-4px}
 .nv-mini-c svg.wm-cpd{height:8.5px;width:auto;display:block}
 @media (max-width:900px){.nv-nova svg.wm-spot{height:19px}.nv-cpd svg.wm-cpd{height:7px}.nv-row .nv-cpd{padding-left:6px!important}}
+</style>
+<style id="panel-lateral">
+/* ===== Panel lateral izquierdo (Sistemas · Categorías · Solicitudes · Cómo solicitar · Administración) y barra superior simplificada ===== */
+:root{--sbw:252px}
+.topbar .tnav{display:none!important}
+@media (min-width:901px){
+  .app{display:grid!important;grid-template-columns:var(--sbw) minmax(0,1fr)!important;align-items:start;width:min(1320px,calc(100% - 24px));margin:0 auto;padding-left:0}
+  .sidebar{display:flex!important;flex-direction:column;gap:6px;position:sticky;top:calc(var(--tb-top) + var(--tb-h) + 10px);height:calc(100vh - var(--tb-top) - var(--tb-h) - 20px);margin:10px 12px 10px 0;padding:16px 12px 14px;overflow-x:hidden;overflow-y:auto;border-radius:22px;border:1px solid rgba(255,255,255,.10);
+    background:radial-gradient(120% 60% at 0% 0%,rgba(79,184,212,.22),transparent 60%),linear-gradient(180deg,#0d3140,#12485a 70%,#0f3a4a)!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 10px 30px -14px rgba(8,36,48,.55)!important}
+  .sidebar .sidenav{flex:1;display:flex;flex-direction:column;gap:4px;min-height:0}
+  .sidebar .sidenav h6{margin:4px 14px 8px;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#8fc3d0}
+  .sidebar .sidenav a{position:relative;display:flex;align-items:center;gap:12px;width:100%;height:46px;padding:0 14px;border-radius:14px;font-size:15px;font-weight:600;color:#d3e8ee;white-space:nowrap;transition:background .18s,color .18s}
+  .sidebar .sidenav a .g{width:20px;height:20px;flex:none;color:currentColor!important;stroke:currentColor!important}
+  .sidebar .sidenav a .tx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .sidebar .sidenav a:hover{background:rgba(255,255,255,.09);color:#fff;text-decoration:none}
+  .sidebar .sidenav a[aria-current="page"]{background:rgba(255,255,255,.16)!important;color:#fff!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.10)}
+  .sidebar .sidenav a[aria-current="page"]::before{content:"";position:absolute;left:-12px;top:22%;bottom:22%;width:4px;border-radius:0 4px 4px 0;background:#f2b632;box-shadow:0 0 10px rgba(242,182,50,.7)}
+  .sidebar .sidenav a:focus-visible{outline:3px solid #7ff3ea;outline-offset:2px}
+  .sidebar .sidenav .sn-admin{margin-top:auto;border-top:1px solid rgba(255,255,255,.14);border-radius:0 0 14px 14px;height:54px;padding-top:2px}
+  .sidebar .sidenav .sn-admin[aria-current="page"]{border-radius:14px}
+  .sidebar .tcount{margin-left:auto}
+  /* Barra superior: logotipo alineado con el panel, buscador y cuenta */
+  .topbar .brand{width:calc(var(--sbw) - 22px);min-width:0}
+  .topbar .searchbox{flex:1 1 auto;max-width:560px;margin-left:0}
+  .topbar .tright{margin-left:auto}
+  .navbar{top:calc(var(--tb-top) + var(--tb-h) + 6px)}
+}
+/* Pantallas medianas: el panel se reduce a una columna de iconos */
+@media (min-width:901px) and (max-width:1180px){
+  :root{--sbw:84px}
+  .sidebar{padding:16px 10px 14px;margin-right:8px}
+  .sidebar .sidenav h6{display:none}
+  .sidebar .sidenav a{justify-content:center;padding:0}
+  .sidebar .sidenav a .tx{display:none}
+  .sidebar .sidenav a[aria-current="page"]::before{left:-10px}
+  .sidebar .tcount{position:absolute;top:4px;right:6px;margin:0;min-width:18px;height:18px;font-size:10.5px}
+  .topbar .brand{width:auto}
+}
+@media (max-width:900px){.sidebar{display:none!important}}
+body.auth .sidebar{display:none!important}
+/* Categorías dentro del panel lateral */
+@media (min-width:901px){
+  .sidebar .sn-cats{display:flex;flex-direction:column;gap:2px;margin:0 0 8px 24px;padding-left:10px;border-left:1px solid rgba(255,255,255,.16)}
+  .sidebar .sidenav .sn-cats a{height:36px;padding:0 10px;gap:10px;font-size:13.5px;font-weight:500;border-radius:10px}
+  .sidebar .sidenav .sn-cats a::before{display:none}
+  .sidebar .sidenav .sn-cats .cdot{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;flex:none;background:linear-gradient(145deg,var(--c1),var(--c2))}
+  .sidebar .sidenav .sn-cats .cdot .g{width:11px;height:11px;color:#fff!important;stroke:#fff!important;stroke-width:2.2}
+}
+@media (min-width:901px) and (max-width:1180px){.sidebar .sn-cats{display:none}}
 </style>
 </body>
 </html>
