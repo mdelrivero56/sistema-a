@@ -4536,6 +4536,107 @@ body.auth .sidebar{display:none!important}
   .sidebar .sidenav .sn-cats .cdot .g{width:11px;height:11px;color:#fff!important;stroke:#fff!important;stroke-width:2.2}
 }
 @media (min-width:901px) and (max-width:1180px){.sidebar .sn-cats{display:none}}
+
+/* ---------- Flechas de carrusel ---------- */
+.sx{position:relative;min-width:0}
+.sx::before,.sx::after{content:"";position:absolute;top:0;bottom:0;width:30px;z-index:4;pointer-events:none;opacity:0;transition:opacity .25s}
+.sx::before{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
+.sx::after{right:0;background:linear-gradient(270deg,var(--bg),transparent)}
+.sx.sx-bleed::before{left:calc(-1*var(--gutter));width:calc(var(--gutter) + 26px)}
+.sx.sx-bleed::after{right:calc(-1*var(--gutter));width:calc(var(--gutter) + 26px)}
+.sx.fl::before,.sx.fr::after{opacity:1}
+.sx-b{position:absolute;top:50%;z-index:5;width:30px;height:30px;margin-top:-15px;padding:0;border-radius:50%;display:grid;place-items:center;cursor:pointer;
+  color:var(--label);background:rgba(255,255,255,.55);border:1px solid rgba(120,140,160,.35);
+  -webkit-backdrop-filter:blur(6px) saturate(160%);backdrop-filter:blur(6px) saturate(160%);
+  box-shadow:0 2px 8px rgba(20,40,60,.14);opacity:0;pointer-events:none;transition:opacity .2s,background .15s,transform .15s}
+.sx-b::after{content:"";position:absolute;inset:-7px}
+.sx-b.on{opacity:.85;pointer-events:auto}
+.sx-b:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sx-b svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.sx-l{left:6px}.sx-r{right:6px}
+.sx-l svg{transform:scaleX(-1)}
+/* Laptop (mouse): sutiles en reposo, claras al pasar el cursor */
+@media (hover:hover) and (pointer:fine){
+  .sx-b.on{opacity:.4}
+  .sx:hover .sx-b.on,.sx-b.on:focus-visible{opacity:1}
+  .sx-b.on:hover{background:rgba(255,255,255,.92);transform:scale(1.1)}
+}
+/* Celular (táctil): pista al inicio y se ocultan tras el primer deslizamiento; área de toque ~44px */
+@media (hover:none),(pointer:coarse){
+  .sx-b{width:28px;height:28px;margin-top:-14px}
+  .sx-b svg{width:15px;height:15px}
+  .sx-b::after{inset:-8px}
+  html.sx-seen .sx-b{opacity:0!important;pointer-events:none!important}
+}
+@media (prefers-reduced-motion:reduce){.sx-b,.sx::before,.sx::after{transition:none!important}}
 </style>
+
+<script>
+/* Flechas translúcidas en carruseles horizontales */
+(function(){
+  var SEL=".chips,.hscroll,.rows.paged,.gallery,.revs,.stats";
+  var ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+  var root=document.documentElement;
+  try{if(localStorage.getItem("sx-seen")==="1")root.classList.add("sx-seen")}catch(e){}
+  function seen(){
+    if(root.classList.contains("sx-seen"))return;
+    root.classList.add("sx-seen");
+    try{localStorage.setItem("sx-seen","1")}catch(e){}
+  }
+  function mk(cls,label){var b=document.createElement("button");b.type="button";b.className="sx-b "+cls;b.setAttribute("aria-label",label);b.innerHTML=ICON;return b}
+  function setup(el){
+    if(el.dataset.sx)return; el.dataset.sx="1";
+    var par=el.parentNode, w=document.createElement("div");
+    w.className="sx"+(el.classList.contains("bleed")?" sx-bleed":"");
+    if(getComputedStyle(par).display.indexOf("flex")>-1){w.style.flex=getComputedStyle(el).flex;}
+    par.insertBefore(w,el); w.appendChild(el);
+    var isChips=el.classList.contains("chips");
+    var l=mk("sx-l",isChips?"Categoría anterior":"Ver anteriores"), r=mk("sx-r",isChips?"Siguiente categoría":"Ver más");
+    w.appendChild(l); w.appendChild(r);
+    function center(){
+      var t=el.querySelector(".feat-card,.shot,.chip,.rev,.stat"), wr=w.getBoundingClientRect(), y;
+      if(t){var tr=t.getBoundingClientRect(); y=tr.top-wr.top+tr.height/2}
+      else{var er=el.getBoundingClientRect(); y=er.top-wr.top+er.height/2}
+      if(y>0){l.style.top=r.style.top=y+"px"}
+    }
+    function upd(){
+      center();
+      var max=el.scrollWidth-el.clientWidth, x=Math.abs(el.scrollLeft);
+      var cl=max>4&&x>4, cr=max>4&&x<max-4;
+      l.classList.toggle("on",cl); r.classList.toggle("on",cr);
+      w.classList.toggle("fl",cl); w.classList.toggle("fr",cr);
+    }
+    function step(){
+      if(isChips){var c=el.querySelector(".chip");if(c){var g=parseFloat(getComputedStyle(el).columnGap)||10;return c.offsetWidth+g}}
+      return Math.max(160,el.clientWidth*.8);
+    }
+    function go(d){el.scrollBy({left:d*step(),behavior:"smooth"})}
+    l.addEventListener("click",function(){go(-1)}); r.addEventListener("click",function(){go(1)});
+    var x0=el.scrollLeft;
+    el.addEventListener("scroll",function(){
+      upd();
+      if(Math.abs(el.scrollLeft-x0)>8&&window.matchMedia("(hover:none),(pointer:coarse)").matches)seen();
+    },{passive:true});
+    /* Shift + rueda: desplazar de lado */
+    el.addEventListener("wheel",function(e){
+      if(e.shiftKey&&Math.abs(e.deltaY)>Math.abs(e.deltaX)&&el.scrollWidth>el.clientWidth){e.preventDefault();el.scrollLeft+=e.deltaY}
+    },{passive:false});
+    /* Teclado: ← → desplazan el carrusel */
+    w.addEventListener("keydown",function(e){
+      if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight")return;
+      var t=e.target; if(t.closest&&t.closest("input,select,textarea,[contenteditable]"))return;
+      if(el.scrollWidth<=el.clientWidth)return;
+      e.preventDefault(); go(e.key==="ArrowRight"?1:-1);
+    });
+    if(window.ResizeObserver){var ro=new ResizeObserver(upd);ro.observe(el);Array.prototype.forEach.call(el.children,function(c){ro.observe(c)})}
+    window.addEventListener("resize",upd); el.addEventListener("load",upd,true);
+    upd(); setTimeout(upd,400);
+  }
+  function scan(){document.querySelectorAll(SEL).forEach(setup)}
+  var t; function later(){cancelAnimationFrame(t);t=requestAnimationFrame(scan)}
+  function init(){scan(); new MutationObserver(later).observe(document.body,{childList:true,subtree:true})}
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
+})();
+</script>
 </body>
 </html>
