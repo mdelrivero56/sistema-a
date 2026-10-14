@@ -1337,6 +1337,28 @@ const mismoCorreo = (a, b) => !!normCorreo(a) && normCorreo(a) === normCorreo(b)
 const buscarPorCorreo = (c) => S.cat.usuarios.find((u) => mismoCorreo(u.correo, c));
 const claveOk = (p) => typeof p === "string" && p.length >= 8 && /[A-Za-z]/.test(p) && /\d/.test(p);
 const CLAVE_AYUDA = "Mínimo 8 caracteres, con letras y números.";
+/* ---- Foto de perfil ---- */
+const fotoKey = (u) => "catalogo-foto-" + u.id;
+const fotoDe = (u) => { if (!u) return ""; if (imgOk(u.foto)) return u.foto; try { const f = localStorage.getItem(fotoKey(u)); return imgOk(f) ? f : ""; } catch (e) { return ""; } };
+const fotoHtml = (u, ini) => { const f = fotoDe(u); return f ? `<img src="${f}" alt="">` : esc(ini); };
+const reducirFoto = (file) => new Promise((ok, no) => { const r = new FileReader(); r.onerror = () => no(); r.onload = () => { const img = new Image(); img.onerror = () => no(); img.onload = () => { const N = 256, c = document.createElement("canvas"); c.width = c.height = N; const s = Math.min(img.width, img.height); c.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, N, N); ok(c.toDataURL("image/jpeg", 0.86)); }; img.src = r.result; }; r.readAsDataURL(file); });
+async function fijarFoto(data) {
+  const u = S.user; if (!u) return;
+  u.foto = data;
+  try { data ? localStorage.setItem(fotoKey(u), data) : localStorage.removeItem(fotoKey(u)); } catch (e) {}
+  let remoto = true;
+  if (SB_ON && u.sb && SB) { try { const { error } = await SB.from("perfiles").update({ foto: data || null }).eq("id", u.id); if (error) remoto = false; } catch (e) { remoto = false; } }
+  else { try { guardarCatalogo(); } catch (e) {} }
+  renderChrome(hashParts()[0]); cerrarModal(); abrirMiCuenta();
+  toast(data ? (remoto ? "Foto de perfil actualizada" : "Foto guardada en este dispositivo") : "Foto eliminada");
+}
+async function cambiarFotoPerfil(file) {
+  if (!S.user || !file) return;
+  if (!/^image\//.test(file.type)) return toast("Elige un archivo de imagen.");
+  if (file.size > 12 * 1024 * 1024) return toast("La imagen pesa demasiado. Elige una de menos de 12 MB.");
+  let data; try { data = await reducirFoto(file); } catch (e) { return toast("No se pudo leer la imagen."); }
+  await fijarFoto(data);
+}
 const iniciales = (n) => String(n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join("").toUpperCase() || "?";
 const hashQuery = () => { const o = {}; new URLSearchParams(location.hash.split("?")[1] || "").forEach((v, k) => (o[k] = v)); return o; };
 const nuevoSalt = () => uid("s") + Math.random().toString(36).slice(2, 10);
@@ -1857,7 +1879,7 @@ function abrirMiCuenta() {
   if (!u) { ACT["ir-login"](); return; }
   modal({
     titulo: "Mi cuenta",
-    body: `<div style="display:flex;gap:14px;align-items:center;margin-bottom:14px"><span class="avatar-i" style="width:52px;height:52px;font-size:18px">${esc(iniciales(u.nombre))}</span><div><b style="font-size:17px">${esc(u.nombre)}</b><div class="muted" style="font-size:14px">${ROLES[rolDe(u.rol)]}</div></div></div>
+    body: `<div style="display:flex;gap:14px;align-items:center;margin-bottom:14px"><span class="avatar-i" style="width:68px;height:68px;font-size:22px">${fotoHtml(u, iniciales(u.nombre))}</span><div><b style="font-size:17px">${esc(u.nombre)}</b><div class="muted" style="font-size:14px">${ROLES[rolDe(u.rol)]}</div><div style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="file" id="up-foto" accept="image/*" data-foto-perfil="1" hidden><button type="button" class="btn sec sm" style="margin:0" data-act="foto-elegir">${glifo("upload")}Cambiar foto</button>${fotoDe(u) ? `<button type="button" class="btn ghost sm" style="margin:0" data-act="foto-quitar">Quitar foto</button>` : ""}</div></div></div>
       <div class="kv">${u.correo ? `<div><span class="k">Correo</span><span class="v">${esc(u.correo)}</span></div>` : ""}${u.dependencia ? `<div><span class="k">Dependencia</span><span class="v">${esc(u.dependencia)}</span></div>` : ""}${u.cargo ? `<div><span class="k">Cargo</span><span class="v">${esc(u.cargo)}</span></div>` : ""}</div>`,
     pie: `<button class="btn sec" data-act="cambiar-pass">${glifo("candado")}Cambiar contraseña</button>${S.admin ? `<a class="btn sec" href="#/admin" data-act="cerrar-modal">${glifo("ajustes")}Administración</a>` : ""}<button class="btn danger" data-act="cerrar-sesion">Cerrar sesión</button>`
   });
@@ -2090,7 +2112,7 @@ function renderChrome(a) {
   $("#sidefoot").innerHTML =
     (S.admin ? `<a class="tbtn" href="#/admin"${cur("admin")} title="Administración" aria-label="Administración">${glifo("ajustes")}<span class="tx">Administración</span></a>` : "")
     + (S.user
-      ? `<button class="tacct" data-act="mi-cuenta" aria-label="Mi cuenta"><span class="uav">${esc(iniciales(S.user.nombre))}</span><span class="ut tx"><b>${esc(S.user.nombre)}</b><small>${esc(ROLES[rolDe(S.user.rol)])}</small></span></button>`
+      ? `<button class="tacct" data-act="mi-cuenta" aria-label="Mi cuenta"><span class="uav">${fotoHtml(S.user, iniciales(S.user.nombre))}</span><span class="ut tx"><b>${esc(S.user.nombre)}</b><small>${esc(ROLES[rolDe(S.user.rol)])}</small></span></button>`
       : `<button class="tlogin" data-act="mi-cuenta">${glifo("user")}<span class="l-lg">Iniciar sesión</span><span class="l-sm">Entrar</span></button>`);
   const tabs = [["", "hoy", "Descubrir"], ["sistemas", "capas", "Sistemas"], ["categorias", "grid", "Categorías"], ["solicitudes", "send", "Solicitudes"], ["buscar", "search", "Buscar"]];
   $("#tabbar").innerHTML = `<a class="rail-brand${imgOk(c.logo) ? "" : " lg"}" href="#/" aria-label="Inicio · ${esc(c.nombre)}">${logoInner(c)}</a>`
@@ -2609,7 +2631,7 @@ function marcarRequisito(t) {
 }
 
 /* ---------- Superadministrador: bandeja de solicitudes recibidas ---------- */
-const ESTADOS_BAN = { nueva: ["warn", "Nueva"], contacto: ["info", "En contacto"], atendida: ["ok", "Atendida"], cancelada: ["bad", "Cancelada"], archivada: ["", "Archivada"] };
+const ESTADOS_BAN = { nueva: ["warn", "Nueva"], contacto: ["info", "En contacto"], atendida: ["ok", "Atendida"], cancelada: ["bad", "Cancelada"], archivada: ["", "Oculta"] };
 S.bf = "todas";
 function exportarBandeja() {
   const ver = S.bf === "todas" ? filasBandeja() : filasBandeja().filter((r) => r.estado === S.bf);
@@ -2638,19 +2660,23 @@ async function bandejaEstado(ids, v) {
 async function bandejaBorrar(ids, texto) {
   if (!S.super || !ids.length) return;
   if (!(await confirmar({ titulo: ids.length === 1 ? "Eliminar solicitud" : "Eliminar solicitudes", texto, si: "Eliminar", peligro: true }))) return;
+  const folios = filasBandeja().filter((r) => ids.includes(r.id)).map((r) => r.folio);
   if (SB) {
     const { error } = await SB.from("solicitudes").delete().in("id", ids);
     if (error) return toast("No se pudo eliminar: tu cuenta necesita permiso de borrado en Supabase.");
     S.inbox = (S.inbox || []).filter((r) => !ids.includes(r.id));
+    /* también quita las copias del historial de este dispositivo ("Mis solicitudes") */
+    if (S.sols.some((x) => folios.includes(x.folio))) { S.sols = S.sols.filter((x) => !folios.includes(x.folio)); await guardarSolicitudes(); }
   } else { S.sols = S.sols.filter((x) => !ids.includes(x.id)); await guardarSolicitudes(); }
-  toast(ids.length === 1 ? "Solicitud eliminada" : `${ids.length} solicitudes eliminadas`); keep(() => render(true));
+  S.bsel = new Set(); toast(ids.length === 1 ? "Solicitud eliminada" : `${ids.length} solicitudes eliminadas`); keep(() => render(true));
 }
 function filasBandeja() {
   if (SB) return Array.isArray(S.inbox) ? S.inbox : [];
   return S.sols.map((x) => ({ id: x.id, folio: x.folio, creado: x.fecha, datos: x.datos, sistemas: x.sistemas, estado: x.estadoBan || "nueva", nota: x.nota || "" }));
 }
-function vBandeja() {
-  if (SB && S.inbox === undefined) { cargarBandeja().then(() => { if (/^#\/solicitudes/.test(location.hash)) render(true); }); }
+function bandejaVisibles() { const rows = filasBandeja(); return S.bf === "todas" ? rows.filter((r) => r.estado !== "archivada") : rows.filter((r) => r.estado === S.bf); }
+function vBandeja(enAdmin) {
+  if (SB && S.inbox === undefined) { cargarBandeja().then(() => { if (/^#\/(admin\/)?solicitudes/.test(location.hash)) render(true); }); }
   const rows = filasBandeja(), cuenta = (e) => rows.filter((r) => r.estado === e).length;
   const activas = rows.filter((r) => r.estado !== "archivada");
   const vis = S.bf === "todas" ? activas : rows.filter((r) => r.estado === S.bf);
@@ -2662,16 +2688,21 @@ function vBandeja() {
     return `<details class="ban-card"><summary><span class="ban-sis">${esc((r.sistemas || []).map((x) => x.nombre).join(", "))}</span><span class="badge ${cl}">${tx}</span><small>${esc(fmtFecha(String(r.creado).slice(0, 10)))} · ${esc(r.folio)}</small></summary>
       <div class="ban-grid">${dato("Nombre", d.nombre)}${dato("Cargo", d.cargo)}${dato("Correo", d.correo, "mailto:" + d.correo + "?subject=" + encodeURIComponent("Seguimiento de tu solicitud " + r.folio))}${dato("Teléfono", d.telefono, tel ? "tel:" + tel : "")}${dato("Prefiere que lo contacten por", d.contactoPref)}${dato("Horario para contactarlo", d.horario)}${dato("Área o unidad", d.area)}${dato("Uso previsto", d.tipoUso)}${dato("Fecha estimada", d.fechaUso ? fmtFecha(d.fechaUso) : "")}${dato("Personas que lo usarían", d.participantes)}</div>
       ${d.mensaje ? `<p class="ban-msg"><small>Lo que necesita</small>${esc(d.mensaje)}</p>` : ""}
-      ${`<div class="ban-acts">${Object.entries(ESTADOS_BAN).filter(([k]) => k !== r.estado).map(([k, v]) => `<button class="btn sm sec" data-act="bandeja-estado" data-id="${esc(r.id)}" data-v="${k}">${k === "archivada" ? "Archivar" : r.estado === "archivada" && k === "nueva" ? "Restaurar" : "Marcar: " + v[1]}</button>`).join("")}<button class="btn sm danger" data-act="bandeja-borrar" data-id="${esc(r.id)}">${glifo("trash")}Eliminar</button></div>
+      ${`<div class="ban-acts">${Object.entries(ESTADOS_BAN).filter(([k]) => k !== r.estado).map(([k, v]) => `<button class="btn sm sec" data-act="bandeja-estado" data-id="${esc(r.id)}" data-v="${k}">${k === "archivada" ? "Ocultar" : r.estado === "archivada" && k === "nueva" ? "Volver a mostrar" : "Marcar: " + v[1]}</button>`).join("")}<button class="btn sm danger" data-act="bandeja-borrar" data-id="${esc(r.id)}">${glifo("trash")}Eliminar</button></div>
       <label class="sr" for="nota-${esc(r.id)}">Nota interna</label><textarea id="nota-${esc(r.id)}" class="ban-nota" placeholder="Nota interna (solo la ves tú)">${esc(r.nota || "")}</textarea><button class="btn sm" data-act="bandeja-nota" data-id="${esc(r.id)}">Guardar nota</button>`}</details>`; };
   const estado = SB ? (S.inbox === "cargando" || S.inbox === undefined ? '<div class="note info">' + glifo("info") + "<div>Cargando solicitudes…</div></div>" : S.inbox === "error" ? '<div class="note warn">' + glifo("warn") + "<div>No se pudieron cargar las solicitudes. Revisa tu conexión y que tu cuenta sea superadministrador.</div></div>" : "") : '<div class="note info">' + glifo("info") + "<div>Aún no está conectado Supabase, así que solo ves las solicitudes hechas desde este dispositivo. Al conectarlo recibirás aquí las de todas las dependencias.</div></div>";
-  const bulk = S.bf === "cancelada" && vis.length ? `<div class="note warn" style="margin:12px 0">${glifo("warn")}<div><b>${vis.length} ${plural(vis.length, "solicitud cancelada", "solicitudes canceladas")}.</b> Archívalas para conservarlas fuera de la lista, o elimínalas definitivamente.<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm sec" data-act="bandeja-archivar-canceladas">Archivar todas</button><button class="btn sm danger" data-act="bandeja-borrar-canceladas">${glifo("trash")}Eliminar todas</button></div></div></div>` : "";
-  return `${cabecera("Solicitudes recibidas", "Qué sistemas pidió cada dependencia y cómo contactarla.")}
-    <div class="sp"></div>${estado}
+  const sel = S.bsel instanceof Set ? S.bsel : (S.bsel = new Set());
+  [...sel].forEach((id) => { if (!vis.some((r) => r.id === id)) sel.delete(id); });
+  const nSel = sel.size, enOcultas = S.bf === "archivada";
+  const pick = (r) => `<label class="ban-pick"><input type="checkbox" data-bsel="${esc(r.id)}" aria-label="Seleccionar ${esc(r.folio)}" ${sel.has(r.id) ? "checked" : ""}></label>`;
+  const barra = vis.length ? `<div class="ban-bulk"><label class="ban-all"><input type="checkbox" data-act="bandeja-selall" ${nSel && nSel === vis.length ? "checked" : ""}><span>${nSel ? `${nSel} ${plural(nSel, "seleccionada", "seleccionadas")}` : "Seleccionar todas"}</span></label><div class="ban-bulk-acts"><button type="button" class="btn sm sec" data-act="bandeja-ocultar-sel" ${nSel ? "" : "disabled"}>${enOcultas ? "Volver a mostrar" : "Ocultar"}</button><button type="button" class="btn sm danger" data-act="bandeja-borrar-sel" ${nSel ? "" : "disabled"}>${glifo("trash")}Eliminar</button></div></div>` : "";
+  const bulk = S.bf === "cancelada" && vis.length ? `<div class="note warn" style="margin:12px 0">${glifo("warn")}<div><b>${vis.length} ${plural(vis.length, "solicitud cancelada", "solicitudes canceladas")}.</b> Ocúltalas para conservarlas fuera de la lista, o elimínalas definitivamente.<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm sec" data-act="bandeja-archivar-canceladas">Ocultar todas</button><button class="btn sm danger" data-act="bandeja-borrar-canceladas">${glifo("trash")}Eliminar todas</button></div></div></div>` : "";
+  return `${enAdmin ? "" : cabecera("Solicitudes recibidas", "Qué sistemas pidió cada dependencia y cómo contactarla.")}
+    <div class="sp"></div>${enAdmin ? `<p class="muted" style="margin:0 0 10px">Aquí puedes ocultar o eliminar solicitudes, por ejemplo las que hiciste de prueba. Ocultar las saca de la lista pero las conserva; eliminar las borra para siempre.</p>` : ""}${estado}
     <div class="ban-kpis"><div><b>${cuenta("nueva")}</b><span>Nuevas</span></div><div><b>${cuenta("contacto")}</b><span>En contacto</span></div><div><b>${cuenta("atendida")}</b><span>Atendidas</span></div><div><b>${nDeps}</b><span>Dependencias</span></div></div>
     <div class="chips" role="group" aria-label="Filtrar por estado">${[["todas", "Todas (" + activas.length + ")"], ...Object.entries(ESTADOS_BAN).map(([k, v]) => [k, v[1] + " (" + cuenta(k) + ")"])].map(([k, t]) => `<button type="button" data-act="bandeja-filtro" data-v="${k}" ${S.bf === k ? 'aria-current="true" class="on"' : ""}>${t}</button>`).join("")}<button type="button" data-act="bandeja-recargar">${glifo("reloj")}Actualizar</button><button type="button" data-act="bandeja-exportar">Descargar Excel (.csv)</button></div>
-    ${bulk}
-    ${grupos.size ? [...grupos.values()].map((g) => `<section class="ban-dep"><h2>${esc(g.nombre)} <small>${g.items.length} solicitud${g.items.length === 1 ? "" : "es"}</small></h2>${g.items.map(card).join("")}</section>`).join("") : vacio("No hay solicitudes", S.bf === "todas" ? "Cuando una dependencia solicite un sistema aparecerá aquí." : "No hay solicitudes con este estado.")}`;
+    ${barra}${bulk}
+    ${grupos.size ? [...grupos.values()].map((g) => `<section class="ban-dep"><h2>${esc(g.nombre)} <small>${g.items.length} solicitud${g.items.length === 1 ? "" : "es"}</small></h2>${g.items.map((r) => `<div class="ban-row">${pick(r)}${card(r)}</div>`).join("")}</section>`).join("") : vacio("No hay solicitudes", S.bf === "todas" ? "Cuando una dependencia solicite un sistema aparecerá aquí." : "No hay solicitudes con este estado.")}`;
 }
 function misSols() { return S.user ? S.sols.filter((x) => normCorreo((x.datos || {}).correo || "") === normCorreo(S.user.correo || "")) : []; }
 function vSesionRequerida(titulo, sub, texto) {
@@ -2726,11 +2757,12 @@ function vAdmin(sub, id) {
 function vAdminBase(sub, id) {
   if (!S.admin) return `${cabecera("Administración")}${vacio("Acceso restringido", "Esta sección es solo para administradores del catálogo.", `<a class="btn" href="#/">Ir al inicio</a>`)}`;
   if (sub === "editar") return vEditor(id);
-  const permitidas = S.super ? ["categorias", "config", "usuarios", "notificaciones", "avisos", "qa"] : ["categorias"], tab = permitidas.includes(sub) ? sub : "sistemas";
+  const permitidas = S.super ? ["categorias", "solicitudes", "config", "usuarios", "notificaciones", "avisos", "qa"] : ["categorias"], tab = permitidas.includes(sub) ? sub : "sistemas";
   const cur = (k) => (tab === k ? ' aria-current="page"' : "");
   const cab = `${cabecera("Administración", S.super ? "Control total del catálogo, usuarios y configuración." : "Como colaborador puedes editar sistemas y categorías.")}
-    <div class="admbar"><nav class="seg" aria-label="Secciones de administración"><a href="#/admin"${cur("sistemas")}>Sistemas</a><a href="#/admin/categorias"${cur("categorias")}>Categorías</a>${S.super ? `<a href="#/admin/notificaciones"${cur("notificaciones")}>Notificaciones${nNoLeidas() ? ` <span class="badge acc">${nNoLeidas()}</span>` : ""}</a><a href="#/admin/avisos"${cur("avisos")}>Avisos</a><a href="#/admin/usuarios"${cur("usuarios")}>Usuarios</a><a href="#/admin/config"${cur("config")}>Configuración</a><a href="#/admin/qa"${cur("qa")}>Pruebas QA${S.qa ? " ●" : ""}</a>` : ""}</nav><button class="btn sec sm" data-act="cerrar-sesion">${glifo("unlock")}Cerrar sesión</button></div><!--panel-->`;
+    <div class="admbar"><nav class="seg" aria-label="Secciones de administración"><a href="#/admin"${cur("sistemas")}>Sistemas</a><a href="#/admin/categorias"${cur("categorias")}>Categorías</a>${S.super ? `<a href="#/admin/solicitudes"${cur("solicitudes")}>Solicitudes${(() => { const n = filasBandeja().filter((r) => r.estado === "nueva").length; return n ? ` <span class="badge acc">${n}</span>` : ""; })()}</a><a href="#/admin/notificaciones"${cur("notificaciones")}>Notificaciones${nNoLeidas() ? ` <span class="badge acc">${nNoLeidas()}</span>` : ""}</a><a href="#/admin/avisos"${cur("avisos")}>Avisos</a><a href="#/admin/usuarios"${cur("usuarios")}>Usuarios</a><a href="#/admin/config"${cur("config")}>Configuración</a><a href="#/admin/qa"${cur("qa")}>Pruebas QA${S.qa ? " ●" : ""}</a>` : ""}</nav><button class="btn sec sm" data-act="cerrar-sesion">${glifo("unlock")}Cerrar sesión</button></div><!--panel-->`;
   if (tab === "categorias") return cab + vAdminCategorias();
+  if (tab === "solicitudes") return cab + vBandeja(true);
   if (tab === "notificaciones") return cab + vAdminNotif();
   if (tab === "avisos") return cab + vAdminAvisos();
   if (tab === "usuarios") return cab + vAdminUsuarios();
@@ -3259,6 +3291,8 @@ const ACT = {
   /* administración */
   "admin-entry"() { go("admin"); },
   "mi-cuenta"() { abrirMiCuenta(); },
+  "foto-elegir"() { const i = $("#up-foto"); if (i) i.click(); },
+  "foto-quitar"() { fijarFoto(""); },
   "cambiar-pass"() { abrirCambiarClave(); },
   "cerrar-sesion"() { cerrarModal(); limpiarSesion(); location.hash = "#/"; render(false); toast("Sesión cerrada"); },
   "super-enviar"() { sbSuperEnviar(); },
@@ -3381,17 +3415,20 @@ const ACT = {
   "entrar-visitante"() { S.guest = true; try { sessionStorage.setItem("catalogo-visitante", "1"); } catch (e) {} location.hash = "#/"; render(true); },
   "bandeja-filtro"(t) { S.bf = t.dataset.v; keep(() => render(true)); },
   "bandeja-exportar"() { exportarBandeja(); },
+  "bandeja-selall"(t) { const s = S.bsel instanceof Set ? S.bsel : (S.bsel = new Set()); if (t.checked) bandejaVisibles().forEach((r) => s.add(r.id)); else s.clear(); keep(() => render(false)); },
+  async "bandeja-ocultar-sel"() { const ids = [...(S.bsel || [])]; if (!ids.length) return; const mostrar = S.bf === "archivada"; await bandejaEstado(ids, mostrar ? "nueva" : "archivada"); S.bsel = new Set(); toast(mostrar ? `${ids.length} ${plural(ids.length, "solicitud visible", "solicitudes visibles")} de nuevo` : `${ids.length} ${plural(ids.length, "solicitud oculta", "solicitudes ocultas")}`); },
+  async "bandeja-borrar-sel"() { const ids = [...(S.bsel || [])]; if (!ids.length) return; await bandejaBorrar(ids, `Se eliminarán ${ids.length} ${plural(ids.length, "solicitud", "solicitudes")} de forma definitiva. No se puede deshacer; si solo quieres sacarlas de la lista, usa «Ocultar».`); },
   "bandeja-recargar"() { S.inbox = undefined; render(true); },
-  async "bandeja-estado"(t) { await bandejaEstado([t.dataset.id], t.dataset.v); if (t.dataset.v === "archivada") toast("Solicitud archivada"); else if (t.dataset.v === "cancelada") toast("Marcada como cancelada"); },
+  async "bandeja-estado"(t) { await bandejaEstado([t.dataset.id], t.dataset.v); if (t.dataset.v === "archivada") toast("Solicitud oculta"); else if (t.dataset.v === "cancelada") toast("Marcada como cancelada"); },
   async "bandeja-nota"(t) {
     const n = $("#nota-" + t.dataset.id); if (!n) return;
     if (SB) { const r = (S.inbox || []).find((x) => x.id === t.dataset.id); if (!r) return; const { error } = await SB.from("solicitudes").update({ nota: n.value }).eq("id", r.id); if (error) return toast("No se pudo guardar la nota."); r.nota = n.value; }
     else { const x = S.sols.find((y) => y.id === t.dataset.id); if (!x) return; x.nota = n.value; await guardarSolicitudes(); }
     toast("Nota guardada");
   },
-  async "bandeja-borrar"(t) { const r = filasBandeja().find((x) => x.id === t.dataset.id); if (r) await bandejaBorrar([r.id], `Se eliminará la solicitud ${r.folio} de ${(r.datos || {}).dependencia || "la dependencia"}. No se puede deshacer; si solo quieres sacarla de la lista, usa «Archivar».`); },
-  async "bandeja-archivar-canceladas"() { await bandejaEstado(filasBandeja().filter((r) => r.estado === "cancelada").map((r) => r.id), "archivada"); toast("Solicitudes canceladas archivadas"); },
-  async "bandeja-borrar-canceladas"() { const ids = filasBandeja().filter((r) => r.estado === "cancelada").map((r) => r.id); await bandejaBorrar(ids, `Se eliminarán ${ids.length} ${plural(ids.length, "solicitud cancelada", "solicitudes canceladas")}. No se puede deshacer; si prefieres conservarlas, usa «Archivar todas».`); },
+  async "bandeja-borrar"(t) { const r = filasBandeja().find((x) => x.id === t.dataset.id); if (r) await bandejaBorrar([r.id], `Se eliminará la solicitud ${r.folio} de ${(r.datos || {}).dependencia || "la dependencia"}. No se puede deshacer; si solo quieres sacarla de la lista, usa «Ocultar».`); },
+  async "bandeja-archivar-canceladas"() { await bandejaEstado(filasBandeja().filter((r) => r.estado === "cancelada").map((r) => r.id), "archivada"); toast("Solicitudes canceladas ocultas"); },
+  async "bandeja-borrar-canceladas"() { const ids = filasBandeja().filter((r) => r.estado === "cancelada").map((r) => r.id); await bandejaBorrar(ids, `Se eliminarán ${ids.length} ${plural(ids.length, "solicitud cancelada", "solicitudes canceladas")}. No se puede deshacer; si prefieres conservarlas, usa «Ocultar todas».`); },
   "guardar-directorio"() { const t = $("#dir-txt"); if (!t) return; cfg().directorio = t.value.split("\n").map((l) => l.split("|").map((x) => x.trim())).filter((a) => a[0]).map((a) => ({ nombre: a[0], cargo: a[1] || "", correo: a[2] || "", telefono: a[3] || "" })); guardarCatalogo(); toast("Directorio guardado"); render(true); },
   "recup-cancelar"() { S.recup = false; if (SB) SB.auth.signOut(); S.authView = "login"; location.hash = "#/acceso"; render(true); },
   "ir-registro"() { cerrarModal(); if (!/^#\/acceso/.test(location.hash)) S.retorno = location.hash; S.authView = "registro"; if (location.hash === "#/acceso") render(true); else location.hash = "#/acceso"; },
@@ -3491,6 +3528,8 @@ document.addEventListener("change", (e) => {
   else if (t.dataset.chk) marcarRequisito(t);
   else if (t.dataset.sel === "orden") { F2.orden = t.value; render(false); }
   else if (t.dataset.sel === "addsis") { if (t.value && !F.sel.includes(t.value)) F.sel.push(t.value); keep(() => render(false)); }
+  else if (t.dataset.bsel) { const s = S.bsel instanceof Set ? S.bsel : (S.bsel = new Set()); if (t.checked) s.add(t.dataset.bsel); else s.delete(t.dataset.bsel); keep(() => render(false)); }
+  else if (t.dataset.fotoPerfil) { const f = t.files[0]; t.value = ""; if (f) cambiarFotoPerfil(f); }
   else if (t.dataset.up2 && S.admin) { const f = t.files[0], k = t.dataset.up2, id = t.dataset.id; t.value = ""; if (f) subirImagenRapida(k, id, f); }
   else if (t.dataset.up === "import") { if (!S.super) { t.value = ""; return toast("Solo el superadministrador puede cargar un catálogo."); } const f = t.files[0]; t.value = ""; if (f) importarCatalogo(f); }
   else if (t.dataset.up) { const fs = [...t.files]; t.value = ""; subirArchivos(t.dataset.up, fs); }
@@ -3543,7 +3582,7 @@ async function sbIniciar() {
   try { await cargarScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"); SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } }); } catch (e) { SB = null; }
 }
 async function sbCatalogo() { if (!SB) return null; try { const { data } = await SB.from("catalogo").select("data").eq("id", 1).maybeSingle(); return data && catValido(data.data) ? data.data : null; } catch (e) { return null; } }
-const sbUsuario = (p, au) => ({ id: p.id, nombre: p.nombre || (au && au.email) || p.correo, correo: p.correo || (au && au.email) || "", rol: rolDe(p.rol), estado: p.estado || "activo", dependencia: p.dependencia || "", area: p.area || "", cargo: p.cargo || "", telefono: p.telefono || "", sb: true, salt: "", hash: "" });
+const sbUsuario = (p, au) => ({ id: p.id, nombre: p.nombre || (au && au.email) || p.correo, correo: p.correo || (au && au.email) || "", rol: rolDe(p.rol), estado: p.estado || "activo", dependencia: p.dependencia || "", area: p.area || "", cargo: p.cargo || "", telefono: p.telefono || "", sb: true, foto: p.foto || "", salt: "", hash: "" });
 async function sbPerfil(au) {
   const { data: p } = await SB.from("perfiles").select("*").eq("id", au.id).maybeSingle();
   if (!p || p.estado !== "activo") { await SB.auth.signOut(); return null; }
@@ -4175,12 +4214,14 @@ body{background:#fff!important;color:#172b34}
 @keyframes hz-run{0%{stroke-dashoffset:15;opacity:0}5%{opacity:1}54%{opacity:1}60%,100%{stroke-dashoffset:-100;opacity:0}}
 /* Sobre superficies oscuras (barra lateral, cabecera de Inicio) la huella usa tonos claros para leerse bien */
 .sidebar .huella,.pagehead .huella,.tabbar .huella{--hz-a:#c4fff8;--hz-b:#46d6cf;--hz:#7ff3ea}
-.pagehead .logo-float:has(.huella){width:54px;height:54px}
+.pagehead .logo-float:has(.huella){width:96px;height:96px}
+.pagehead.home-head .logo-float:has(.huella){margin-right:10px}
 .authwrap .authcard .auth-logo:has(.huella){width:70px!important;height:70px!important}
 .authwrap .authcard .auth-logo .logo-svg.huella{filter:drop-shadow(0 8px 12px rgba(15,110,140,.2))}
 .brand .ico.lg:has(.huella){--s:36px}
 .rail-brand.lg:has(.huella){width:36px;height:36px}
-@media (max-width:380px){.pagehead .logo-float:has(.huella){width:46px;height:46px}}
+@media (max-width:640px){.pagehead .logo-float:has(.huella){width:68px;height:68px;margin-right:2px}}
+@media (max-width:380px){.pagehead .logo-float:has(.huella){width:60px;height:60px}}
 @media (prefers-reduced-motion:reduce){.hz-l{animation:none;opacity:0}}
 </style>
 <style id="topbar-css">
@@ -4222,7 +4263,7 @@ body.auth .topbar{display:none!important}
 .topbar .tright{display:flex;align-items:center;gap:8px;flex:none}
 .topbar #sidefoot{display:flex;align-items:center;gap:8px}
 #tbell{display:contents}
-.topbar #campana{position:static;top:auto;right:auto;width:44px;height:44px;border-radius:14px;color:#fff;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+.topbar #campana{position:relative;top:auto;right:auto;width:44px;height:44px;border-radius:14px;color:#fff;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
 .topbar #campana:hover{background:rgba(255,255,255,.16);transform:none;box-shadow:none}
 .topbar #campana[aria-expanded="true"]{background:#f2b632;color:#0d3140}
 .topbar #campana .nbadge{top:-4px;right:-4px;box-shadow:0 0 0 2px #0f3d4d}
@@ -4398,6 +4439,20 @@ a.hh-go:hover{background:#fff;text-decoration:none}
   .topbar .searchbox input[type=search]{font-size:14px}
   .topbar .tlogin{padding:0 11px}
 }
+</style>
+<style id="foto-perfil">
+.avatar-i,.uav{overflow:hidden}
+.avatar-i img,.uav img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%}
+</style>
+<style id="bandeja-sel">
+.ban-row{display:flex;gap:10px;align-items:flex-start}.ban-row .ban-card{flex:1;min-width:0}
+.ban-pick{flex:none;padding-top:24px;cursor:pointer}.ban-pick input,.ban-all input{width:18px;height:18px;accent-color:var(--accent,#176b87);cursor:pointer}
+.ban-bulk{position:sticky;top:8px;z-index:5;display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;background:#fff;border:1px solid var(--pal-borde,#dbe6ea);border-radius:12px;padding:10px 14px;margin:14px 0 0;box-shadow:0 6px 18px -12px rgba(14,47,61,.35)}
+.ban-all{display:flex;gap:10px;align-items:center;font-weight:600;cursor:pointer}.ban-bulk-acts{display:flex;gap:8px}
+.ban-bulk .btn[disabled]{opacity:.45;pointer-events:none}
+.ban-bulk-acts{align-items:center}.ban-bulk-acts .btn{margin:0}
+.admbar>.seg{flex:1 1 0;min-width:0}.admbar .seg a{padding:7px 12px}
+@media (prefers-color-scheme:dark){.ban-bulk{background:#10222b;border-color:#27424f;color:#e8f4f8}}
 </style>
 </body>
 </html>
