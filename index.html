@@ -4381,11 +4381,11 @@ a.hh-go:hover{background:#fff;text-decoration:none}
   .hh-chip{height:30px;padding:0 11px;font-size:12.5px}
 }
 @media (prefers-reduced-motion:reduce){.pagehead.home-head .logo-float::before,.pagehead.home-head .when::before{animation:none}}
-/* Marca más gruesa */
-.nv-nova{font-weight:800!important;font-size:25px!important;letter-spacing:-.04em!important}
-.nv-cpd{font-weight:700!important}
-.nv-mini-n{font-weight:800!important;font-size:21px!important;letter-spacing:-.04em!important}
-.nv-mini-c{font-weight:700!important}
+/* Marca sencilla: tipografía del sistema, sin letras pesadas ni apretadas */
+.nv-nova,.nv-mini-n{font-family:var(--font)!important;font-weight:600!important;letter-spacing:0!important;text-transform:capitalize}
+.nv-nova{font-size:24px!important}
+.nv-mini-n{font-size:20px!important}
+.nv-cpd,.nv-mini-c{font-family:var(--font)!important;font-weight:500!important;letter-spacing:.18em!important}
 @media (max-width:900px){.nv-nova{font-size:22px!important}}
 .nv-row .nv-cpd{align-self:center}
 @media (max-width:900px){.nv-row{gap:7px}.nv-row .nv-cpd{font-size:8.5px;padding-left:7px}}
