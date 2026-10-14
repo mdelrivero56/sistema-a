@@ -708,6 +708,90 @@ button.avatar{font:inherit;font-weight:700}
 :root[data-theme="dark"]{color-scheme:light;--bg:#f7f9fc;--bg-soft:#edf3f8;--bg-card:#fff;--bg-input:#fff;--label:#203047;--label-2:#53657b;--label-3:#718198;--sep:#dce5ef;--sep-strong:#b8c9dc;--accent:#176b87;--accent-ink:#fff;--accent-soft:#e0f2f5;--pill:#e7f0f6;--pill-ink:#155b78;--glass:rgba(255,255,255,.96);--sidebar:#edf3f8;--sel:#dfeaf3;--shadow:0 2px 8px rgba(34,65,92,.06);--shadow-pop:0 12px 32px rgba(34,65,92,.14);--scrim:rgba(25,45,65,.22)}
 
 </style>
+<style id="nv-css">
+/* ===== Ficha «Sistema del momento»: panel oscuro con brillo, ilustración flotante y llamada a la acción con degradado dorado ===== */
+.nc{--c-hi:color-mix(in srgb,var(--c1,#4fb8d4) 70%,#fff);position:relative;isolation:isolate;display:flex;flex-direction:column;color:#fff;border-radius:28px;overflow:hidden;border:1px solid rgba(255,255,255,.12);background:radial-gradient(75% 60% at 90% 0%,color-mix(in srgb,var(--c1,#4fb8d4) 50%,transparent),transparent 62%),radial-gradient(70% 55% at 0% 100%,color-mix(in srgb,var(--c2,#176b87) 55%,transparent),transparent 65%),#0a2531;box-shadow:0 28px 50px -28px rgba(6,28,38,.75)}
+.nc .tc-link{z-index:1;border-radius:inherit}
+.nc-art{position:relative;height:220px}
+.nc-art::before{content:"";position:absolute;left:50%;top:52%;width:240px;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.28),transparent 68%);filter:blur(10px)}
+.nc .tc-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.nc .tc-ill{position:absolute;left:50%;top:54%;height:96%;width:auto;max-width:92%;transform:translate(-50%,-50%);filter:drop-shadow(0 18px 24px rgba(0,0,0,.35))}
+.nc .tc-glyph{position:absolute;left:50%;top:54%;width:34%;max-width:140px;aspect-ratio:1;transform:translate(-50%,-50%);display:grid;place-items:center;color:rgba(255,255,255,.92);filter:drop-shadow(0 12px 20px rgba(0,0,0,.35))}
+.nc .tc-glyph .g{width:100%;height:100%;stroke-width:1.2}
+.nc-sello{position:absolute;top:18px;left:18px;z-index:2;display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.24);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);font-weight:600;font-size:13px;line-height:1;white-space:nowrap}
+.nc-sello::before{content:"";width:8px;height:8px;border-radius:50%;background:#5ef2b0;box-shadow:0 0 0 0 rgba(94,242,176,.6);animation:ncpulso 2.4s ease-out infinite}
+@keyframes ncpulso{70%,100%{box-shadow:0 0 0 9px rgba(94,242,176,0)}}
+.nc-body{position:relative;z-index:2;padding:4px 24px 24px;pointer-events:none}
+.nc-cat{display:block;font-weight:600;font-size:14px;color:var(--c-hi)}
+.nc-body h3{margin:8px 0 10px;font-weight:800;font-size:clamp(32px,9vw,40px);line-height:1.04;letter-spacing:-.03em;color:#fff;text-wrap:balance}
+.nc-body p{margin:0;font-size:16px;line-height:1.5;color:rgba(255,255,255,.74);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.nc-acts{display:flex;flex-direction:column;gap:10px;margin-top:22px;pointer-events:auto;position:relative;z-index:2}
+.nc .get-wrap{align-items:stretch}
+.nc .get.nc-btn{display:flex;width:100%;min-width:0;align-items:center;justify-content:center;gap:10px;padding:15px 20px;border-radius:16px;background:linear-gradient(135deg,#ffd75e,#f1a73a);color:#0a2531;font-size:16.5px;font-weight:800;box-shadow:0 10px 24px -10px rgba(241,167,58,.75);-webkit-backdrop-filter:none;backdrop-filter:none;transition:transform .15s,filter .15s}
+.nc .get.nc-btn::after{content:"";width:8px;height:8px;border-top:2.5px solid currentColor;border-right:2.5px solid currentColor;transform:rotate(45deg);margin-left:-2px}
+.nc .get.nc-btn:hover{filter:brightness(1.06)}.nc .get.nc-btn:active{transform:scale(.98)}
+.nc-more{display:flex;align-items:center;justify-content:center;padding:13px 18px;border-radius:16px;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.06);color:#fff;font-weight:700;font-size:15.5px;text-decoration:none}
+.nc-more:hover{background:rgba(255,255,255,.14);text-decoration:none}
+@media (min-width:900px){
+  .nc.wide{display:grid;grid-template-columns:1.05fr 1fr;min-height:400px;align-items:center}
+  .nc.wide .nc-art{grid-column:2;grid-row:1;height:100%;min-height:400px}
+  .nc.wide .nc-art::before{width:360px}
+  .nc.wide .nc-body{grid-column:1;grid-row:1;padding:40px 12px 40px 44px}
+  .nc.wide .nc-body h3{font-size:clamp(40px,4.4vw,58px)}
+  .nc.wide .nc-acts{flex-direction:row;max-width:460px}
+  .nc.wide .nc-acts .get-wrap{flex:1.4}.nc.wide .nc-more{flex:1}
+}
+/* ===== Barra inferior flotante: solo la pestaña activa muestra su nombre ===== */
+@media (max-width:900px){
+  .tabbar{left:12px!important;right:12px!important;bottom:calc(8px + env(safe-area-inset-bottom,0px))!important;top:auto!important;width:auto!important;height:58px!important;padding:6px!important;gap:2px!important;margin:0!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:22px!important;background:rgba(10,37,49,.94)!important;-webkit-backdrop-filter:blur(14px)!important;backdrop-filter:blur(14px)!important;box-shadow:0 14px 30px -10px rgba(4,22,31,.65)!important;overflow:hidden}
+  .tabbar a:not(.rail-brand),.rail-admin{flex:1 1 0!important;flex-direction:row!important;justify-content:center;gap:0!important;padding:0!important;border-radius:16px!important;color:#8fb6c3;transition:flex-grow .3s cubic-bezier(.2,.8,.2,1),background .2s}
+  .tabbar a:not(.rail-brand) span,.rail-admin span{max-width:0;opacity:0;font-size:13px;font-weight:700;overflow:hidden;transition:max-width .3s,opacity .2s,margin .3s}
+  .tabbar .g{width:22px;height:22px;stroke-width:1.7;flex:none}
+  .tabbar a[aria-current="page"]{flex:2.6 1 0!important;background:rgba(255,255,255,.14)!important;color:#fff!important}
+  .tabbar a[aria-current="page"] span{max-width:90px;opacity:1;margin-left:7px}
+  .tabbar a[aria-current="page"] .g{stroke:#ffd75e!important;color:#ffd75e!important}
+  .tabbar a:not(.rail-brand)::before{display:none!important}
+}
+@media (prefers-reduced-motion:reduce){.nc-sello::before{animation:none}.tabbar a,.tabbar span{transition:none!important}}
+
+/* ===== Ficha con fondo blanco (mismo contorno y forma) ===== */
+.nc{--ink:#0e2f3d;--acc:color-mix(in srgb,var(--c2,#176b87) 80%,#000);color:var(--ink);background:#fff!important;border:1px solid color-mix(in srgb,var(--c2,#176b87) 28%,#cfdde3);box-shadow:0 18px 36px -22px rgba(14,47,61,.35)}
+.nc-art::before{background:radial-gradient(circle,color-mix(in srgb,var(--c1,#4fb8d4) 38%,transparent),transparent 68%)}
+.nc .tc-ill{filter:drop-shadow(0 14px 16px rgba(14,47,61,.22))}
+.nc .tc-glyph{color:var(--acc);filter:drop-shadow(0 10px 14px rgba(14,47,61,.18))}
+.nc-sello{background:color-mix(in srgb,var(--c1,#4fb8d4) 14%,#fff);border-color:color-mix(in srgb,var(--c2,#176b87) 30%,#fff);color:var(--ink);-webkit-backdrop-filter:none;backdrop-filter:none}
+.nc-sello::before{background:#1fb87a;box-shadow:0 0 0 0 rgba(31,184,122,.55)}
+@keyframes ncpulso{70%,100%{box-shadow:0 0 0 9px rgba(31,184,122,0)}}
+.nc-cat{color:var(--acc)}
+.nc-body h3{color:var(--ink)}
+.nc-body p{color:#4a6470}
+.nc-more{border-color:color-mix(in srgb,var(--c2,#176b87) 35%,#cfdde3);background:#fff;color:var(--ink)}
+.nc-more:hover{background:color-mix(in srgb,var(--c1,#4fb8d4) 12%,#fff)}
+
+/* ===== Detalles de la ficha: datos clave, usos y marco para la portada ===== */
+.nc-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin:18px 0 0;border:1px solid color-mix(in srgb,var(--c2,#176b87) 20%,#dbe6ea);border-radius:14px;background:color-mix(in srgb,var(--c1,#4fb8d4) 6%,#f8fbfc);overflow:hidden}
+.nc-meta>div{padding:10px 14px;min-width:0}
+.nc-meta>div:nth-child(odd){border-right:1px solid color-mix(in srgb,var(--c2,#176b87) 16%,#dbe6ea)}
+.nc-meta>div:nth-child(n+3){border-top:1px solid color-mix(in srgb,var(--c2,#176b87) 16%,#dbe6ea)}
+.nc-meta dt{font-size:12px;font-weight:600;color:#5d7782;margin:0}
+.nc-meta dd{margin:2px 0 0;font-size:14.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nc-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.nc-tags span{padding:6px 12px;border-radius:999px;background:color-mix(in srgb,var(--c1,#4fb8d4) 14%,#fff);border:1px solid color-mix(in srgb,var(--c2,#176b87) 20%,#fff);font-size:13px;font-weight:600;color:var(--acc)}
+.nc-art.con-img{padding:12px}
+.nc-art.con-img::before{display:none}
+.nc-art.con-img .tc-img{position:relative;inset:auto;display:block;width:100%;height:100%;border-radius:20px;box-shadow:0 16px 30px -16px rgba(14,47,61,.55),0 0 0 1px rgba(14,47,61,.08)}
+.nc-art.con-img .nc-sello{top:26px;left:26px}
+.nc-acts{margin-top:20px}
+@media (min-width:900px){
+  .nc.wide .nc-art.con-img{padding:20px 8px 20px 20px}
+  .nc.wide .nc-meta{max-width:460px}
+  .nc.wide .nc-meta{grid-template-columns:repeat(4,auto)}
+  .nc.wide .nc-meta>div,.nc.wide .nc-meta>div:nth-child(n+3){border-top:0}
+  .nc.wide .nc-meta>div+div{border-left:1px solid color-mix(in srgb,var(--c2,#176b87) 16%,#dbe6ea)}
+  .nc.wide .nc-meta>div:nth-child(odd){border-right:0}
+  .nc.wide .nc-meta{max-width:none;width:fit-content}
+}
+</style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -1194,6 +1278,13 @@ function ilusVotacion() {
   <circle cx="60" cy="236" r="7" fill="#fff" opacity=".85"/><circle cx="372" cy="238" r="5" style="fill:var(--c1)"/><circle cx="98" cy="46" r="5" style="fill:var(--c2)" opacity=".6"/><circle cx="352" cy="42" r="8" fill="#fff" opacity=".75"/>
   </svg>`;
 }
+function ncDetalles(s) {
+  const nd = (s.dependencias || []).length, nr = (s.requisitos || []).filter((x) => String(x).trim()).length;
+  const it = [s.version && ["Versión", "v" + String(s.version).replace(/^v/i, "")], nd && ["Lo usan", nd + (nd === 1 ? " dependencia" : " dependencias")], nr && ["Requisitos", nr + (nr === 1 ? " por cumplir" : " por cumplir")], s.estado && ["Estado", s.estado]].filter(Boolean).slice(0, 4);
+  const tags = (s.usos || []).slice(0, 3);
+  return (it.length ? `<dl class="nc-meta">${it.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>` : "")
+    + (tags.length ? `<div class="nc-tags" aria-label="Ideal para">${tags.map((t) => `<span>${esc(t)}</span>`).join("")}</div>` : "");
+}
 function tarjetaHoy(s, o = {}) {
   const cat = S.cat.categorias.find((k) => k.id === (s.categorias || [])[0]);
   const eye = (cat ? cat.nombre : (s.usos || [])[0] ? "Ideal para " + s.usos[0].toLowerCase() : "Sistema institucional");
@@ -1203,11 +1294,10 @@ function tarjetaHoy(s, o = {}) {
   if (imgOk(s.portada)) arte = `<img class="tc-img" src="${esc(s.portada)}" alt="">`;
   else if (o.ilus && s.icono && s.icono.glifo === "votacion") arte = ilusVotacion();
   else arte = `<span class="tc-glyph">${glifo(GLIFOS.includes((s.icono || {}).glifo) ? s.icono.glifo : "app")}</span>`;
-  return `<article class="tc ${o.wide ? "wide" : ""}" style="${colorVars((s.icono || {}).color)}">
-    <div class="tc-art" aria-hidden="true">${arte}<span class="tc-blur"></span><span class="tc-fade"></span></div>
-    <span class="tc-tab">${esc(tab)}</span>
-    <div class="tc-txt"><span class="tc-eye">${esc(eye)}</span><h3>${esc(s.nombre)}</h3><p>${esc(desc)}</p></div>
-    <div class="tc-bar">${icono(s, "s48")}<span class="t"><b>${esc(s.nombre)}</b><small>${esc(s.subtitulo || s.area || "")}</small></span>${btnGet(s, "glass", true)}</div>
+  return `<article class="nc ${o.wide ? "wide" : ""}" style="${colorVars((s.icono || {}).color)}">
+    <div class="nc-art${imgOk(s.portada) ? " con-img" : ""}" aria-hidden="true">${arte}<span class="nc-sello">${esc(tab)}</span></div>
+    <div class="nc-body"><span class="nc-cat">${esc(eye)}</span><h3>${esc(s.nombre)}</h3><p>${esc(desc)}</p>${ncDetalles(s)}
+      <div class="nc-acts">${btnGet(s, "nc-btn", true)}<a class="nc-more" href="#/sistema/${enc(s.id)}">Ver ficha</a></div></div>
     <a class="tc-link" href="#/sistema/${enc(s.id)}" aria-label="Ver ${esc(s.nombre)}"></a></article>`;
 }
 function seccionesHoy(lista) {
@@ -1328,7 +1418,7 @@ function abrirSesion(u, recordar) {
   const volver = S.retorno && !/^#\/acceso/.test(S.retorno) ? S.retorno : ""; S.retorno = null;
   S.user = u; aplicarRol(u); S.guest = false; try { sessionStorage.removeItem("catalogo-visitante"); } catch (e) {} guardarSesion(u, recordar); S.authView = "login";
   if (/^#\/acceso/.test(location.hash)) history.replaceState(null, "", volver || "#/");
-  render(true); if (!u.debeCambiar) toast(nNoLeidas() ? `Bienvenido(a), ${u.nombre.split(" ")[0]} · tienes ${nNoLeidas()} ${nNoLeidas() === 1 ? "notificación nueva" : "notificaciones nuevas"}` : `Bienvenido(a), ${u.nombre.split(" ")[0]}`);
+  render(true); if (!u.debeCambiar) toast(`Bienvenido(a), ${u.nombre.split(" ")[0]}`);
 }
 
 /* ---------- Registro propio y notificaciones (sin códigos ni correos) ---------- */
@@ -1349,6 +1439,16 @@ async function marcarNotifs(id) {
   const l = (S.cat.notificaciones || []).filter((n) => (id ? n.id === id : !n.leida));
   l.forEach((n) => (n.leida = true));
   if (SB && l.length) { try { await SB.from("notificaciones").update({ leida: true }).in("id", l.map((n) => n.id)); } catch (e) {} } else guardarCatalogo();
+}
+/* Avisa al superadministrador: notificación en la campana + correo. Nunca bloquea ni rompe el flujo de quien la origina. */
+async function avisarSuper(tipo, titulo, detalle, asunto, campos, yaEnviadoA) {
+  try {
+    if (SB) { try { await SB.from("notificaciones").insert({ tipo, titulo, detalle }); } catch (e) {} }
+    else { notificar(tipo, titulo, detalle); guardarCatalogo(false); }
+  } catch (e) {}
+  try {
+    if (normCorreo(yaEnviadoA) !== normCorreo(CORREO_SUPER)) await enviarAvisoCorreo(CORREO_SUPER, asunto, campos);
+  } catch (e) {}
 }
 async function registrarse() {
   authErr("");
@@ -1406,11 +1506,11 @@ function vAdminNotif() {
   const dato = (k, v) => (v ? `<div><span class="k">${k}</span><span class="v">${esc(v)}</span></div>` : "");
   const sinSB = SB_ON ? "" : `<div class="note warn" style="margin-bottom:14px">${glifo("warn")}<div>Sin servidor conectado, estos avisos solo aparecen cuando la persona se registra <b>en este mismo navegador</b>. Para recibirlos desde cualquier dispositivo, conecta Supabase.</div></div>`;
   return `<div class="admbar" style="margin-top:0"><span class="muted">${L.length ? `${nl} sin leer · ${L.length} en total` : "Sin notificaciones"}</span>${nl ? `<button class="btn sec sm" data-act="notif-todas">${glifo("check")}Marcar todas como leídas</button>` : ""}</div>${sinSB}
-  ${L.length ? `<div class="list-card">${L.map((n) => { const d = n.detalle || {}, rec = n.tipo === "recuperacion"; return `<div class="arow" style="align-items:flex-start;${n.leida ? "opacity:.72" : ""}"><span class="avatar-i" style="${n.leida ? "" : "background:linear-gradient(145deg,var(--accent),#2bb5a0);color:#fff"}">${glifo(rec ? "candado" : "user")}</span>
+  ${L.length ? `<div class="list-card">${L.map((n) => { const d = n.detalle || {}, rec = n.tipo === "recuperacion", esSol = n.tipo === "solicitud" || n.tipo === "checklist"; return `<div class="arow" style="align-items:flex-start;${n.leida ? "opacity:.72" : ""}"><span class="avatar-i" style="${n.leida ? "" : "background:linear-gradient(145deg,var(--accent),#2bb5a0);color:#fff"}">${glifo(rec ? "candado" : esSol ? (n.tipo === "checklist" ? "check" : "documento") : "user")}</span>
     <div class="t"><b>${esc(n.titulo)}</b> ${n.leida ? "" : '<span class="badge acc">Nueva</span>'}<small>${esc(fecha(n.fecha))}</small>
-      <div class="kv" style="margin-top:8px">${dato("Dependencia", d.dependencia)}${dato("Área", d.area)}${dato("Cargo", d.cargo)}${dato("Correo", d.correo)}${dato("Teléfono", d.telefono)}</div></div>
-    <div class="acts">${rec && d.userId ? `<button class="btn sm" data-act="usr-reset" data-id="${esc(d.userId)}">Restablecer contraseña</button>` : `<a class="btn sm sec" href="#/admin/usuarios">Ver en Usuarios</a>`}${n.leida ? "" : `<button class="btn sm ghost" data-act="notif-leer" data-id="${esc(n.id)}">Marcar leída</button>`}</div></div>`; }).join("")}</div>`
-    : vacio("Todo al día", "Cuando alguien se registre o pida restablecer su contraseña, lo verás aquí.", "")}`;
+      <div class="kv" style="margin-top:8px">${dato("Folio", d.folio)}${dato("Sistemas", d.sistemas)}${dato("Contacto", d.folio ? d.nombre : "")}${dato("Dependencia", d.dependencia)}${dato("Área", d.area)}${dato("Cargo", d.cargo)}${dato("Correo", d.correo)}${dato("Teléfono", d.telefono)}</div></div>
+    <div class="acts">${rec && d.userId ? `<button class="btn sm" data-act="usr-reset" data-id="${esc(d.userId)}">Restablecer contraseña</button>` : esSol ? `<a class="btn sm sec" href="#/solicitudes">Ver solicitudes</a>` : `<a class="btn sm sec" href="#/admin/usuarios">Ver en Usuarios</a>`}${n.leida ? "" : `<button class="btn sm ghost" data-act="notif-leer" data-id="${esc(n.id)}">Marcar leída</button>`}</div></div>`; }).join("")}</div>`
+    : vacio("Todo al día", "Cuando alguien se registre, pida restablecer su contraseña, solicite un sistema o complete su checklist, lo verás aquí.", "")}`;
 }
 
 /* ---------- Avisos para usuarios + campana flotante ---------- */
@@ -1433,6 +1533,7 @@ function iniciarCampana() {
   const b = document.createElement("button"); b.id = "campana"; b.type = "button"; b.dataset.act = "notif-abrir"; b.setAttribute("aria-haspopup", "dialog"); b.setAttribute("aria-expanded", "false");
   ($("#tbell") || document.body).appendChild(b);
   window.addEventListener("scroll", () => b.classList.toggle("scrolled", window.scrollY > 8), { passive: true });
+  setInterval(() => { if (S.super && SB && !document.hidden) sbNotifs().then(refrescarCampana); }, 60000);
 }
 function actualizarCampana() {
   iniciarCampana();
@@ -1447,17 +1548,18 @@ const fechaCorta = (iso) => { try { return new Date(iso).toLocaleDateString("es-
 function itemAviso(a, leido) {
   return `<button class="nitem ${leido ? "" : "nuevo"} t-${esc(a.tipo || "general")}" data-act="aviso-ir" data-id="${esc(a.id)}"><span class="ndot" aria-hidden="true"></span><span class="ntxt"><span class="ntipo">${esc(TIPOS_AVISO[a.tipo] || "Aviso")}${a.fijado ? " · Fijado" : ""}</span><b>${esc(a.titulo)}</b>${a.mensaje ? `<small>${esc(a.mensaje)}</small>` : ""}</span><time>${esc(hace(a.publicar))}</time></button>`;
 }
+const ETIQ_NOTIF = { registro: "Nuevo registro", recuperacion: "Contraseña", solicitud: "Nueva solicitud", checklist: "Checklist completo" };
 function itemAcceso(n) {
-  const d = n.detalle || {};
-  return `<div class="nitem ${n.leida ? "" : "nuevo"} t-acceso"><span class="ndot" aria-hidden="true"></span><span class="ntxt"><span class="ntipo">${n.tipo === "recuperacion" ? "Contraseña" : "Nuevo registro"}</span><b>${esc(n.titulo)}</b><small>${esc([d.dependencia, d.cargo].filter(Boolean).join(" · "))}</small></span><span class="nacts">${n.tipo === "recuperacion" && d.userId ? `<button class="nlink" data-act="notif-reset" data-id="${esc(d.userId)}">Restablecer</button>` : `<a class="nlink" href="#/admin/usuarios" data-act="notif-cerrar">Ver</a>`}${n.leida ? "" : `<button class="nlink" data-act="notif-leer" data-id="${esc(n.id)}">Leída</button>`}</span></div>`;
+  const d = n.detalle || {}, esSol = n.tipo === "solicitud" || n.tipo === "checklist";
+  return `<div class="nitem ${n.leida ? "" : "nuevo"} t-${esSol ? n.tipo : "acceso"}"><span class="ndot" aria-hidden="true"></span><span class="ntxt"><span class="ntipo">${ETIQ_NOTIF[n.tipo] || "Nuevo registro"}</span><b>${esc(n.titulo)}</b><small>${esc((esSol ? [d.sistemas, d.dependencia] : [d.dependencia, d.cargo]).filter(Boolean).join(" · "))}</small></span><span class="nacts">${n.tipo === "recuperacion" && d.userId ? `<button class="nlink" data-act="notif-reset" data-id="${esc(d.userId)}">Restablecer</button>` : `<a class="nlink" href="${esSol ? "#/solicitudes" : "#/admin/usuarios"}" data-act="notif-cerrar">Ver</a>`}${n.leida ? "" : `<button class="nlink" data-act="notif-leer" data-id="${esc(n.id)}">Leída</button>`}</span></div>`;
 }
 function htmlNotif() {
   const A = avisosVis(), l = leidosSet(), an = A.filter((a) => !l.has(a.id)).length, ac = Array.isArray(S.cat.notificaciones) ? S.cat.notificaciones : [], acn = nNoLeidas();
   const tab = S.super && S.nTab === "accesos" ? "accesos" : "avisos";
-  const tabs = S.super ? `<div class="ntabs" role="tablist"><button role="tab" aria-selected="${tab === "avisos"}" data-act="notif-tab" data-v="avisos">Avisos${an ? ` <i>${an}</i>` : ""}</button><button role="tab" aria-selected="${tab === "accesos"}" data-act="notif-tab" data-v="accesos">Accesos${acn ? ` <i>${acn}</i>` : ""}</button></div>` : "";
+  const tabs = S.super ? `<div class="ntabs" role="tablist"><button role="tab" aria-selected="${tab === "avisos"}" data-act="notif-tab" data-v="avisos">Avisos${an ? ` <i>${an}</i>` : ""}</button><button role="tab" aria-selected="${tab === "accesos"}" data-act="notif-tab" data-v="accesos">Actividad${acn ? ` <i>${acn}</i>` : ""}</button></div>` : "";
   const lista = tab === "avisos"
     ? (A.length ? A.slice(0, 12).map((a) => itemAviso(a, l.has(a.id))).join("") : `<div class="nvacio">${glifo("campana")}<b>Todo al día</b><span>No hay avisos por ahora.</span></div>`)
-    : (ac.length ? ac.slice(0, 12).map(itemAcceso).join("") : `<div class="nvacio">${glifo("campana")}<b>Sin novedades</b><span>Aquí verás registros nuevos y cambios de contraseña.</span></div>`);
+    : (ac.length ? ac.slice(0, 12).map(itemAcceso).join("") : `<div class="nvacio">${glifo("campana")}<b>Sin novedades</b><span>Aquí verás registros, cambios de contraseña, solicitudes de sistemas y checklists completados.</span></div>`);
   const pie = tab === "avisos"
     ? `<button class="nlink" data-act="avisos-leer-todo" ${an ? "" : "disabled"}>Marcar todo como leído</button><span class="nsp"></span>${S.super ? `<a class="nlink" href="#/admin/avisos" data-act="notif-cerrar">Administrar</a>` : ""}<a class="nlink fuerte" href="#/avisos" data-act="notif-cerrar">Ver todos</a>`
     : `<button class="nlink" data-act="notif-todas" ${acn ? "" : "disabled"}>Marcar todo como leído</button><span class="nsp"></span><a class="nlink fuerte" href="#/admin/notificaciones" data-act="notif-cerrar">Ver todo</a>`;
@@ -1468,6 +1570,7 @@ function abrirNotif() {
   let p = $("#notifpop");
   if (!p) { p = document.createElement("div"); p.id = "notifpop"; p.setAttribute("role", "dialog"); p.setAttribute("aria-label", "Notificaciones"); p.tabIndex = -1; document.body.appendChild(p); }
   if (S.nOpen) return cerrarNotif();
+  if (S.super && SB) sbNotifs().then(() => { if (S.nOpen) refrescarCampana(); });
   S.nOpen = true; if (S.super && !S.nTab) S.nTab = nAvisosNo() || !nNoLeidas() ? "avisos" : "accesos";
   p.innerHTML = htmlNotif(); p.hidden = false; requestAnimationFrame(() => p.classList.add("on")); document.querySelectorAll('[data-act="notif-abrir"]').forEach((b) => b.setAttribute("aria-expanded", "true")); p.focus({ preventScroll: true });
 }
@@ -1481,6 +1584,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && S.nOpen)
 window.addEventListener("hashchange", () => { if (S.nOpen) cerrarNotif(); });
 
 function bannerAviso() {
+  return ""; /* los avisos solo se muestran en la campana de notificaciones */
   const l = leidosSet(), a = avisosVis().find((x) => x.fijado && !l.has(x.id)); if (!a) return "";
   return `<aside class="aviso-banner t-${esc(a.tipo || "general")}" role="status"><span class="ndot" aria-hidden="true"></span><div><span class="ntipo">${esc(TIPOS_AVISO[a.tipo] || "Aviso")}</span><b>${esc(a.titulo)}</b>${a.mensaje ? `<span class="amsg">${esc(a.mensaje)}</span>` : ""}</div><button class="btn sm" data-act="aviso-ir" data-id="${esc(a.id)}">${a.sistemaId && byId(a.sistemaId) ? "Ver sistema" : "Leer"}</button><button class="iconbtn" data-act="aviso-cerrar" data-id="${esc(a.id)}" aria-label="Descartar aviso">${glifo("x")}</button></aside>`;
 }
@@ -2450,6 +2554,9 @@ async function enviarSolicitud() {
     if (para && (await enviarAvisoCorreo(para, asuntoSol(sol), { Folio: sol.folio, Dependencia: sol.datos.dependencia, Contacto: sol.datos.nombre, Correo: sol.datos.correo, Teléfono: sol.datos.telefono, Sistemas: sol.sistemas.map((s) => s.nombre).join(", "), Mensaje: armarMensaje(sol) }))) { sol.estado = "enviada"; sol.canal = "automático"; }
   }
   try { await depsRegistrar(sol.datos.dependencia); } catch (err) {}
+  const sisTxt = sol.sistemas.map((s) => s.nombre).join(", ");
+  avisarSuper("solicitud", `Nueva solicitud: ${sisTxt} — ${sol.datos.dependencia}`, { folio: sol.folio, solId: sol.id, sistemas: sisTxt, dependencia: sol.datos.dependencia, area: sol.datos.area, nombre: sol.datos.nombre, correo: sol.datos.correo, telefono: sol.datos.telefono }, asuntoSol(sol),
+    { Folio: sol.folio, Dependencia: sol.datos.dependencia, Contacto: sol.datos.nombre, Correo: sol.datos.correo, Teléfono: sol.datos.telefono, Sistemas: sisTxt, Mensaje: armarMensaje(sol) }, sol.canal === "automático" ? (c.correoDestino || c.correoAdmin || "") : "");
   S.sols.unshift(sol); await guardarSolicitudes();
   F.ini = null; F.sel = []; F.errs = {}; F.enviando = false; F.vals.mensaje = ""; F.vals.acepto = false;
   go("gracias/" + enc(sol.folio));
@@ -3323,6 +3430,9 @@ const ACT = {
     t.disabled = true; t.textContent = "Enviando…";
     const ok = await enviarAvisoCorreo(para, asunto, { Folio: sol.folio, Dependencia: sol.datos.dependencia, Contacto: sol.datos.nombre, Correo: sol.datos.correo, Teléfono: sol.datos.telefono, Sistemas: sol.sistemas.map((s) => s.nombre).join(", "), Estado: "Requisitos completos: listo para implementar", Detalle: cuerpo });
     sol.listo = true; sol.listoFecha = hoyISO(); await guardarSolicitudes();
+    const sisTxt = sol.sistemas.map((s) => s.nombre).join(", ");
+    avisarSuper("checklist", `Checklist completo: ${sisTxt} — ${sol.datos.dependencia}`, { folio: sol.folio, solId: sol.id, sistemas: sisTxt, dependencia: sol.datos.dependencia, area: sol.datos.area, nombre: sol.datos.nombre, correo: sol.datos.correo, telefono: sol.datos.telefono }, asunto,
+      { Folio: sol.folio, Dependencia: sol.datos.dependencia, Contacto: sol.datos.nombre, Correo: sol.datos.correo, Teléfono: sol.datos.telefono, Sistemas: sisTxt, Estado: "Requisitos completos: listo para implementar", Detalle: cuerpo }, ok ? para : "");
     if (ok) toast("Aviso enviado. ¡Todo listo para usar el sistema!");
     else { toast("No se pudo enviar automáticamente. Se abrirá tu correo."); setTimeout(() => { location.href = `mailto:${para}?subject=${enc(asunto)}&body=${enc(cuerpo)}`; }, 300); }
     keep(() => render(false));
@@ -3855,7 +3965,7 @@ button.nitem:hover{background:var(--sel)}
 .nitem.nuevo{background:color-mix(in srgb,var(--accent) 7%,transparent)}
 .ndot{width:9px;height:9px;border-radius:50%;margin-top:6px;background:var(--label-3);opacity:.45}
 .nuevo .ndot{opacity:1;background:var(--tc,var(--accent))}
-.t-sistema{--tc:var(--accent)}.t-recordatorio{--tc:#d98a0b}.t-general{--tc:#6b7f8a}.t-acceso{--tc:#2f9e6e}
+.t-sistema{--tc:var(--accent)}.t-recordatorio{--tc:#d98a0b}.t-general{--tc:#6b7f8a}.t-acceso{--tc:#2f9e6e}.t-solicitud{--tc:#2b7fd9}.t-checklist{--tc:#2f9e6e}
 .ntipo{display:block;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--tc,var(--label-2))}
 .ntxt{min-width:0;display:flex;flex-direction:column;gap:1px}
 .ntxt b{font-size:14.5px;font-weight:600;line-height:1.3;letter-spacing:-.01em}
