@@ -866,10 +866,11 @@ const norm = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-
 const plural = (n, a, b) => (n === 1 ? a : b);
 
 const COLORES = {
-  azul: ["#52b0ff", "#0a60ea"], verde: ["#62dc8c", "#12994a"], naranja: ["#ffb340", "#f2640a"],
-  rojo: ["#ff7a6b", "#d92a2a"], morado: ["#c08bff", "#7a35e0"], turquesa: ["#4ddbd0", "#0a8f9b"],
-  rosa: ["#ff8ab5", "#e0306f"], indigo: ["#8a8dff", "#4338d8"], grafito: ["#8a8f9e", "#2f333d"], amarillo: ["#ffd84d", "#e09a00"]
+  azul: ["#3B82D6", "#004EAA"], morado: ["#B392DD", "#9568C6"], celeste: ["#8CBBEA", "#2F7BD0"], grafito: ["#8A9AB3", "#3A4C66"]
 };
+/* Colores antiguos: siguen funcionando pero se muestran con la paleta oficial (azul / lila). */
+Object.entries({ verde: "celeste", turquesa: "celeste", naranja: "morado", amarillo: "morado", rojo: "morado", rosa: "morado", indigo: "azul" })
+  .forEach(([k, v]) => Object.defineProperty(COLORES, k, { value: COLORES[v], enumerable: false }));
 const GLIFOS = ["votacion", "calendario", "documento", "candado", "ayuda", "caja", "usuarios", "identidad", "capas", "app", "chart", "mensaje", "mapa", "nube", "tablet", "qr", "correo", "reloj", "estrella", "ajustes", "escudo", "libro", "rayo", "globo"];
 const ESTADOS = ["Disponible", "Requiere validación", "Próximamente", "En mantenimiento"];
 const TIPOS_USO = ["Evento o reunión", "Uso institucional recurrente", "Prueba o demostración", "Otro"];
@@ -1944,6 +1945,13 @@ function renderChrome(a) {
 }
 
 /* ---------- Vistas públicas ---------- */
+function storeHero(feats) {
+  const g = (s) => glifo(GLIFOS.includes(s.icono.glifo) ? s.icono.glifo : "app");
+  const main = (s) => `<article class="hmain" style="${colorVars(s.icono.color)}"><a class="hlink" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}"></a><span class="hglyph">${g(s)}</span><div class="htxt"><span class="tag-pill">${esc(s.etiqueta || "Ya está disponible")}</span><h2>${esc(s.nombre)}</h2><p>${esc(s.subtitulo)}</p>${btnGet(s, "big", true)}</div></article>`;
+  const tile = (s) => `<article class="htile" style="${colorVars(s.icono.color)}"><a class="hlink" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}"></a><span class="hglyph">${g(s)}</span><div class="htxt"><span class="tag-pill">${esc(s.etiqueta || "Ya está disponible")}</span><h3>${esc(s.nombre)}</h3></div></article>`;
+  const [a, b, c] = feats;
+  return `<div class="store-hero">${main(a)}${b ? `<div class="hero-side">${tile(b)}${c ? tile(c) : `<article class="htile"><a class="hlink" href="#/sistemas" aria-label="Ver todos los sistemas"></a><div class="htxt"><span class="tag-pill">Catálogo</span><h3>Ver todos los sistemas</h3></div></article>`}</div>` : ""}</div>`;
+}
 function vHome() {
   const lista = vis(), hoy = new Date();
   const cuando = `${DIAS[hoy.getDay()]} ${hoy.getDate()} de ${MESES[hoy.getMonth()]}`;
@@ -1958,7 +1966,8 @@ function vHome() {
   return `${cabecera("Descubrir", "", cuando)}
     ${bannerAviso()}
     ${cats.length ? `<div class="chips bleed" role="list" aria-label="Categorías">${cats.map((k) => `<a role="listitem" class="chip" href="#/categoria/${enc(k.id)}" style="${colorVars(k.color)}"><span class="cdot">${glifo(k.glifo)}</span>${esc(k.nombre)}</a>`).join("")}</div>` : ""}
-    <div class="hscroll feat-row bleed" aria-label="Sistemas destacados">${feats.map(feat).join("")}</div>
+    ${storeHero(feats)}
+    ${feats.length > 3 ? `<section class="sec sec-poster"><div class="hscroll feat-row bleed" aria-label="Más sistemas destacados">${feats.slice(3).map(feat).join("")}</div></section>` : ""}
     <section class="sec"><h2 class="sec-h"><a href="#/sistemas">Sistemas que no te puedes perder ${glifo("chev")}</a></h2><div class="rows paged">${top.map((s) => fila(s)).join("")}</div></section>
     ${usos.length ? `<section class="sec"><h2 class="sec-h">Para cada necesidad</h2><div class="colls">${usos.map(([u, n]) => {
       const ss = vis().filter((s) => s.usos.includes(u));
@@ -3749,6 +3758,205 @@ body{background:#fff!important;color:#172b34}
 .card,.system-card,.category-chip,.panel{box-shadow:0 2px 8px rgba(13,53,68,.06)!important}
 #acc-btn{box-shadow:0 3px 12px rgba(13,53,68,.14)!important}
 /* El control de alto contraste se retira; se conservan las demás opciones de accesibilidad. */
+</style>
+<style id="tema-final">
+/* =====================================================================
+   TEMA FINAL · Catálogo de Sistemas  (cargar SIEMPRE al final)
+   Base blanca y descansada · azul #004EAA para acciones · lila #9568C6
+   como segundo color suave. Reemplaza las capas de colores anteriores.
+   ===================================================================== */
+:root,:root[data-theme="light"],:root[data-theme="dark"],:root:not([data-theme="light"]){
+  color-scheme:light!important;
+  --azul:#004EAA; --azul-hover:#003F8A; --azul-suave:#EAF1FB; --azul-borde:#C9DAF1;
+  --lila:#9568C6; --lila-texto:#6D45A3; --lila-suave:#F3EEFA; --lila-borde:#DCCDF0;
+  --bg:#FFFFFF!important; --bg-soft:#F6F8FC!important; --bg-card:#FFFFFF!important; --bg-input:#FFFFFF!important;
+  --label:#14233F!important; --label-2:#55657F!important; --label-3:#7A8AA3!important;
+  --sep:#E3E9F3!important; --sep-strong:#CBD6E6!important;
+  --accent:#004EAA!important; --accent-2:#003F8A!important; --accent-ink:#FFFFFF!important;
+  --accent-soft:rgba(0,78,170,.09)!important; --pill:#EAF1FB!important; --pill-ink:#004EAA!important;
+  --glass:rgba(255,255,255,.94)!important; --sidebar:#FFFFFF!important; --sel:rgba(0,78,170,.07)!important;
+  --shadow:0 1px 2px rgba(20,35,63,.04),0 10px 30px rgba(20,35,63,.07)!important;
+  --ok:#1F7A4A!important; --warn:#8A5A00!important; --bad:#B3261E!important;
+  --pal-profundo:#14233F!important; --pal-apoyo:#003F8A!important; --pal-principal:#004EAA!important;
+  --pal-acento:#9568C6!important; --pal-texto:#14233F!important; --pal-borde:#E3E9F3!important;
+}
+html,body{background:#FFFFFF!important;color:var(--label)!important;overflow-x:hidden}
+body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+@media(min-width:900px){body{padding-bottom:0}}
+
+/* ---- Barra lateral: blanca ---- */
+.sidebar{background:#FFFFFF!important;color:var(--label)!important;border-right:1px solid var(--sep)!important;box-shadow:none!important}
+.sidebar,.sidebar a,.sidebar .brand,.sidebar .brand b,.sidebar .sidenav-a,.sidebar button{color:var(--label)!important}
+.sidebar h6,.sidebar small,.sidebar .mode{color:var(--label-2)!important}
+.sidebar a:hover,.sidebar .sidenav-a:hover{background:var(--bg-soft)!important}
+.sidebar a[aria-current="page"],.sidebar .sidenav a.active{background:var(--azul-suave)!important;color:var(--azul)!important}
+.sidebar .sidenav a .g,.sidebar .sidenav-a .g,.sidebar .side-foot .g{color:var(--label-2)!important;stroke:var(--label-2)!important}
+.sidebar a[aria-current="page"] .g{color:var(--azul)!important;stroke:var(--azul)!important}
+.sidebar input,.sidebar .search{background:var(--bg-soft)!important;color:var(--label)!important;border:1px solid var(--sep)!important}
+.sidebar input::placeholder{color:var(--label-3)!important}
+.side-foot{border-top-color:var(--sep)!important}
+
+/* ---- Encabezado de página: claro, azul → lila muy suave ---- */
+.pagehead,.hero,.discover-hero{
+  background:linear-gradient(120deg,#EAF1FB 0%,#F3EEFA 100%)!important;color:var(--label)!important;
+  border:1px solid var(--sep)!important;border-radius:20px!important;box-shadow:0 8px 24px -16px rgba(20,35,63,.25)!important}
+.pagehead *,.hero *,.discover-hero *{color:inherit}
+.pagehead .eyebrow,.pagehead small{color:var(--label-2)!important}
+.pagehead .large-title::before{background:linear-gradient(90deg,var(--azul),var(--lila))!important}
+.pagehead::after{background:radial-gradient(circle,rgba(149,104,198,.18),transparent 65%)!important}
+.avatar,.avatar.on,.avatar-i{background:linear-gradient(145deg,#3B82D6,#004EAA)!important;color:#fff!important;box-shadow:none!important}
+
+/* ---- Barra de navegación: blanca ---- */
+.tabbar{background:rgba(255,255,255,.96)!important;border:0!important;border-top:1px solid var(--sep)!important;box-shadow:0 -8px 24px rgba(20,35,63,.06)!important}
+.tabbar::after{background:linear-gradient(180deg,var(--azul),transparent 70%)!important}
+.tabbar a:not(.rail-brand),.rail-admin{color:var(--label-2)!important}
+.tabbar a[aria-current="page"]{background:var(--azul-suave)!important;color:var(--azul)!important}
+.tabbar a:not(.rail-brand)::before{background:var(--azul)!important}
+.rail-admin.on{color:var(--azul)!important}
+.navbar.scrolled{background:rgba(255,255,255,.96)!important;color:var(--label)!important;border-bottom-color:var(--sep)!important;box-shadow:0 4px 18px rgba(20,35,63,.06)!important}
+.navbar.scrolled a,.navbar.scrolled button{color:var(--azul)!important}
+:focus-visible{outline:3px solid var(--azul)!important;outline-offset:2px}
+
+/* ---- Botones ---- */
+.btn,.get.big{background:var(--azul)!important;color:#fff!important;border-color:var(--azul)!important}
+.btn:hover,.get.big:hover{background:var(--azul-hover)!important;filter:none!important}
+.btn.sec,.navbar.scrolled .btn.sec{background:#fff!important;color:var(--azul)!important;border:1px solid var(--azul-borde)!important}
+.navbar.scrolled .btn{background:var(--azul)!important;color:#fff!important}
+.get{background:var(--azul-suave)!important;color:var(--azul)!important;border-radius:999px!important;font-weight:700}
+.get.glass{background:var(--azul)!important;color:#fff!important;backdrop-filter:none!important}
+
+/* ---- Iconos y puntos de color: degradados suaves de la paleta ---- */
+.ico{box-shadow:0 1px 3px rgba(20,35,63,.14)!important}
+.ico::after{background:linear-gradient(rgba(255,255,255,.22),transparent 55%)!important}
+
+/* ---- Tarjetas y chips ---- */
+.card,.system-card,.category-chip,.panel{box-shadow:0 2px 10px rgba(20,35,63,.06)!important}
+.chip{background:#fff!important;color:var(--label)!important;border:1px solid var(--sep)!important}
+.eyebrow{color:var(--azul)}
+.row{border-color:var(--sep)}
+.nbadge{background:var(--lila)!important;color:#fff!important}
+.tag{background:var(--lila-suave)!important;color:var(--lila-texto)!important}
+
+/* ---- Colecciones: pastel, texto oscuro ---- */
+.coll{background:linear-gradient(150deg,color-mix(in srgb,var(--c1) 14%,#fff),color-mix(in srgb,var(--c2) 24%,#fff))!important;
+  color:var(--label)!important;border:1px solid color-mix(in srgb,var(--c2) 18%,#fff);box-shadow:var(--shadow)!important}
+.coll::before{background:radial-gradient(circle,rgba(255,255,255,.8),transparent 68%)!important}
+.coll .eyebrow{color:var(--label-2)!important}
+.coll small{color:var(--label-2)!important}
+.coll strong{color:var(--label)!important}
+
+/* ---- Sistemas destacados: tarjeta única, pastel y relajante ---- */
+.feat-row{grid-auto-columns:min(88%,460px)!important}
+.feat{position:relative;display:grid;min-width:0;border-radius:28px;overflow:hidden;isolation:isolate;
+  background:linear-gradient(165deg,#F4F8FE,#DCE8F8);border:1px solid var(--azul-borde);box-shadow:var(--shadow);
+  --tinta:var(--azul)}
+.feat:nth-child(even){background:linear-gradient(165deg,#FAF7FD,#E9DEF6);border-color:var(--lila-borde);--tinta:var(--lila-texto)}
+.feat-card{grid-area:1/1;aspect-ratio:auto!important;min-height:440px;background:transparent!important;box-shadow:none!important;border-radius:0!important}
+.feat-art::before{background:radial-gradient(circle,rgba(255,255,255,.85),transparent 68%)!important}
+.feat-art::after{display:none!important}
+.feat-glyph{left:50%!important;top:8%!important;width:42%!important;transform:translateX(-50%);color:var(--tinta)!important;opacity:.42;filter:none!important}
+.feat-glyph .g{stroke-width:.9!important}
+.feat-txt{grid-area:1/1;z-index:3;align-self:end;padding:0 22px 92px!important;gap:6px!important;color:var(--label)!important}
+.feat-txt .eyebrow{color:var(--tinta)!important;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.feat-txt strong{color:var(--label)!important;font-size:30px!important;line-height:1.12;font-weight:700}
+.feat-txt .sub{color:var(--label-2)!important;font-size:16px!important;line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.feat-bar{z-index:4;padding:14px 16px!important;gap:12px;background:rgba(255,255,255,.88)!important;backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.9);color:var(--label)!important}
+.feat-bar b{color:var(--label)!important;font-size:17px;font-weight:700}
+.feat-bar small{display:none!important}
+.feat-bar .get,.feat-bar .get.glass{background:var(--azul)!important;color:#fff!important;padding:11px 24px;font-size:15px}
+.feat:nth-child(even) .feat-bar .get{background:var(--lila-texto)!important}
+@media(min-width:900px){.feat-card{min-height:460px}.feat-glyph{width:34%!important}}
+@media(max-width:900px){.feat-glyph{top:9%!important;width:44%!important}}
+
+/* ---- Empalmes vistos en móvil ---- */
+.app,main{scroll-padding-top:90px}
+.searchbox input,.bigsearch input{min-width:0;width:100%;text-overflow:ellipsis}
+#acc-btn{background:var(--azul)!important;color:#fff!important;border:2px solid #fff!important;box-shadow:0 6px 18px rgba(0,78,170,.3)!important;
+  bottom:calc(88px + env(safe-area-inset-bottom,0px))!important;right:12px!important;z-index:60}
+#campana{color:var(--azul)!important;border-color:var(--sep)!important}
+@media(max-width:900px){.pagehead{padding-right:78px!important}}
+
+/* ---- Correcciones tras revisión ---- */
+.pagehead .large-title{color:var(--label)!important}
+.pagehead .lede,.pagehead .when{color:var(--label-2)!important;opacity:1!important}
+.tabbar{background:#FFFFFF!important;backdrop-filter:none!important;z-index:50!important}
+.tabbar a:not(.rail-brand) .g,.rail-admin .g{color:inherit!important;stroke:currentColor!important;opacity:1!important}
+.tabbar a:not(.rail-brand),.rail-admin{opacity:1!important}
+
+/* ---- Barra lateral: texto legible (anula reglas claras de capas anteriores) ---- */
+.sidebar .sidenav a,.sidebar .sidenav a span,.sidebar .sidenav-a,.sidebar .side-foot button,.sidebar .side-foot a,
+.sidebar .side-foot button span,.sidebar .side-foot .sidenav-a span{color:var(--label)!important;opacity:1!important}
+.sidebar .sidenav a[aria-current="page"],.sidebar .sidenav a[aria-current="page"] span,
+.sidebar .sidenav a.active,.sidebar .sidenav a.active span{color:var(--azul)!important;background-color:transparent}
+.sidebar .sidenav a[aria-current="page"],.sidebar .sidenav a.active{background:var(--azul-suave)!important}
+.sidebar .sidenav a[aria-current="page"] .g{color:var(--azul)!important;stroke:var(--azul)!important}
+.sidebar .side-foot .g,.sidebar .sidenav a .g{color:var(--label-2)!important;stroke:var(--label-2)!important}
+.sidebar .brand,.sidebar .brand b{color:var(--label)!important}
+.sidebar .brand small{color:var(--label-2)!important}
+</style>
+<style id="tienda">
+/* ===== Estilo "tienda" (inspirado en Microsoft Store) · 3 colores: azul, lila, ámbar ===== */
+:root{--ambar:#F59E42;--ambar-oscuro:#B45309;--ambar-suave:#FFF3E3;--ambar-borde:#F6D9B4}
+body{background:radial-gradient(900px 420px at 0% 0%,rgba(245,158,66,.13),transparent 62%),
+  radial-gradient(900px 520px at 100% 8%,rgba(149,104,198,.13),transparent 62%),#F7F9FD!important;background-attachment:fixed!important}
+/* Paneles blancos redondeados */
+.sec{background:#fff;border:1px solid #E6EAF3;border-radius:22px;padding:22px 24px 12px;margin-top:22px;box-shadow:0 2px 12px rgba(20,35,63,.05)}
+.sec-h{font-size:24px;margin-bottom:6px}
+.sec-h a{color:var(--label)!important}
+.sec-h a .g{color:var(--lila)}
+.how li{background:#F7F9FD;border:1px solid #E6EAF3}
+.how .n{background:linear-gradient(145deg,var(--azul),var(--lila))!important}
+.row{padding-block:12px}
+.row .ico{border-radius:22%}
+.get{background:#F1F4FA!important;color:var(--label)!important;font-weight:600;border-radius:10px!important}
+.get:hover{background:var(--azul)!important;color:#fff!important}
+.get.big,.hmain .get{background:#fff!important;color:var(--azul)!important}
+/* Etiqueta tipo "Game Pass" en ámbar */
+.tag-pill{display:inline-block;align-self:flex-start;padding:4px 12px;border-radius:8px;font-size:12.5px;font-weight:700;background:var(--ambar-suave);color:var(--ambar-oscuro);border:1px solid var(--ambar-borde)}
+.hmain .tag-pill{background:var(--ambar);color:#3A2100;border-color:transparent}
+/* Zona principal: tarjeta grande + 2 mosaicos */
+.store-hero{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;margin-top:18px}
+.hero-side{display:grid;grid-template-rows:1fr 1fr;gap:16px;min-width:0}
+.hmain,.htile{position:relative;overflow:hidden;border-radius:24px;isolation:isolate;box-shadow:var(--shadow)}
+.hlink{position:absolute;inset:0;z-index:1}
+.hlink:hover{text-decoration:none}
+.hmain{min-height:400px;display:flex;align-items:flex-end;color:#fff;background:linear-gradient(135deg,#003A80 0%,#004EAA 45%,#9568C6 100%)}
+.hmain::before{content:"";position:absolute;width:70%;aspect-ratio:1;right:-12%;top:-30%;border-radius:50%;background:radial-gradient(circle,rgba(245,158,66,.45),transparent 68%);z-index:-1}
+.hglyph{position:absolute;right:7%;top:12%;width:34%;color:rgba(255,255,255,.55);z-index:0;pointer-events:none}
+.hglyph .g{width:100%;height:auto;aspect-ratio:1;stroke-width:.8}
+.htxt{position:relative;z-index:2;display:flex;flex-direction:column;gap:10px;padding:30px;max-width:62%;pointer-events:none}
+.htxt .get,.htxt a{pointer-events:auto}
+.hmain h2{font-size:38px;line-height:1.1;font-weight:700;letter-spacing:-.02em;color:#fff}
+.hmain p{font-size:17px;line-height:1.4;color:rgba(255,255,255,.9)}
+.htile{min-height:192px;display:flex;align-items:flex-end;padding:20px;color:var(--label);background:linear-gradient(150deg,#F4F8FE,#DCE8F8);border:1px solid var(--azul-borde)}
+.hero-side .htile:nth-child(2){background:linear-gradient(150deg,#FFF8EE,#FCDDB4);border-color:var(--ambar-borde)}
+.htile .htxt{padding:0;max-width:70%}
+.htile h3{font-size:22px;font-weight:700;line-height:1.15}
+.htile .hglyph{right:8%;top:14%;width:38%;color:var(--azul);opacity:.4}
+.hero-side .htile:nth-child(2) .hglyph{color:var(--ambar-oscuro)}
+.sec-poster{background:transparent;border:0;box-shadow:none;padding:0}
+@media(max-width:900px){
+  .store-hero{grid-template-columns:1fr}
+  .hero-side{grid-template-rows:none;grid-template-columns:1fr 1fr}
+  .hmain{min-height:360px}.htxt{max-width:100%;padding:22px}.hmain h2{font-size:30px}
+  .htile{min-height:150px;padding:16px}.htile h3{font-size:18px}.htile .htxt{max-width:100%}
+  .sec{padding:18px 16px 6px;border-radius:20px}
+}
+/* Menú lateral con barra de acento, como la tienda */
+.sidebar a[aria-current="page"],.sidebar .sidenav a[aria-current="page"]{position:relative}
+.sidebar .sidenav a[aria-current="page"]::before{content:"";position:absolute;left:-14px;top:22%;bottom:22%;width:4px;border-radius:0 4px 4px 0;background:linear-gradient(var(--azul),var(--lila))}
+/* Colecciones con el tercer color */
+.colls .coll:nth-child(3n){background:linear-gradient(150deg,#FFF8EE,#FCDDB4)!important;border-color:var(--ambar-borde)}
+.feat:nth-child(3n){background:linear-gradient(165deg,#FFF8EE,#FBE1BC)!important;border-color:var(--ambar-borde)}
+.feat:nth-child(3n){--tinta:var(--ambar-oscuro)}
+.feat:nth-child(3n) .feat-bar .get{background:var(--ambar-oscuro)!important;color:#fff!important}
+.chip:hover{border-color:var(--lila-borde)!important;background:var(--lila-suave)!important}
+.hero-side{grid-template-rows:none!important;grid-auto-rows:1fr}
+.htile{min-height:0}
+.hmain .get-wrap{align-items:flex-start}
+.hmain .get-note{display:none}
+@media(max-width:900px){.hero-side{grid-auto-rows:auto;grid-template-columns:1fr 1fr!important}.htile{min-height:150px}}
 </style>
 </body>
 </html>
