@@ -305,7 +305,10 @@ main{flex:1;width:100%;max-width:1100px;margin:0 auto;padding:0 var(--gutter) 72
 .clamp.open{-webkit-line-clamp:unset;display:block}
 .prose{font-size:16px;line-height:1.5;color:var(--label);max-width:72ch}
 .prose p+p,.prose p+ul,.prose ul+p{margin-top:.75em}
-.prose ul{list-style:disc;padding-left:1.25em;display:grid;gap:3px}
+.prose ul{list-style:none;padding-left:0;display:grid;gap:5px}
+.prose li{position:relative;padding-left:1.2em}
+.prose li::before{content:"–";position:absolute;left:0;color:var(--azul,#004EAA);font-weight:700}
+.prose strong{color:var(--azul,#004EAA);font-weight:700}
 .more{color:var(--accent);font-weight:500;float:right;margin-top:6px;font-size:16px}
 .gallery{display:grid;grid-auto-flow:column;grid-auto-columns:min(78%,430px);gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding-block:2px 10px;scrollbar-width:none}
 .gallery::-webkit-scrollbar{display:none}
@@ -915,54 +918,289 @@ function sistemaBase(o) {
   }, o);
 }
 
+const CATEGORIAS_BASE = [
+  {
+    "id": "desarrollo",
+    "nombre": "Desarrollo de Software",
+    "glifo": "app",
+    "color": "azul",
+    "descripcion": "Herramientas y soluciones digitales institucionales."
+  },
+  {
+    "id": "reuniones",
+    "nombre": "Reuniones y Eventos",
+    "glifo": "calendario",
+    "color": "celeste",
+    "descripcion": "Para organizar reuniones, agendas y eventos."
+  },
+  {
+    "id": "votaciones-elecciones",
+    "nombre": "Votaciones y Elecciones",
+    "glifo": "votacion",
+    "color": "azul",
+    "descripcion": "Para gestionar procesos de votación y selección."
+  },
+  {
+    "id": "encuestas",
+    "nombre": "Encuestas y Formularios",
+    "glifo": "mensaje",
+    "color": "celeste",
+    "descripcion": "Para recopilar información y respuestas."
+  },
+  {
+    "id": "portales",
+    "nombre": "Portales y Trámites",
+    "glifo": "globo",
+    "color": "morado",
+    "descripcion": "Portales informativos y trámites digitales."
+  },
+  {
+    "id": "etica-denuncias",
+    "nombre": "Ética y Denuncias",
+    "glifo": "candado",
+    "color": "morado",
+    "descripcion": "Para asuntos relacionados con la ética institucional."
+  },
+  {
+    "id": "capacitacion",
+    "nombre": "Capacitación y Aprendizaje",
+    "glifo": "estrella",
+    "color": "morado",
+    "descripcion": "Para cursos, formación y desarrollo de conocimientos."
+  },
+  {
+    "id": "gestion-administrativa",
+    "nombre": "Gestión Administrativa y Sistemas",
+    "glifo": "chart",
+    "color": "azul",
+    "descripcion": "Para herramientas de control y gestión institucional."
+  }
+];
+/* Textos oficiales de cada sistema: frase corta (máx. 5 palabras), texto destacado y descripción resumida.
+   Se usan en el catálogo inicial y en Administración → Datos y publicación → «Actualizar textos de los sistemas». */
+const TEXTOS_SISTEMAS = [
+  {
+    "id": "sis-votaciones",
+    "alias": [
+      "votaciones",
+      "sistema de votaciones"
+    ],
+    "nombre": "Sistema de Votaciones",
+    "subtitulo": "Cada voto cuenta",
+    "etiqueta": "Digitaliza votaciones y controla la participación en eventos.",
+    "glifo": "votacion",
+    "color": "azul",
+    "categoria": "votaciones-elecciones",
+    "usos": [
+      "Votaciones",
+      "Eventos",
+      "Reuniones"
+    ],
+    "destacado": true,
+    "descripcion": "El **Sistema de Votaciones** permite realizar **votaciones electrónicas** en reuniones, sesiones y eventos con tablets individuales, y obtener resultados al instante.\n\n**Funcionalidades principales:**\n- Votaciones con **tablets individuales**\n- Preguntas con **dos o tres opciones**\n- **Registro de participación** y de quién ya votó\n- **Conteo y resultados** de cada votación\n- Menos **papeletas** y registros manuales"
+  },
+  {
+    "id": "sis-encuestas",
+    "alias": [
+      "encuestas interactivas",
+      "encuestas"
+    ],
+    "nombre": "Encuestas Interactivas",
+    "subtitulo": "Pregunta, recopila y descubre",
+    "etiqueta": "Crea formularios y concentra las respuestas en un solo lugar.",
+    "glifo": "mensaje",
+    "color": "celeste",
+    "categoria": "encuestas",
+    "usos": [
+      "Encuestas",
+      "Consultas",
+      "Registros"
+    ],
+    "destacado": true,
+    "descripcion": "**Encuestas Interactivas** permite **crear, publicar y administrar formularios** digitales para recopilar información y analizar las respuestas.\n\n**Funcionalidades principales:**\n- Creación de **encuestas y formularios**\n- Distribución mediante **enlaces**\n- **Respuestas concentradas** en un mismo espacio\n- **Filtrado y descarga** de datos para análisis\n- Apoyo a la elaboración de **reportes**"
+  },
+  {
+    "id": "sis-sigta",
+    "alias": [
+      "sigta",
+      "sigta 3",
+      "sigta 3.1"
+    ],
+    "nombre": "SIGTA 3",
+    "subtitulo": "Tecnología y gestión integradas",
+    "etiqueta": "Centraliza el acceso a las herramientas institucionales.",
+    "glifo": "chart",
+    "color": "azul",
+    "categoria": "gestion-administrativa",
+    "usos": [
+      "Gestión",
+      "Herramientas"
+    ],
+    "destacado": true,
+    "descripcion": "**SIGTA 3** es un sistema institucional que **centraliza el acceso** a las herramientas digitales disponibles para usuarios autorizados.\n\n**Funcionalidades principales:**\n- Acceso a **herramientas digitales** institucionales\n- Consulta de funciones **según tus permisos**\n- **Centralización** de recursos en una sola plataforma\n- Apoyo a la **gestión** de recursos tecnológicos"
+  },
+  {
+    "id": "sis-gafetes",
+    "alias": [
+      "gafetes digitales",
+      "gafetes"
+    ],
+    "nombre": "Gafetes Digitales",
+    "subtitulo": "Identificación digital, más sencilla",
+    "etiqueta": "Administra gafetes digitales de forma centralizada.",
+    "glifo": "identidad",
+    "color": "morado",
+    "categoria": "gestion-administrativa",
+    "usos": [
+      "Identificación",
+      "Eventos"
+    ],
+    "destacado": false,
+    "descripcion": "**Gafetes Digitales** facilita la **administración de la identificación digital** de la institución, con la información organizada en un solo lugar.\n\n**Funcionalidades principales:**\n- Administración de **gafetes digitales**\n- Información de identificación **organizada**\n- Consulta de datos **según permisos**\n- Transición de procesos **manuales a digitales**"
+  },
+  {
+    "id": "sis-orden-dia",
+    "alias": [
+      "sistema de orden del dia",
+      "orden del dia"
+    ],
+    "nombre": "Sistema de Orden del Día",
+    "subtitulo": "Reuniones con rumbo claro",
+    "etiqueta": "Organiza actividades, horarios y expositores en una agenda digital.",
+    "glifo": "reloj",
+    "color": "celeste",
+    "categoria": "reuniones",
+    "usos": [
+      "Reuniones",
+      "Sesiones",
+      "Eventos"
+    ],
+    "destacado": false,
+    "descripcion": "El **Sistema de Orden del Día** facilita planear reuniones y eventos con **agendas digitales** estructuradas, y se integra con el **Gestor de Eventos**.\n\n**Funcionalidades principales:**\n- Creación de **órdenes del día**\n- Temas, **horarios** y **expositores** por actividad\n- **Enlaces** y archivos complementarios\n- Uso **independiente** o vinculado al Gestor de Eventos"
+  },
+  {
+    "id": "sis-gestor-eventos",
+    "alias": [
+      "gestor de eventos"
+    ],
+    "nombre": "Gestor de Eventos",
+    "subtitulo": "Tus eventos, bien organizados",
+    "etiqueta": "Consulta y organiza los eventos de tu institución.",
+    "glifo": "calendario",
+    "color": "azul",
+    "categoria": "reuniones",
+    "usos": [
+      "Eventos",
+      "Reuniones"
+    ],
+    "destacado": false,
+    "descripcion": "El **Gestor de Eventos** permite **registrar, organizar y consultar** las actividades de la institución, desde posadas hasta ceremonias y reuniones.\n\n**Funcionalidades principales:**\n- Registro de **nombre, fecha y ubicación**\n- Clasificación por **categoría y tipo**\n- **Consulta** de la información registrada\n- Vinculación con el **Orden del Día**"
+  },
+  {
+    "id": "sis-votaciones-etica",
+    "alias": [
+      "votaciones del comite de etica"
+    ],
+    "nombre": "Votaciones del Comité de Ética",
+    "subtitulo": "Votación por etapas, resultados claros",
+    "etiqueta": "Gestiona etapas de votación y consulta resultados.",
+    "glifo": "escudo",
+    "color": "morado",
+    "categoria": "votaciones-elecciones",
+    "usos": [
+      "Votaciones",
+      "Ética"
+    ],
+    "destacado": false,
+    "descripcion": "**Votaciones del Comité de Ética** organiza procesos de selección con **votaciones digitales por etapas**, concentrando los resultados conforme a las reglas del Comité.\n\n**Funcionalidades principales:**\n- Presentación de **candidatos**\n- Procesos en **fases** según las reglas\n- **Registro de votos** y resultados por fase\n- Identificación de las **candidaturas más votadas**\n- Medidas de **confidencialidad**"
+  },
+  {
+    "id": "sis-stem",
+    "alias": [
+      "pagina stem chihuahua",
+      "stem chihuahua"
+    ],
+    "nombre": "Página STEM Chihuahua",
+    "subtitulo": "Ciencia y tecnología para Chihuahua",
+    "etiqueta": "Conoce los centros e iniciativas STEM de Chihuahua.",
+    "glifo": "rayo",
+    "color": "celeste",
+    "categoria": "portales",
+    "usos": [
+      "Información",
+      "Ciencia y tecnología"
+    ],
+    "destacado": false,
+    "descripcion": "La **Página STEM Chihuahua** es un portal informativo que difunde **centros, capacidades e iniciativas** de ciencia, tecnología, ingeniería y matemáticas.\n\n**Funcionalidades principales:**\n- **Directorio** de centros STEM\n- Información de **laboratorios** y capacidades\n- **Noticias**, convocatorias y actividades\n- Acceso a **documentación institucional**"
+  },
+  {
+    "id": "sis-portal-chihuahua",
+    "alias": [
+      "portal chihuahua"
+    ],
+    "nombre": "Portal CHIHUAHUA",
+    "subtitulo": "Servicios del estado, al alcance",
+    "etiqueta": "Información, trámites y servicios en un solo portal.",
+    "glifo": "globo",
+    "color": "azul",
+    "categoria": "portales",
+    "usos": [
+      "Información",
+      "Trámites"
+    ],
+    "destacado": false,
+    "descripcion": "El **Portal CHIHUAHUA** es el sitio oficial del Gobierno del Estado: un punto de acceso a **información pública, trámites y servicios**.\n\n**Funcionalidades principales:**\n- **Noticias** y comunicados oficiales\n- Información de **dependencias** estatales\n- Localización de **trámites y servicios**\n- Acceso a **plataformas digitales** y transparencia"
+  },
+  {
+    "id": "sis-cpd-web",
+    "alias": [
+      "pagina web cpd",
+      "pagina web cpd coordinacion de politica digital",
+      "pagina web cpd — coordinacion de politica digital"
+    ],
+    "nombre": "Página Web CPD",
+    "subtitulo": "Innovación digital para Chihuahua",
+    "etiqueta": "Conoce proyectos y soluciones tecnológicas de la CPD.",
+    "glifo": "app",
+    "color": "morado",
+    "categoria": "portales",
+    "usos": [
+      "Información",
+      "Innovación"
+    ],
+    "destacado": false,
+    "descripcion": "La **Página Web de la CPD** difunde las **actividades, proyectos e iniciativas** de la Coordinación de Política Digital del Gobierno de Chihuahua.\n\n**Funcionalidades principales:**\n- Proyectos de **transformación digital**\n- **Noticias** y comunicados\n- Información de **servicios y soluciones** tecnológicas\n- Enlaces a **plataformas** institucionales"
+  },
+  {
+    "id": "sis-mitch",
+    "alias": [
+      "mitch",
+      "mitch — mi tramite chihuahua",
+      "mitch mi tramite chihuahua"
+    ],
+    "nombre": "MITCH",
+    "subtitulo": "Tus trámites, ahora digitales",
+    "etiqueta": "Consulta trámites y servicios del Gobierno de Chihuahua.",
+    "glifo": "documento",
+    "color": "celeste",
+    "categoria": "portales",
+    "usos": [
+      "Trámites",
+      "Información"
+    ],
+    "destacado": false,
+    "descripcion": "**MITCH (Mi Trámite Chihuahua)** facilita consultar **trámites y servicios** del Gobierno del Estado, con sus requisitos y procedimientos.\n\n**Funcionalidades principales:**\n- **Búsqueda** de trámites por nombre o dependencia\n- Consulta de **requisitos, costos y plazos**\n- **Registro** e inicio de sesión\n- **Solicitudes digitales** en trámites habilitados"
+  }
+];
+
 function datosEjemplo() {
-  /* Catálogo real del Área de Desarrollo de Software. Cada ficha se completa después desde Administración
-     (descripción, enlace al sistema, manual, requisitos, capturas y dependencias que lo usan). */
-  const area = "Área de Desarrollo de Software";
-  const S = (o) => sistemaBase(Object.assign({ area, ejemplo: false, categorias: ["desarrollo"], plataforma: "Web", version: "1.0" }, o));
+  const area = "Coordinación de Política Digital";
+  const S = (o) => sistemaBase(Object.assign({ area, ejemplo: false, plataforma: "Web", version: "1.0" }, o));
   return {
     formato: 2, editado: false, actualizado: hoyISO(),
     config: clone(CONFIG_BASE),
-    categorias: [
-      { id: "desarrollo", nombre: "Desarrollo de Software", glifo: "app", color: "azul", descripcion: "Herramientas y soluciones digitales institucionales." },
-      { id: "reuniones", nombre: "Reuniones y Asistencia", glifo: "calendario", color: "turquesa", descripcion: "Para organizar reuniones y registrar participantes." },
-      { id: "votaciones-elecciones", nombre: "Votaciones y Elecciones", glifo: "votacion", color: "azul", descripcion: "Para gestionar procesos de votación y selección." },
-      { id: "etica-denuncias", nombre: "Ética y Denuncias", glifo: "candado", color: "morado", descripcion: "Para atender reportes y asuntos relacionados con la ética institucional." },
-      { id: "capacitacion", nombre: "Capacitación y Aprendizaje", glifo: "estrella", color: "naranja", descripcion: "Para cursos, formación y desarrollo de conocimientos." },
-      { id: "gestion-administrativa", nombre: "Gestión Administrativa y Sistemas", glifo: "chart", color: "verde", descripcion: "Para herramientas de control y gestión institucional." }
-    ],
-    sistemas: [
-      S({
-        id: "sis-votaciones", nombre: "Votaciones", subtitulo: "Cuenta quién votó en tus reuniones y eventos", categorias: ["votaciones-elecciones"],
-        icono: { glifo: "votacion", color: "azul", imagen: "" }, usos: ["Votaciones", "Eventos", "Reuniones"], destacado: true,
-        descripcion: "Sistema de votaciones para llevar la cuenta de quién votó en una reunión o en un evento.\n\nDesarrollado por el Área de Desarrollo de Software."
-      }),
-      S({
-        id: "sis-elecciones", nombre: "Elecciones", subtitulo: "Procesos de elección con resultados al instante", categorias: ["votaciones-elecciones"],
-        icono: { glifo: "calendario", color: "naranja", imagen: "" }, usos: ["Votaciones", "Eventos"], destacado: true,
-        descripcion: "Sistema para llevar a cabo procesos de elección.\n\nDesarrollado por el Área de Desarrollo de Software."
-      }),
-      S({
-        id: "sis-minuta", nombre: "Minuta y Lista de Asistencia", subtitulo: "Minutas y registro de asistencia de tus reuniones",
-        icono: { glifo: "documento", color: "verde", imagen: "" }, usos: ["Reuniones"], categorias: ["desarrollo"],
-        descripcion: "Sistema para elaborar la minuta y llevar la lista de asistencia de una reunión.\n\nDesarrollado por el Área de Desarrollo de Software."
-      }),
-      S({
-        id: "sis-denuncias-etica", nombre: "Denuncias del Comité de Ética e Igualdad de Género", subtitulo: "Denuncias del comité de ética e igualdad de género", categorias: ["etica-denuncias"],
-        icono: { glifo: "candado", color: "morado", imagen: "" },
-        descripcion: "Sistema de denuncias del Comité de Ética e Igualdad de Género.\n\nDesarrollado por el Área de Desarrollo de Software."
-      }),
-      S({
-        id: "sis-cpd-academy", nombre: "CPD Academy", subtitulo: "Plataforma de capacitación y aprendizaje", categorias: ["capacitacion"],
-        icono: { glifo: "estrella", color: "indigo", imagen: "" },
-        descripcion: "Plataforma CPD ACADEMY.\n\nDesarrollada por el Área de Desarrollo de Software."
-      }),
-      S({
-        id: "sis-sigta", nombre: "SIGTA", subtitulo: "Versión 3.1", version: "3.1", categorias: ["gestion-administrativa"],
-        icono: { glifo: "chart", color: "turquesa", imagen: "" },
-        descripcion: "SIGTA, versión 3.1.\n\nDesarrollado por el Área de Desarrollo de Software."
-      })
-    ]
+    categorias: clone(CATEGORIAS_BASE),
+    sistemas: TEXTOS_SISTEMAS.map((t) => S({ id: t.id, nombre: t.nombre, subtitulo: t.subtitulo, etiqueta: t.etiqueta, descripcion: t.descripcion, categorias: [t.categoria], icono: { glifo: t.glifo, color: t.color, imagen: "" }, usos: t.usos.slice(), destacado: t.destacado }))
   };
 }
 
@@ -984,19 +1222,7 @@ function migrar(c) {
     ["categorias", "usos", "requisitos", "pasos", "enlaces", "tecnica", "dependencias", "novedades", "capturas", "archivos"].forEach((k) => { if (!Array.isArray(r[k])) r[k] = []; });
     return r;
   });
-  const categoriaPorSistema = {
-    "sis-votaciones": "votaciones-elecciones",
-    "sis-elecciones": "votaciones-elecciones",
-    "sis-minuta": "reuniones",
-    "sis-denuncias-etica": "etica-denuncias",
-    "sis-cpd-academy": "capacitacion",
-    "sis-sigta": "gestion-administrativa"
-  };
-  out.sistemas.forEach((s) => {
-    const categoria = categoriaPorSistema[s.id];
-    if (categoria) s.categorias = [categoria];
-    if (s.id === "sis-cpd-academy" && s.nombre === "CPD ACADEMY") s.nombre = "CPD Academy";
-  });
+  out.sistemas.forEach((s) => { if (s.id === "sis-cpd-academy" && s.nombre === "CPD ACADEMY") s.nombre = "CPD Academy"; });
   return out;
 }
 const catValido = (j) => j && typeof j === "object" && Array.isArray(j.sistemas) && Array.isArray(j.categorias);
@@ -1945,12 +2171,31 @@ function renderChrome(a) {
 }
 
 /* ---------- Vistas públicas ---------- */
+const etqCorta = (s) => (s.etiqueta && s.etiqueta.length <= 24 ? s.etiqueta : s.estado === "Disponible" ? "Ya está disponible" : s.estado);
+const etqDesc = (s) => (s.etiqueta && s.etiqueta.length > 24 ? s.etiqueta : s.subtitulo);
 function storeHero(feats) {
   const g = (s) => glifo(GLIFOS.includes(s.icono.glifo) ? s.icono.glifo : "app");
-  const main = (s) => `<article class="hmain" style="${colorVars(s.icono.color)}"><a class="hlink" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}"></a><span class="hglyph">${g(s)}</span><div class="htxt"><span class="tag-pill">${esc(s.etiqueta || "Ya está disponible")}</span><h2>${esc(s.nombre)}</h2><p>${esc(s.subtitulo)}</p>${btnGet(s, "big", true)}</div></article>`;
-  const tile = (s) => `<article class="htile" style="${colorVars(s.icono.color)}"><a class="hlink" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}"></a><span class="hglyph">${g(s)}</span><div class="htxt"><span class="tag-pill">${esc(s.etiqueta || "Ya está disponible")}</span><h3>${esc(s.nombre)}</h3></div></article>`;
+  const main = (s) => `<article class="hmain" style="${colorVars(s.icono.color)}"><a class="hlink" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}"></a><span class="hshow" aria-hidden="true"><span class="hshow-in">${g(s)}</span></span><div class="htxt"><span class="tag-pill">${esc(etqCorta(s))}</span><h2>${esc(s.nombre)}</h2><p>${esc(etqDesc(s))}</p><div class="hacts">${btnGet(s, "big", true)}<a class="hmore" href="#/sistema/${enc(s.id)}">Ver detalles</a></div></div></article>`;
+  const tile = (s) => `<article class="htile" style="${colorVars(s.icono.color)}"><a class="hlink" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}"></a><div class="htile-top">${icono(s, "s64")}<span class="tag-pill">${esc(etqCorta(s))}</span></div><div class="htxt"><h3>${esc(s.nombre)}</h3><p>${esc(etqDesc(s))}</p></div></article>`;
+  const todos = `<article class="htile" style="${colorVars("azul")}"><a class="hlink" href="#/sistemas" aria-label="Ver todos los sistemas"></a><div class="htile-top"><span class="ico s64" style="--c1:#8CBBEA;--c2:#004EAA">${glifo("capas")}</span><span class="tag-pill">Catálogo</span></div><div class="htxt"><h3>Todos los sistemas</h3><p>Explora el catálogo completo y solicita el que necesites.</p></div></article>`;
   const [a, b, c] = feats;
-  return `<div class="store-hero">${main(a)}${b ? `<div class="hero-side">${tile(b)}${c ? tile(c) : `<article class="htile"><a class="hlink" href="#/sistemas" aria-label="Ver todos los sistemas"></a><div class="htxt"><span class="tag-pill">Catálogo</span><h3>Ver todos los sistemas</h3></div></article>`}</div>` : ""}</div>`;
+  return `<div class="store-hero ${b ? "" : "solo"}">${main(a)}${b ? `<div class="hero-side">${tile(b)}${c ? tile(c) : todos}</div>` : ""}</div>`;
+}
+function iniciarCarrusel() {
+  $$(".cv-wrap").forEach((w) => {
+    const g = $(".cv-grid, .chips", w), p = $(".cv-prev", w), n = $(".cv-next", w);
+    const act = () => { p.hidden = g.scrollLeft <= 2; n.hidden = g.scrollLeft >= g.scrollWidth - g.clientWidth - 2; };
+    g.addEventListener("scroll", act, { passive: true });
+    if ("ResizeObserver" in window) new ResizeObserver(act).observe(g);
+    act();
+  });
+}
+function cardVer(s) {
+  const cap = s.capturas && s.capturas[0], k = catById(s.categorias[0]);
+  const art = imgOk(s.portada)
+    ? `<img class="cv-img" src="${esc(s.portada)}" alt="">`
+    : `<span class="cv-glyph">${glifo(GLIFOS.includes(s.icono.glifo) ? s.icono.glifo : "app")}</span>${cap && imgOk(cap.src) ? `<span class="cv-shot"><img src="${esc(cap.src)}" alt=""></span>` : ""}`;
+  return `<article class="cv"><span class="cv-eye">${esc(etqCorta(s))}</span><div class="cv-card"><a class="cv-art" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}">${art}<span class="cv-over">${k ? `<small>${esc(k.nombre)}</small>` : ""}<b>${esc(s.subtitulo || s.nombre)}</b></span></a><div class="cv-bar">${icono(s, "s48")}<span class="cv-t"><b>${esc(s.nombre)}</b><small>Versión ${esc(s.version)}${s.area ? " · " + esc(s.area) : ""}</small></span>${btnGet(s, "sm", true)}</div></div></article>`;
 }
 function vHome() {
   const lista = vis(), hoy = new Date();
@@ -1959,21 +2204,24 @@ function vHome() {
     return cabecera("Descubrir", "", cuando) + vacio("Aún no hay sistemas publicados", S.admin ? "Agrega el primer sistema para que aparezca aquí." : "Vuelve pronto: estamos preparando el catálogo.", S.admin ? `<a class="btn" href="#/admin/editar/nuevo">${glifo("plus")}Agregar sistema</a>` : "");
   }
   const dest = lista.filter((s) => s.destacado), feats = (dest.length ? dest : lista).slice(0, 5);
+  const enHero = new Set(feats.slice(0, 3).map((s) => s.id));
+  const ver = lista.filter((s) => !enHero.has(s.id)).sort((a, b) => (b.destacado ? 1 : 0) - (a.destacado ? 1 : 0)).slice(0, 8);
   const top = [...lista].sort((a, b) => b.dependencias.length - a.dependencias.length).slice(0, 6);
   const nuevos = [...lista].sort((a, b) => (b.actualizado || "").localeCompare(a.actualizado || "")).slice(0, 6);
   const cats = S.cat.categorias.filter((k) => lista.some((s) => s.categorias.includes(k.id)));
   const usos = todosUsos().slice(0, 4);
+  post = iniciarCarrusel;
   return `${cabecera("Descubrir", "", cuando)}
     ${bannerAviso()}
-    ${cats.length ? `<div class="chips bleed" role="list" aria-label="Categorías">${cats.map((k) => `<a role="listitem" class="chip" href="#/categoria/${enc(k.id)}" style="${colorVars(k.color)}"><span class="cdot">${glifo(k.glifo)}</span>${esc(k.nombre)}</a>`).join("")}</div>` : ""}
+    ${cats.length ? `<div class="cv-wrap ch-wrap"><button type="button" class="cv-arrow cv-prev" data-act="cv-prev" aria-label="Anterior" hidden>${glifo("back")}</button><div class="chips bleed" role="list" aria-label="Categorías">${cats.map((k) => `<a role="listitem" class="chip" href="#/categoria/${enc(k.id)}" style="${colorVars(k.color)}"><span class="cdot">${glifo(k.glifo)}</span>${esc(k.nombre)}</a>`).join("")}</div><button type="button" class="cv-arrow cv-next" data-act="cv-next" aria-label="Siguiente" hidden>${glifo("chev")}</button></div>` : ""}
     ${storeHero(feats)}
-    ${feats.length > 3 ? `<section class="sec sec-poster"><div class="hscroll feat-row bleed" aria-label="Más sistemas destacados">${feats.slice(3).map(feat).join("")}</div></section>` : ""}
-    <section class="sec"><h2 class="sec-h"><a href="#/sistemas">Sistemas que no te puedes perder ${glifo("chev")}</a></h2><div class="rows paged">${top.map((s) => fila(s)).join("")}</div></section>
+    ${ver.length ? `<section class="sec sec-ver"><h2 class="sec-h"><a href="#/sistemas">También te podría interesar ${glifo("chev")}</a></h2><div class="cv-wrap"><button type="button" class="cv-arrow cv-prev" data-act="cv-prev" aria-label="Anterior" hidden>${glifo("back")}</button><div class="cv-grid">${ver.map(cardVer).join("")}</div><button type="button" class="cv-arrow cv-next" data-act="cv-next" aria-label="Siguiente" hidden>${glifo("chev")}</button></div></section>` : ""}
+    <div class="duo ${lista.length > 3 ? "" : "solo"}"><section class="sec"><h2 class="sec-h"><a href="#/sistemas">Los más utilizados ${glifo("chev")}</a></h2><div class="rows paged">${top.map((s) => fila(s)).join("")}</div></section>
+    ${lista.length > 3 ? `<section class="sec"><h2 class="sec-h"><a href="#/sistemas">Nuevos y actualizados ${glifo("chev")}</a></h2><div class="rows paged">${nuevos.map((s) => fila(s, `Versión ${s.version} · ${hace(s.actualizado)}`)).join("")}</div></section>` : ""}</div>
     ${usos.length ? `<section class="sec"><h2 class="sec-h">Para cada necesidad</h2><div class="colls">${usos.map(([u, n]) => {
       const ss = vis().filter((s) => s.usos.includes(u));
       return `<a class="coll" href="#/uso/${enc(u)}" style="${colorVars(ss[0].icono.color)}"><div><span class="eyebrow">Ideal para</span><strong>${esc(u)}</strong><small>${n} ${plural(n, "sistema", "sistemas")}</small></div><div class="stack">${ss.slice(0, 4).map((s) => icono(s, "s40")).join("")}</div></a>`;
     }).join("")}</div></section>` : ""}
-    ${lista.length > 3 ? `<section class="sec"><h2 class="sec-h"><a href="#/sistemas">Nuevos y actualizados ${glifo("chev")}</a></h2><div class="rows paged">${nuevos.map((s) => fila(s, `Versión ${s.version} · ${hace(s.actualizado)}`)).join("")}</div></section>` : ""}
     <section class="sec"><h2 class="sec-h">Cómo solicitar un sistema</h2>
       <ol class="how">
         <li><span class="n">1</span><b>Elige un sistema</b><p>Revisa su descripción, capturas, requisitos y cuáles dependencias ya lo usan.</p></li>
@@ -2600,6 +2848,7 @@ function vAdminConfig(sec) {
         <button class="btn sec sm" data-act="como-publicar">Cómo publicar</button>
         ${S.pub && S.cat.editado ? `<button class="btn danger sm" data-act="descartar-local">Descartar mis cambios y usar el publicado</button>` : ""}
       </div></section>
+    <section class="grp"><h2>Textos de los sistemas</h2><p class="hint">Aplica los textos resumidos (frase corta de máximo 5 palabras, texto destacado y descripción con negritas y guiones) a los sistemas del catálogo y agrega los que falten.</p><div class="card"><button class="btn sm" data-act="aplicar-textos">Actualizar textos de los sistemas</button></div></section>
     <section class="grp"><h2>Contenido de ejemplo</h2><p class="hint">${ej ? `Hay ${ej} ${plural(ej, "sistema de ejemplo", "sistemas de ejemplo")} en el catálogo.` : "No hay sistemas de ejemplo."}</p>${ej ? `<div class="card"><button class="btn danger sm" data-act="quitar-ejemplos">${glifo("trash")}Quitar sistemas de ejemplo</button></div>` : ""}</section>`;
   }
   const nav = `<nav class="cfg-nav" aria-label="Secciones de configuración">${SECS.map(([k, l, ic]) => `<a href="#/admin/config/${k}"${k === sec ? ' aria-current="page"' : ""}>${glifo(ic)}${l}</a>`).join("")}</nav>`;
@@ -2973,6 +3222,8 @@ const ACT = {
   copiar(t) { copiar(t.dataset.v, "Copiado"); },
   "toggle-desc"(t) { const d = $("#desc"); if (!d) return; d.classList.toggle("open"); t.textContent = d.classList.contains("open") ? "menos" : "más"; },
   lightbox(t) { const s = byId(t.dataset.id); if (!s) return; const items = s.capturas.filter((c) => imgOk(c.src)); abrirLightbox(items, +t.dataset.i); },
+  "cv-next"(t) { const g = $(".cv-grid, .chips", t.closest(".cv-wrap")); if (g) g.scrollBy({ left: g.clientWidth + 20, behavior: "smooth" }); },
+  "cv-prev"(t) { const g = $(".cv-grid, .chips", t.closest(".cv-wrap")); if (g) g.scrollBy({ left: -(g.clientWidth + 20), behavior: "smooth" }); },
   "lb-cerrar": cerrarLightbox,
   "lb-prev"() { if (lb) { lb.i = (lb.i - 1 + lb.items.length) % lb.items.length; pintarLightbox(); } },
   "lb-next"() { if (lb) { lb.i = (lb.i + 1) % lb.items.length; pintarLightbox(); } },
@@ -3075,6 +3326,17 @@ const ACT = {
     const s = byId(t.dataset.id); if (!s) return;
     if (!(await confirmar({ titulo: `Eliminar «${s.nombre}»`, texto: "Se borrará el sistema con todo su contenido y adjuntos. Esta acción no se puede deshacer.", si: "Eliminar", peligro: true }))) return;
     S.cat.sistemas = S.cat.sistemas.filter((x) => x.id !== s.id); delete S.drafts[s.id]; guardarCatalogo(); toast("Sistema eliminado"); irA("admin");
+  },
+  async "aplicar-textos"() {
+    if (!(await confirmar({ titulo: "Actualizar textos de los sistemas", texto: "Se actualizan nombre, frase corta, texto destacado y descripción de los sistemas que coincidan por nombre, y se agregan los que falten. Íconos, enlaces, capturas, manuales y dependencias no se tocan.", si: "Actualizar" }))) return;
+    let n1 = 0, n2 = 0;
+    CATEGORIAS_BASE.forEach((k) => { if (!catById(k.id) && TEXTOS_SISTEMAS.some((t) => t.categoria === k.id)) S.cat.categorias.push(clone(k)); });
+    TEXTOS_SISTEMAS.forEach((t) => {
+      const keys = t.alias.map(norm), s = S.cat.sistemas.find((x) => keys.includes(norm(x.nombre)));
+      if (s) { Object.assign(s, { nombre: t.nombre, subtitulo: t.subtitulo, etiqueta: t.etiqueta, descripcion: t.descripcion, ejemplo: false }); if (!s.usos.length) s.usos = t.usos.slice(); if (!s.categorias.length) s.categorias = [t.categoria]; n1++; }
+      else { S.cat.sistemas.push(sistemaBase({ id: t.id, nombre: t.nombre, subtitulo: t.subtitulo, etiqueta: t.etiqueta, descripcion: t.descripcion, categorias: [t.categoria], icono: { glifo: t.glifo, color: t.color, imagen: "" }, usos: t.usos.slice(), destacado: t.destacado, area: "Coordinación de Política Digital", plataforma: "Web" })); n2++; }
+    });
+    guardarCatalogo(); toast(`Listo: ${n1} actualizados y ${n2} agregados`); render(false);
   },
   async "quitar-ejemplos"() {
     if (!(await confirmar({ titulo: "Eliminar sistemas de ejemplo", texto: "Se quitarán todos los sistemas marcados como ejemplo. Tus propios sistemas no se tocan.", si: "Eliminar", peligro: true }))) return;
@@ -3196,7 +3458,7 @@ const ACT = {
   "conf-no"() { if (confFin) confFin(false); }
 };
 
-const SOLO_SUPER = new Set(["bandeja-estado", "bandeja-nota", "bandeja-borrar", "bandeja-archivar-canceladas", "bandeja-borrar-canceladas", "aviso-nuevo", "aviso-editar", "aviso-borrar", "notif-leer", "notif-todas", "notif-reset", "usr-super", "usr-gen", "logo-marca", "logo-color", "logo-forma", "usr-nuevo", "usr-reset", "usr-reset-ok", "usr-toggle", "usr-del", "guardar-cfg", "exportar", "descartar-local", "quitar-ejemplos", "probar-correo", "cfg-tema", "cfg-acento", "quitar-logo", "como-publicar", "qa-activar", "qa-salir", "qa-datos", "qa-reiniciar", "qa-correr", "qa-limpiar-manual", "dep-add", "dep-ren", "dep-del", "dep-reg", "dep-import"]);
+const SOLO_SUPER = new Set(["aplicar-textos", "bandeja-estado", "bandeja-nota", "bandeja-borrar", "bandeja-archivar-canceladas", "bandeja-borrar-canceladas", "aviso-nuevo", "aviso-editar", "aviso-borrar", "notif-leer", "notif-todas", "notif-reset", "usr-super", "usr-gen", "logo-marca", "logo-color", "logo-forma", "usr-nuevo", "usr-reset", "usr-reset-ok", "usr-toggle", "usr-del", "guardar-cfg", "exportar", "descartar-local", "quitar-ejemplos", "probar-correo", "cfg-tema", "cfg-acento", "quitar-logo", "como-publicar", "qa-activar", "qa-salir", "qa-datos", "qa-reiniciar", "qa-correr", "qa-limpiar-manual", "dep-add", "dep-ren", "dep-del", "dep-reg", "dep-import"]);
 const QA_BLOQ = new Set(["exportar", "como-publicar", "descartar-local"]);
 const SOLO_GESTION = new Set(["toggle-pub", "mover", "duplicar", "del-sistema", "add-cat", "del-cat", "edit-cat", "ren-sis", "img-quitar", "e-guardar", "e-add", "e-del"]);
 document.addEventListener("click", (e) => {
@@ -3957,6 +4219,101 @@ body{background:radial-gradient(900px 420px at 0% 0%,rgba(245,158,66,.13),transp
 .hmain .get-wrap{align-items:flex-start}
 .hmain .get-note{display:none}
 @media(max-width:900px){.hero-side{grid-auto-rows:auto;grid-template-columns:1fr 1fr!important}.htile{min-height:150px}}
+</style>
+<style id="tienda-pro">
+/* ===== Tienda PRO: hero tipo Microsoft Store + tarjetas "Qué ver" tipo App Store ===== */
+/* Hero */
+.store-hero{gap:18px;margin-top:20px;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr)}
+.store-hero.solo{grid-template-columns:1fr}
+.hmain{min-height:420px;border-radius:26px;background:linear-gradient(135deg,#00306B 0%,#004EAA 55%,#7B5BB8 100%);box-shadow:0 22px 44px -26px rgba(0,50,110,.6)}
+.hmain::before{width:60%;right:-6%;top:-26%;background:radial-gradient(circle,rgba(245,158,66,.28),transparent 68%)}
+.hmain .hglyph{display:none}
+.hshow{position:absolute;right:9%;top:50%;width:min(34%,250px);aspect-ratio:1;border-radius:28%;display:grid;place-items:center;pointer-events:none;
+  background:linear-gradient(145deg,rgba(255,255,255,.24),rgba(255,255,255,.06));border:1px solid rgba(255,255,255,.32);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 24px 50px -24px rgba(0,0,0,.45);transform:translateY(-50%) rotate(-4deg);z-index:0}
+.hshow-in{width:50%;color:#fff;display:block}
+.hshow-in .g{width:100%;height:auto;aspect-ratio:1;stroke-width:1.1}
+.hmain .htxt{max-width:58%}
+.hmain h2{font-size:40px}
+.hacts{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px;pointer-events:none}
+.hacts>*{pointer-events:auto}
+.hmain .get.big{border-radius:10px!important;padding:12px 28px;font-weight:700;font-size:16px}
+.hmore{color:#fff;font-weight:600;font-size:15px;padding:11px 20px;border-radius:10px;border:1px solid rgba(255,255,255,.5)}
+.hmore:hover{background:rgba(255,255,255,.14);text-decoration:none}
+/* Mosaicos laterales */
+.hero-side{gap:18px}
+.htile{display:flex;flex-direction:column;justify-content:space-between;align-items:stretch;padding:20px;border-radius:22px}
+.htile .hglyph{display:none}
+.htile-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;position:relative;z-index:2;pointer-events:none}
+.htile-top .ico{--s:56px;box-shadow:0 8px 18px -10px rgba(20,35,63,.45)!important}
+.htile .htxt{max-width:100%;padding:0;gap:3px}
+.htile h3{font-size:21px;line-height:1.15}
+.htile p{font-size:14px;line-height:1.35;color:var(--label-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.htile:hover{box-shadow:0 18px 34px -22px rgba(20,35,63,.5)}
+/* Qué ver (App Store) */
+.sec-ver{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;margin-top:34px}
+.sec-ver .sec-h{padding-left:2px}
+.cv-wrap{position:relative}
+.cv-grid{display:grid;grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:calc((100% - 40px)/3);gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:4px 2px 16px;scrollbar-width:none}
+.cv-grid::-webkit-scrollbar{display:none}
+.cv{scroll-snap-align:start}
+.cv-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:34px;height:64px;display:grid;place-items:center;color:#9AA7BD;border-radius:12px;transition:color .15s,background .15s}
+.cv-arrow .g{width:30px;height:30px;stroke-width:1.5}
+.cv-arrow:hover{color:var(--azul);background:rgba(0,78,170,.07)}
+.cv-arrow[hidden]{display:none}
+.cv-prev{left:-40px}.cv-next{right:-40px}
+.ch-wrap .cv-arrow{height:46px;width:44px;justify-content:start;padding-left:4px;top:calc(50% + 4px);background:linear-gradient(90deg,#F6F8FC 70%,transparent);border-radius:0}
+.ch-wrap .cv-next{right:0;background:linear-gradient(270deg,#F6F8FC 70%,transparent);justify-content:end;padding:0 4px 0 0}
+.ch-wrap .cv-prev{left:-16px;padding-left:16px}
+.ch-wrap .cv-arrow .g{width:24px;height:24px}
+@media(max-width:900px){.cv-arrow{display:none!important}}
+.cv{display:flex;flex-direction:column;gap:8px;min-width:0}
+.cv-eye{font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--azul);padding-left:2px}
+.cv:nth-child(3n+2) .cv-eye{color:var(--lila-texto)}
+.cv:nth-child(3n) .cv-eye{color:var(--ambar-oscuro)}
+.cv-card{background:#fff;border:1px solid #E6EAF3;border-radius:20px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 24px -16px rgba(20,35,63,.4);transition:transform .2s,box-shadow .2s}
+.cv-card:hover{transform:translateY(-3px);box-shadow:0 18px 34px -18px rgba(20,35,63,.5)}
+.cv-art{position:relative;display:block;aspect-ratio:16/10;overflow:hidden;color:#fff;background:linear-gradient(135deg,#3B82D6,#003A80)}
+.cv:nth-child(3n+2) .cv-art{background:linear-gradient(135deg,#B392DD,#5B3A8E)}
+.cv:nth-child(3n) .cv-art{background:linear-gradient(135deg,#F2A04A,#B45309)}
+.cv-art:hover{text-decoration:none}
+.cv-art::before{content:"";position:absolute;width:80%;aspect-ratio:1;right:-20%;top:-35%;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.3),transparent 68%)}
+.cv-glyph{position:absolute;right:9%;top:12%;width:32%;color:rgba(255,255,255,.4)}
+.cv-glyph .g{width:100%;height:auto;aspect-ratio:1;stroke-width:.9}
+.cv-shot{position:absolute;right:-4%;top:14%;width:52%;border-radius:10px;overflow:hidden;box-shadow:0 14px 30px -10px rgba(0,0,0,.45);transform:rotate(-3deg);background:#fff}
+.cv-img{width:100%;height:100%;object-fit:cover}
+.cv-over{position:absolute;left:0;right:0;bottom:0;padding:46px 18px 16px;background:linear-gradient(transparent,rgba(10,20,45,.5));display:flex;flex-direction:column;gap:2px;color:#fff}
+.cv-over small{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.9}
+.cv-over b{font-size:20px;line-height:1.2;font-weight:700;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-shadow:0 1px 8px rgba(0,0,0,.25)}
+.cv-bar{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.cv-bar .ico{--s:44px}
+.cv-t{flex:1;min-width:0;display:flex;flex-direction:column}
+.cv-t b{font-size:15.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cv-t small{font-size:13px;color:var(--label-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Botones tipo píldora suave */
+.cv-bar .get,.row .get{background:var(--azul-suave)!important;color:var(--azul)!important;border-radius:999px!important;min-width:0;padding:8px 18px;font-weight:700}
+.cv-bar .get:hover,.row .get:hover{background:var(--azul)!important;color:#fff!important}
+/* Paneles dobles tipo Microsoft Store */
+.duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:34px}
+.duo .sec{margin-top:0;min-width:0}
+.duo.solo{grid-template-columns:1fr}
+@media(min-width:901px){.duo .rows{grid-template-columns:1fr;column-gap:0}}
+@media(max-width:900px){
+  .duo{grid-template-columns:1fr;gap:0;margin-top:0}
+  .duo .sec{margin-top:22px}
+  .hmain{min-height:380px}.hmain .htxt{max-width:100%;padding:22px}.hmain h2{font-size:30px}
+  .store-hero{grid-template-columns:minmax(0,1fr)}
+  .hero-side{grid-template-columns:1fr 1fr!important}
+  .htile{min-height:170px;padding:16px}
+  .htile-top .ico{--s:46px}
+  .htile .tag-pill{font-size:10.5px;padding:3px 8px;white-space:nowrap}
+  .hshow{width:30%;right:6%;top:20%}
+  .hmain .htxt{padding-top:110px}
+  .cv-grid{scroll-padding-inline:var(--gutter)}
+  .cv-grid{grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:84%;overflow-x:auto;scroll-snap-type:x mandatory;margin-inline:calc(-1*var(--gutter));padding:2px var(--gutter) 10px;scrollbar-width:none}
+  .cv-grid::-webkit-scrollbar{display:none}
+  .cv{scroll-snap-align:start}
+}
 </style>
 </body>
 </html>
