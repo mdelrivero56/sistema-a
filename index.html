@@ -2322,7 +2322,7 @@ function renderChrome(a) {
   const act = { "": "", sistema: "sistemas", sistemas: "sistemas", uso: "sistemas", categorias: "categorias", categoria: "categorias", solicitar: "solicitudes", gracias: "solicitudes", solicitudes: "solicitudes", buscar: "buscar", ayuda: "ayuda", dudas: "dudas", admin: "admin" }[a] ?? "";
   const cur = (k) => (act === k ? ' aria-current="page"' : "");
   const catActiva = a === "categoria" ? hashParts()[1] : null;
-  const cats = S.cat.categorias.filter((k) => vis().some((s) => s.categorias.includes(k.id)));
+  const cats = S.cat.categorias.slice();
   $("#sidenav").innerHTML = `
     <a href="#/"${cur("")}>${glifo("hoy")}Descubrir</a>
     <a href="#/sistemas"${cur("sistemas")}>${glifo("capas")}Sistemas</a>
@@ -2389,7 +2389,7 @@ function vHome() {
   const ver = lista.filter((s) => !enHero.has(s.id)).sort((a, b) => (b.destacado ? 1 : 0) - (a.destacado ? 1 : 0)).slice(0, 8);
   const top = [...lista].sort((a, b) => b.dependencias.length - a.dependencias.length).slice(0, 6);
   const nuevos = [...lista].sort((a, b) => (b.actualizado || "").localeCompare(a.actualizado || "")).slice(0, 6);
-  const cats = S.cat.categorias.filter((k) => lista.some((s) => s.categorias.includes(k.id)));
+  const cats = S.cat.categorias.slice();
   const usos = todosUsos().slice(0, 4);
   post = iniciarCarrusel;
   return `${cabecera("Descubrir", "", cuando)}
@@ -2417,7 +2417,7 @@ function vSistemas() {
   if (F2.orden === "nombre") l = [...l].sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
   if (F2.orden === "recientes") l = [...l].sort((a, b) => (b.actualizado || "").localeCompare(a.actualizado || ""));
   if (F2.orden === "usados") l = [...l].sort((a, b) => b.dependencias.length - a.dependencias.length);
-  const cats = S.cat.categorias.filter((k) => vis().some((s) => s.categorias.includes(k.id)));
+  const cats = S.cat.categorias.slice();
   post = iniciarCarrusel;
   return `${cabecera("Sistemas", "Todos los sistemas que puedes solicitar para tu dependencia.")}
     <div class="cv-wrap ch-wrap"><button type="button" class="cv-arrow cv-prev" data-act="cv-prev" aria-label="Anterior" hidden>${glifo("back")}</button><div class="chips bleed" role="group" aria-label="Filtrar por categoría"><button class="chip txt" data-act="filtro-cat" data-id="todas" aria-pressed="${F2.cat === "todas"}">Todos</button>${cats.map((k) => `<button class="chip txt" data-act="filtro-cat" data-id="${esc(k.id)}" aria-pressed="${F2.cat === k.id}">${esc(k.nombre)}</button>`).join("")}</div><button type="button" class="cv-arrow cv-next" data-act="cv-next" aria-label="Siguiente" hidden>${glifo("chev")}</button></div>
@@ -2428,7 +2428,7 @@ function vSistemas() {
 }
 
 function vCategorias() {
-  const cats = S.admin ? S.cat.categorias : S.cat.categorias.filter((k) => vis().some((s) => s.categorias.includes(k.id)));
+  const cats = S.cat.categorias.slice();
   const tools = (k) => S.admin ? `<div class="cat-tools"><button class="btn sm sec" data-act="edit-cat" data-id="${esc(k.id)}">${glifo("edit")}Renombrar / editar</button><button class="btn sm danger" data-act="del-cat" data-id="${esc(k.id)}">${glifo("trash")}Eliminar</button></div>` : "";
   return `${cabecera("Categorías", "Explora los sistemas según lo que necesitas hacer.")}
     ${S.admin ? `<div class="admbar" style="margin-top:12px"><span class="muted">Puedes renombrar, editar o eliminar categorías.</span><button class="btn" data-act="add-cat">${glifo("plus")}Agregar categoría</button></div>` : ""}
