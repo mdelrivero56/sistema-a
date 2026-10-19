@@ -807,12 +807,13 @@ button.avatar{font:inherit;font-weight:700}
 const CONFIG_BASE = {
   nombre: "Catálogo de Sistemas",
   organizacion: "Coordinación de Política Digital",
-  correoDestino: "",          // ← pon aquí el correo que recibirá las solicitudes
+  correoDestino: "delrivero25@gmail.com",          // ← correo que recibe las solicitudes
   endpoint: "",               // ← opcional: URL de Formspree / Apps Script
   telefono: "",
+  whatsapp: "",               // WhatsApp que recibe las dudas (solo dígitos con código de país, ej. 5215512345678)
   privacidad: "Usaremos tus datos únicamente para atender esta solicitud y ponernos en contacto contigo.",
   pinHash: "",
-  correoAdmin: "",   // recibe solicitudes de usuario y de recuperación de contraseña
+  correoAdmin: "delrivero25@gmail.com",   // recibe solicitudes de usuario y de recuperación de contraseña
   logo: "",                   // imagen subida (opcional); si está vacío se usa el diseño de abajo
   logoMarca: "nodos",         // facetas | mosaico | capas | orbita | cubo | onda | inicial
   logoColor: "turquesa",      // color de la paleta
@@ -839,6 +840,9 @@ const URL_ERR = SB_ON && /[#&?](error_code|error_description)=/.test(location.ha
 const ARCHIVO_PUBLICADO = "catalogo.json";   // catálogo compartido con todos los visitantes
 const LIMITE_ARCHIVO = 10 * 1024 * 1024;      // 10 MB por adjunto
 const CORREO_SUPER = "delrivero25@gmail.com";  // único correo autorizado para Superadministrador
+const DOMINIO_PERMITIDO = "";  // ← por ahora vacío = se acepta cualquier correo. Cuando quieras limitar el acceso, escribe "gob.mx" (el propietario siempre puede entrar)
+const correoPermitido = (c) => { const x = String(c || "").trim().toLowerCase(); return !DOMINIO_PERMITIDO || x === String(CORREO_SUPER).toLowerCase() || x.endsWith("@" + DOMINIO_PERMITIDO) || x.endsWith("." + DOMINIO_PERMITIDO); };
+const avisoDominio = () => `Solo se aceptan correos institucionales que terminen en ${DOMINIO_PERMITIDO}.`;
 const ROLES = { visitante: "Usuario", gestor: "Colaborador", superadmin: "Superadministrador" };
 const rolDe = (r) => (r === "admin" ? "superadmin" : r === "usuario" ? "visitante" : ROLES[r] ? r : "visitante");
 
@@ -1210,6 +1214,8 @@ function migrar(c) {
   c = c || {};
   const base = datosEjemplo();
   const out = { formato: 2, editado: !!c.editado, actualizado: c.actualizado || hoyISO(), config: Object.assign({}, CONFIG_BASE, c.config || {}) };
+  if (!String(out.config.correoDestino || "").trim()) out.config.correoDestino = CONFIG_BASE.correoDestino;
+  if (!String(out.config.correoAdmin || "").trim()) out.config.correoAdmin = CONFIG_BASE.correoAdmin;
   out.usuarios = Array.isArray(c.usuarios) ? c.usuarios.filter((u) => u && (u.correo || u.rfc) && u.hash).map((u) => Object.assign({}, u, { rol: rolDe(u.rol) })) : [];
   out.avisos = Array.isArray(c.avisos) ? c.avisos.filter((a) => a && a.id).slice(0, 300) : [];
   out.notificaciones = Array.isArray(c.notificaciones) ? c.notificaciones.filter((n) => n && n.id).slice(0, 200) : [];
@@ -1646,6 +1652,7 @@ async function registrarse() {
   guardarCatalogo(); abrirSesion(u, true);
 }
 async function sbRegistro(d, p1, fin) {
+  if (!correoPermitido(d.correo)) return fin(avisoDominio());
   if (!SB) return fin("No se pudo conectar con el servicio de acceso. Revisa tu conexión.");
   const { data, error } = await SB.auth.signUp({ email: d.correo, password: p1, options: { data: { nombre: d.nombre } } });
   if (error) return fin(/regist|already|exists/i.test(error.message) ? "Ese correo ya está registrado. Inicia sesión." : "No se pudo crear la cuenta: " + error.message);
@@ -1823,7 +1830,8 @@ async function iniciarSesion() {
 
 /* ---------- Acceso: pestañas, campos obligatorios y dependencia ---------- */
 function authTabs(a) {
-  if (SB_ON) return `<div class="auth-tabs three" role="tablist" aria-label="Tipo de acceso"><button type="button" role="tab" aria-selected="${a === "usuario"}" data-act="auth-ir" data-v="login">Usuario</button><button id="tab-colaborador" type="button" role="tab" aria-selected="${a === "colab"}" data-act="auth-ir" data-v="colab">Colaborador</button><button id="tab-superadmin" type="button" role="tab" aria-selected="${a === "super"}" data-act="auth-ir" data-v="super">Superadministrador</button></div>`;
+  if (SB_ON) return "";
+  if (false) return `<div class="auth-tabs three" role="tablist" aria-label="Tipo de acceso"><button type="button" role="tab" aria-selected="${a === "usuario"}" data-act="auth-ir" data-v="login">Usuario</button><button id="tab-colaborador" type="button" role="tab" aria-selected="${a === "colab"}" data-act="auth-ir" data-v="colab">Colaborador</button><button id="tab-superadmin" type="button" role="tab" aria-selected="${a === "super"}" data-act="auth-ir" data-v="super">Superadministrador</button></div>`;
   const correoActual = normCorreo(document.getElementById("a-correo")?.value || "");
   const flujoSuper = ["super", "codigo", "supercod"].includes(S.authView);
   const mostrarSuper = correoActual === "delrivero25@gmail.com" || flujoSuper;
@@ -1841,6 +1849,8 @@ function marcarFaltantes(lista) {
 document.addEventListener("input", (e) => { const w = e.target.closest && e.target.closest(".authcard .field.bad, .authcard .chk.bad"); if (w) { w.classList.remove("bad"); const i = e.target; if (i.removeAttribute) i.removeAttribute("aria-invalid"); } });
 document.addEventListener("input", (e) => {
   if (!e.target || e.target.id !== "a-correo") return;
+  const ow = document.getElementById("a-owner");
+  if (ow) ow.style.display = normCorreo(e.target.value) === normCorreo(CORREO_SUPER) ? "" : "none";
   const tab = document.getElementById("tab-superadmin");
   if (tab && !SB_ON) tab.hidden = normCorreo(e.target.value) !== "delrivero25@gmail.com";
 });
@@ -1883,9 +1893,11 @@ async function enviarAvisoCorreo(para, asunto, campos) {
     });
     clearTimeout(tm);
     const j = await r.json().catch(() => ({}));
+    S.mailErr = /activat/i.test(String(j.message || "")) ? "activar" : "";
     return r.ok && (j.success === true || String(j.success || "").toLowerCase() === "true" || String(j.success || "").toLowerCase() === "email sent");
-  } catch (e) { return false; }
+  } catch (e) { S.mailErr = "red"; return false; }
 }
+const avisoMailFallo = () => S.mailErr === "activar" ? "El servicio de correo (FormSubmit) necesita activarse: abre el correo que te envió y pulsa «Activate Form». Mientras tanto se abrirá tu correo para enviar a mano." : S.mailErr === "red" ? "No hay conexión con el servicio de correo. Se abrirá tu correo para enviar a mano." : "No se pudo enviar automáticamente. Se abrirá tu correo.";
 const enviarCodigoSuper = (pend, codigo) => enviarAvisoCorreo(CORREO_SUPER, `Autorización de Superadministrador · ${pend.nombre}`, {
   "Nombre": pend.nombre, "Usuario": pend.correo, "Tipo de cuenta": "Superadministrador",
   "Código de autorización": codigo, "Fecha": new Date().toLocaleString("es-MX"),
@@ -1956,7 +1968,7 @@ async function prepararEnvio(tipo, asunto, cuerpo, folio) {
   const ok = await enviarAvisoCorreo(para, asunto, { Folio: folio, Mensaje: cuerpo });
   if (!S.authInfo || S.authInfo.folio !== folio) return;
   S.authInfo.enviando = false; S.authInfo.auto = ok; render(false);
-  if (!ok && para) setTimeout(() => { location.href = mailtoAdmin(S.authInfo); }, 200);
+  if (!ok && para) { toast(avisoMailFallo()); setTimeout(() => { window.open(mailtoAdmin(S.authInfo), "_blank", "noopener"); }, 600); }
 }
 const gmailCompose = (to, subject, body) => `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to || "")}&su=${encodeURIComponent(subject || "")}&body=${encodeURIComponent(body || "")}`; const mailtoAdmin = (i) => gmailCompose(i.para, i.asunto, i.cuerpo);
 function solicitarUsuario() {
@@ -2074,7 +2086,8 @@ async function cambiarMiClave() {
   if (SB_ON && u.sb) {
     if (!claveOk(n)) { er.textContent = CLAVE_AYUDA; return; }
     if (n !== n2) { er.textContent = "Las contraseñas nuevas no coinciden."; return; }
-    const { error: e1 } = await SB.auth.signInWithPassword({ email: u.correo, password: a });
+    const sinActual = !a && mismoCorreo(u.correo, CORREO_SUPER);
+    const { error: e1 } = sinActual ? { error: null } : await SB.auth.signInWithPassword({ email: u.correo, password: a });
     if (e1) { er.textContent = "La contraseña actual no es correcta."; return; }
     const { error: e2 } = await SB.auth.updateUser({ password: n });
     if (e2) { er.textContent = /same|different/i.test(e2.message) ? "La nueva contraseña debe ser distinta a la actual." : "No se pudo actualizar. Inténtalo de nuevo."; return; }
@@ -2280,6 +2293,7 @@ function render(nav) {
       case "solicitudes": html = S.super ? vBandeja() : vSolicitudes(); break;
       case "avisos": html = vAvisos(); break;
       case "ayuda": html = vAyuda(); break;
+      case "dudas": html = vDudas(b); break;
       case "contacto": html = vContacto(); break;
       case "privacidad": case "terminos": html = vLegal(a); break;
       case "admin": html = vAdmin(b, c); break;
@@ -2305,7 +2319,7 @@ function renderChrome(a) {
   const c = cfg();
   $("#brand").setAttribute("aria-label", `${c.nombre} · inicio`);
   $("#brand").innerHTML = `${logoHtml(c)}<span><b>${esc(c.nombre)}</b><small>${esc(c.organizacion)}</small></span>`;
-  const act = { "": "", sistema: "sistemas", sistemas: "sistemas", uso: "sistemas", categorias: "categorias", categoria: "categorias", solicitar: "solicitudes", gracias: "solicitudes", solicitudes: "solicitudes", buscar: "buscar", ayuda: "ayuda", admin: "admin" }[a] ?? "";
+  const act = { "": "", sistema: "sistemas", sistemas: "sistemas", uso: "sistemas", categorias: "categorias", categoria: "categorias", solicitar: "solicitudes", gracias: "solicitudes", solicitudes: "solicitudes", buscar: "buscar", ayuda: "ayuda", dudas: "dudas", admin: "admin" }[a] ?? "";
   const cur = (k) => (act === k ? ' aria-current="page"' : "");
   const catActiva = a === "categoria" ? hashParts()[1] : null;
   const cats = S.cat.categorias.filter((k) => vis().some((s) => s.categorias.includes(k.id)));
@@ -2315,6 +2329,7 @@ function renderChrome(a) {
     <a href="#/solicitudes"${cur("solicitudes")}>${glifo("send")}${S.super ? "Solicitudes" : "Mis solicitudes"}${misSols().length && !S.super ? ` <span class="badge acc" style="margin-left:auto">${misSols().length}</span>` : ""}</a>
     <a href="#/categorias"${cur("categorias")}>${glifo("grid")}Categorías</a>
     <a href="#/ayuda"${cur("ayuda")}>${glifo("info")}Cómo solicitar</a>
+    <a href="#/dudas"${cur("dudas")}>${glifo("mensaje")}Dudas por WhatsApp</a>
     ${cats.length ? `<h6 class="cat">Categorías</h6>` : ""}
     ${cats.map((k) => `<a class="cat" href="#/categoria/${enc(k.id)}" ${catActiva === k.id ? 'aria-current="page"' : ""}><span class="cdot" style="${colorVars(k.color)}">${glifo(k.glifo)}</span>${esc(k.nombre)}</a>`).join("")}`;
   $("#sidefoot").innerHTML = `<div class="mode">${S.user ? esc(S.user.nombre) + " · " + ROLES[rolDe(S.user.rol)] : "Visualizador"}</div>`
@@ -2540,6 +2555,7 @@ function vFicha(id) {
       ${prim ? `<div><a class="lr" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">Sitio del sistema ${glifo("out")}</a></div>` : ""}
       <div><button class="lr" data-act="contacto" data-id="${esc(s.id)}">Contactar al área responsable ${glifo("correo")}</button></div>
       <div><button class="lr" data-act="contacto" data-id="${esc(s.id)}" data-problema="1">Reportar un problema ${glifo("warn")}</button></div>
+      <div><a class="lr" href="#/dudas/${enc(s.id)}">Tengo una duda (WhatsApp) ${glifo("mensaje")}</a></div>
     </div></section>
   ${s.usos.length ? `<section class="sec"><h2 class="sec-h">Parte de</h2><div class="tagcards">${s.usos.map((u) => `<a class="tagcard" href="#/uso/${enc(u)}"><span class="cdot" style="${colorVars(s.icono.color)}">${glifo("tag")}</span>${esc(u)}</a>`).join("")}</div></section>` : ""}
   ${rel.length ? `<section class="sec"><h2 class="sec-h"><a href="#/sistemas">También te podría interesar ${glifo("chev")}</a></h2><div class="rows">${rel.map((x) => fila(x, motivo(s, x))).join("")}</div></section>` : ""}
@@ -2551,6 +2567,7 @@ function vContacto() {
   const tel = (t) => String(t || "").replace(/[^\d+]/g, "");
   const med = [
     c.correoDestino && `<a class="ctc" href="mailto:${esc(c.correoDestino)}">${glifo("correo")}<span><b>Correo</b>${esc(c.correoDestino)}</span></a>`,
+    waNum() && `<a class="ctc" href="https://wa.me/${waNum()}" target="_blank" rel="noopener noreferrer">${glifo("mensaje")}<span><b>WhatsApp</b>Enviar una duda</span></a>`,
     c.telefono && `<a class="ctc" href="tel:${esc(tel(c.telefono))}">${glifo("mensaje")}<span><b>Teléfono</b>${esc(c.telefono)}</span></a>`,
     c.horario && `<div class="ctc">${glifo("reloj")}<span><b>Horario</b>${esc(c.horario)}</span></div>`
   ].filter(Boolean).join("");
@@ -2559,6 +2576,20 @@ function vContacto() {
   return `${cabecera("Contacto", "Escríbenos o llámanos; respondemos en " + (c.tiempoRespuesta || "unos días") + ".")}
     <div class="ctcs">${med || vacio("Aún no hay datos de contacto", S.admin ? "Agrégalos en Administración → Configuración." : "Vuelve pronto.")}</div>
     <h2 class="dir-h">Directorio</h2>${pers ? `<ul class="dir">${pers}</ul>` : vacio("El directorio está vacío", S.admin ? "Agrega a las personas responsables abajo." : "Pronto publicaremos a las personas responsables.")}${ed}`;
+}
+const waNum = () => String(cfg().whatsapp || "").replace(/\D/g, "");
+function vDudas(id) {
+  const c = cfg(), num = waNum(), u = S.user || {}, sel = byId(id) ? id : "";
+  const lista = vis().map((s) => `<option value="${esc(s.id)}" ${s.id === sel ? "selected" : ""}>${esc(s.nombre)}</option>`).join("");
+  const aviso = num ? "" : `<div class="note warn" style="margin-bottom:14px">${glifo("warn")}<div>${S.super ? `Aún no has configurado tu WhatsApp. <a href="#/admin/config/solicitudes">Agrégalo en Configuración → Solicitudes</a>.` : "El WhatsApp de atención todavía no está configurado. Mientras tanto puedes escribirnos por correo."}${c.correoDestino ? ` <a href="${esc(gmailCompose(c.correoDestino, "Duda sobre el catálogo de sistemas", ""))}" target="_blank" rel="noopener noreferrer">Escribir por correo</a>` : ""}</div></div>`;
+  return `${cabecera("Dudas por WhatsApp", "Escribe tu pregunta y se abrirá WhatsApp con el mensaje listo para enviarnos. Respondemos en " + (c.tiempoRespuesta || "unos días") + ".")}
+    ${aviso}<div class="card" style="padding:18px;display:grid;gap:14px;max-width:640px">
+      <div class="field"><label for="d-nombre">Tu nombre <span class="req" aria-hidden="true">*</span></label><input id="d-nombre" type="text" value="${esc(u.nombre || "")}" autocomplete="name"></div>
+      <div class="field"><label for="d-dep">Dependencia (opcional)</label><input id="d-dep" type="text" value="${esc(u.dependencia || "")}" autocomplete="organization"></div>
+      <div class="field"><label for="d-sis">Sistema relacionado (opcional)</label><select class="select" id="d-sis"><option value="">Ninguno en particular</option>${lista}</select></div>
+      <div class="field"><label for="d-msg">Tu duda <span class="req" aria-hidden="true">*</span></label><textarea id="d-msg" style="min-height:130px" placeholder="Escribe aquí tu pregunta"></textarea></div>
+      <div><button type="button" class="btn big" data-act="dudas-enviar" ${num ? "" : "disabled"}>${glifo("send")}Enviar por WhatsApp</button></div>
+      <p class="muted" style="font-size:13px">Se abrirá WhatsApp en tu teléfono o computadora y tú pulsas «Enviar». No guardamos tu mensaje en este sitio.</p></div>`;
 }
 function vAyuda() {
   const c = cfg();
@@ -2976,6 +3007,7 @@ function vAdminConfig(sec) {
     panel = `<section class="grp"><h2>Recepción de solicitudes</h2><p class="hint">Define a dónde llegan las solicitudes de las dependencias y cómo se envían.</p><div class="card"><div class="fields">
       ${f("correoAdmin", "Correo del administrador (solicitudes de usuario y recuperación)", { tipo: "email", ph: "admin@tudependencia.gob.mx", full: true, hint: "Aquí llegan las solicitudes de nuevos usuarios y de recuperación de contraseña." })}
       ${f("correoDestino", "Correo que recibe las solicitudes de sistemas", { tipo: "email", ph: "solicitudes@tudependencia.gob.mx", full: true, hint: "Al enviar, se abre el correo del solicitante con el mensaje ya redactado hacia esta dirección." })}
+      ${f("whatsapp", "WhatsApp para dudas", { tipo: "tel", ph: "5215512345678", full: true, hint: "Número con código de país, solo dígitos (México: 52 + 1 + 10 dígitos). Las dudas del apartado «Dudas por WhatsApp» abren un chat con este número." })}
       ${f("endpoint", "Envío automático (opcional)", { tipo: "url", ph: "https://formspree.io/f/xxxxxxx", full: true, hint: "Si pegas la URL de un servicio de formularios (Formspree, Apps Script…), la solicitud se envía sin que el solicitante abra su correo." })}
       <div class="field full"><div><button type="button" class="btn sec sm" data-act="probar-correo">${glifo("correo")}Enviar correo de prueba</button></div></div>
     </div></div></section>
@@ -3529,6 +3561,8 @@ const ACT = {
     const c = S.cfgDraft; if (!c) return;
     if (c.correoDestino && !correoOk(c.correoDestino)) return toast("El correo de destino no es válido.");
     if (c.endpoint && !urlOk(c.endpoint)) return toast("La URL de envío automático debe empezar con https://");
+    c.whatsapp = String(c.whatsapp || "").replace(/\D/g, "");
+    if (c.whatsapp && !/^\d{10,15}$/.test(c.whatsapp)) return toast("El WhatsApp debe tener entre 10 y 15 dígitos, con código de país.");
     Object.assign(S.cat.config, c, { correoDestino: c.correoDestino.trim(), endpoint: c.endpoint.trim(), nombre: c.nombre.trim() || CONFIG_BASE.nombre, organizacion: c.organizacion.trim() || CONFIG_BASE.organizacion });
     S.cat.config.tiempoRespuesta = (S.cat.config.tiempoRespuesta || "").trim(); S.cat.config.reunion = (S.cat.config.reunion || "").trim(); S.cat.config.horario = (S.cat.config.horario || "").trim();
     guardarCatalogo(); S.cfgDraft = null; aplicarApariencia(); toast("Configuración guardada"); render(false);
@@ -3621,7 +3655,7 @@ const ACT = {
     const ok = await enviarAvisoCorreo(para, asunto, { Folio: sol.folio, Dependencia: sol.datos.dependencia, Contacto: sol.datos.nombre, Correo: sol.datos.correo, Teléfono: sol.datos.telefono, Sistemas: sol.sistemas.map((s) => s.nombre).join(", "), Estado: "Requisitos completos: listo para implementar", Detalle: cuerpo });
     sol.listo = true; sol.listoFecha = hoyISO(); await guardarSolicitudes();
     if (ok) toast("Aviso enviado. ¡Todo listo para usar el sistema!");
-    else { toast("No se pudo enviar automáticamente. Se abrirá tu correo."); setTimeout(() => { location.href = `mailto:${para}?subject=${enc(asunto)}&body=${enc(cuerpo)}`; }, 300); }
+    else { toast(avisoMailFallo()); setTimeout(() => { location.href = `mailto:${para}?subject=${enc(asunto)}&body=${enc(cuerpo)}`; }, 300); }
     keep(() => render(false));
   },
   "qa-activar"() { activarQA(); },
@@ -3630,6 +3664,15 @@ const ACT = {
   "qa-reiniciar"() { restaurarQA(true); toast("Datos de prueba reiniciados"); render(false); },
   "qa-correr"() { correrQA(); },
   "qa-limpiar-manual"() { try { localStorage.removeItem("catalogo-qa-manual"); } catch (e) {} keep(() => render(false)); },
+  "dudas-enviar"() {
+    const num = waNum(); if (!num) return toast("El WhatsApp de atención aún no está configurado.");
+    const nombre = val("d-nombre"), dep = val("d-dep"), msg = val("d-msg"), s = byId(val("d-sis"));
+    if (nombre.length < 3) { toast("Escribe tu nombre."); const i = $("#d-nombre"); if (i) i.focus(); return; }
+    if (msg.length < 5) { toast("Escribe tu duda."); const i = $("#d-msg"); if (i) i.focus(); return; }
+    const texto = [`Hola, tengo una duda sobre el ${cfg().nombre}.`, "", `Nombre: ${nombre}`, dep ? `Dependencia: ${dep}` : null, s ? `Sistema: ${s.nombre}` : null, "", msg].filter((x) => x !== null).join("\n");
+    const w = window.open(`https://wa.me/${num}?text=${enc(texto)}`, "_blank", "noopener");
+    toast(w ? "Abriendo WhatsApp…" : "Tu navegador bloqueó la ventana. Permite ventanas emergentes e inténtalo de nuevo.");
+  },
   "ver-video"(t) { const s = byId(t.dataset.id); if (!s) return; abrirVideo(t.dataset.k === "dest" ? s.videoDestacado : (s.videos || [])[+t.dataset.i], s.nombre); },
   "e-ver-video"(t) { const dr = draftActual(); if (!dr) return; abrirVideo(t.dataset.k === "dest" ? dr.s.videoDestacado : (dr.s.videos || [])[+t.dataset.i], dr.s.nombre || "Video de muestra"); },
   "e-quitar-videodest"() { const dr = draftActual(); if (!dr) return; dr.s.videoDestacado = { url: "", data: "", nombre: "" }; dr.dirty = true; keep(() => render(false)); },
@@ -3717,6 +3760,7 @@ document.addEventListener("submit", (e) => {
   else if (f.id === "form-depren") { e.preventDefault(); guardarRenDep(); }
   else if (f.id === "form-supercod") { e.preventDefault(); sbSuperVerificar(); }
   else if (f.id === "form-supermail") { e.preventDefault(); sbSuperEnviar(); }
+  else if (f.id === "form-superpass") { e.preventDefault(); sbLoginSuper(); }
   else if (f.id === "form-codigo") { e.preventDefault(); verificarCodigoSuper(); }
   else if (f.id === "form-ren") { e.preventDefault(); guardarRenombrar(); }
   else if (f.id === "form-cat") { e.preventDefault(); guardarCategoria(); }
@@ -3751,19 +3795,20 @@ async function sbIniciar() {
   if (!SB_ON) return;
   try { await cargarScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"); SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } }); } catch (e) { SB = null; }
 }
-async function sbCatalogo() { if (!SB) return null; try { const { data } = await SB.from("catalogo").select("data").eq("id", 1).maybeSingle(); return data && catValido(data.data) ? data.data : null; } catch (e) { return null; } }
+async function sbCatalogo() { if (!SB) return null; try { const { data, error } = await SB.from("catalogo").select("data").eq("id", 1).maybeSingle(); S.catErr = error ? error.message || "error" : ""; return data && catValido(data.data) ? data.data : null; } catch (e) { S.catErr = "red"; return null; } }
 const sbUsuario = (p, au) => ({ id: p.id, nombre: p.nombre || (au && au.email) || p.correo, correo: p.correo || (au && au.email) || "", rol: rolDe(p.rol), estado: p.estado || "activo", dependencia: p.dependencia || "", area: p.area || "", cargo: p.cargo || "", telefono: p.telefono || "", sb: true, salt: "", hash: "" });
 async function sbPerfil(au) {
   const { data: p } = await SB.from("perfiles").select("*").eq("id", au.id).maybeSingle();
   if (!p || p.estado !== "activo") { await SB.auth.signOut(); return null; }
   const u = sbUsuario(p, au); let lista = [u];
   if (rolDe(p.rol) === "superadmin") { const { data } = await SB.from("perfiles").select("*"); if (data) lista = data.map((x) => sbUsuario(x)); }
-  S.cat.usuarios = lista; if (rolDe(p.rol) === "superadmin") await sbNotifs(); return lista.find((x) => x.id === u.id) || u;
+  S.cat.usuarios = lista; if (rolDe(p.rol) === "superadmin") { await sbNotifs(); if (S.catErr && S.catErr !== "red") setTimeout(() => toast("Los visualizadores no pueden leer el catálogo publicado. Ejecuta supabase-visualizador.sql en Supabase."), 1500); } return lista.find((x) => x.id === u.id) || u;
 }
 async function sbLogin() {
   const correo = normCorreo(val("a-correo")), pass = $("#a-pass").value; authErr("");
   const fl = []; if (!correoOk(correo)) fl.push(["a-correo", "Escribe un correo electrónico válido."]); if (!pass) fl.push(["a-pass", "Escribe tu contraseña."]);
   if (fl.length) return marcarFaltantes(fl);
+  if (!correoPermitido(correo)) return marcarFaltantes([["a-correo", avisoDominio()]]);
   if (!SB) return authErr("No se pudo conectar con el servicio de acceso. Revisa tu conexión.");
   const { data, error } = await SB.auth.signInWithPassword({ email: correo, password: pass });
   if (error || !data.user) return authErr("Correo o contraseña incorrectos.");
@@ -3773,10 +3818,26 @@ async function sbLogin() {
   abrirSesion(u, true);
 }
 
+async function sbLoginSuper() {
+  authErr("");
+  const correo = normCorreo(val("a-sup-correo")), pass = $("#a-sup-pass").value, fl = [];
+  if (!correoOk(correo)) fl.push(["a-sup-correo", "Escribe el correo del propietario."]);
+  if (!pass) fl.push(["a-sup-pass", "Escribe tu contraseña."]);
+  if (fl.length) return marcarFaltantes(fl);
+  if (correo !== normCorreo(CORREO_SUPER)) return marcarFaltantes([["a-sup-correo", "Este acceso está reservado al correo autorizado del propietario."]]);
+  if (!SB) return authErr("No se pudo conectar con el servicio de acceso. Revisa tu conexión.");
+  const btn = $("#a-supp-btn"); if (btn) { btn.disabled = true; btn.textContent = "Entrando…"; }
+  const libre = () => { if (btn) { btn.disabled = false; btn.textContent = "Entrar como superadministrador"; } };
+  const { data, error } = await SB.auth.signInWithPassword({ email: correo, password: pass });
+  if (error || !data.user) { libre(); return authErr("Correo o contraseña incorrectos. Si aún no tienes contraseña, usa «Entrar con código por correo»."); }
+  const u = await sbPerfil(data.user);
+  if (!u || rolDe(u.rol) !== "superadmin") { try { await SB.auth.signOut(); } catch (e) {} libre(); return authErr("Esta cuenta aún no está habilitada como superadministrador. Ejecuta supabase-superadmin-dependencias.sql en Supabase."); }
+  abrirSesion(u, true);
+}
 /* ---------- Superadministrador (Supabase): código de un solo uso al correo del propietario ---------- */
 async function sbSuperEnviar() {
   authErr("");
-  const campoSup = $("#a-sup-correo");
+  const campoSup = $("#a-sup-correo") || $("#a-correo");
   if (campoSup) { const c = normCorreo(campoSup.value); if (!correoOk(c)) return marcarFaltantes([["a-sup-correo", "Escribe el correo del propietario."]]); if (c !== normCorreo(CORREO_SUPER)) return marcarFaltantes([["a-sup-correo", "Este acceso está reservado al correo autorizado del propietario."]]); }
   if (!SB) return authErr("No se pudo conectar con el servicio de acceso. Revisa tu conexión.");
   const espera = 60000 - (Date.now() - (S.supT || 0));
@@ -3848,8 +3909,9 @@ function vAuthSB() {
   const cab = `<div class="auth-brand"><span class="auth-logo${imgOk(c.logo) ? "" : " lg"}">${logo}</span><div><b>${esc(c.nombre)}</b><small>${esc(c.organizacion)}</small></div></div>`;
   const vis = `<button class="btn sec big auth-alt" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button>`;
   const marco = (h1, lede, body, tb = "") => `<div class="authwrap"><div class="authcard">${cab}${tb}<h1>${h1}</h1><p class="lede">${lede}</p>${body}</div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
-  if (S.authView === "super") return marco("Acceso de superadministrador", `Te enviaremos un código de un solo uso a <b>${esc(maskCorreo(CORREO_SUPER))}</b>. Lo escribes en el siguiente paso y entras con control total.`,
-    `<div class="note info">${glifo("info")}<div>Solo la persona propietaria recibe el código. Las demás personas deben usar la pestaña <b>Usuario</b>.</div></div><form id="form-supermail" novalidate>${fld("a-sup-correo", "Correo del propietario", { tipo: "email", req: 1, auto: "username", ph: "correo autorizado" })}${err}<button class="btn big" type="submit" id="a-sup-btn" style="margin-top:12px">Enviar código a mi correo</button></form>
+  if (S.authView === "super") return marco("Acceso de superadministrador", `Entra con tu correo y contraseña. Si aún no tienes contraseña, usa «Entrar con código por correo» (se envía a <b>${esc(maskCorreo(CORREO_SUPER))}</b>) y luego créala en Mi cuenta → Cambiar contraseña.`,
+    `<div class="note info">${glifo("info")}<div>Solo la persona propietaria recibe el código. Las demás personas deben usar la pestaña <b>Usuario</b>.</div></div><form id="form-superpass" novalidate>${fld("a-sup-correo", "Correo del propietario", { tipo: "email", req: 1, auto: "username", ph: "correo autorizado" })}${fld("a-sup-pass", "Contraseña", { pw: 1, req: 1 })}${err}<button class="btn big" type="submit" id="a-supp-btn" style="margin-top:12px">Entrar como superadministrador</button></form>
+     <div class="auth-links"><button type="button" data-act="super-enviar" id="a-sup-btn">Entrar con código por correo</button></div>
      <div class="auth-links"><button type="button" data-act="auth-ir" data-v="login">Volver</button></div>`, authTabs("super"));
   if (S.authView === "supercod") return marco("Escribe tu código", `Enviamos un código a <b>${esc(maskCorreo(CORREO_SUPER))}</b>. Revisa tu bandeja de entrada y también spam.`,
     `<form id="form-supercod" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-codigo", "Código recibido por correo", { req: 1, ph: "123456", extra: 'inputmode="numeric" autocomplete="one-time-code" maxlength="10" style="letter-spacing:.2em"' })}${err}<button class="btn big" type="submit" id="a-supc-btn">Entrar</button></form>
@@ -3873,6 +3935,7 @@ function vAuthSB() {
   return `<div class="authwrap"><div class="authcard">${cab}${authTabs("usuario")}<h1>Iniciar sesión</h1><p class="lede">Entra con tu correo y contraseña, o explora el catálogo como visualizador. ¿Aún no tienes cuenta? Usa «Registrarse».</p>
   <form id="form-login" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "username", ph: "nombre@dependencia.gob.mx", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, req: 1 })}${err}<button class="btn big" type="submit">Iniciar sesión</button></form>
   <div class="auth-links"><button type="button" data-act="auth-ir" data-v="recuperar">¿Olvidaste tu contraseña?</button></div>
+  <div class="auth-links" id="a-owner" style="display:none"><button type="button" data-act="super-enviar">Entrar con código por correo</button></div>
   <button class="btn sec big auth-alt" type="button" data-act="auth-ir" data-v="registro">${glifo("user")}Registrarse</button>${vis}</div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
 }
 
