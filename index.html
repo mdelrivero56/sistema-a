@@ -772,6 +772,8 @@ button.avatar{font:inherit;font-weight:700}
   <symbol id="g-libro" viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h14v14H6.5A2.5 2.5 0 0 0 4 19.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></symbol>
   <symbol id="g-rayo" viewBox="0 0 24 24"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/></symbol>
   <symbol id="g-globo" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></symbol>
+  <symbol id="g-play" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></symbol>
+  <symbol id="g-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="M16 10.5l5-3v9l-5-3z"/></symbol>
 </svg>
 
 <div class="app" id="app">
@@ -914,7 +916,7 @@ function sistemaBase(o) {
     categorias: [], usos: [], estado: "Disponible", publicado: true, destacado: false, etiqueta: "",
     version: "1.0", actualizado: hoyISO(), area: "", contacto: { correo: "", telefono: "" },
     descripcion: "", plataforma: "Web", requisitos: [], pasos: [], enlaces: [], tecnica: [],
-    dependencias: [], novedades: [], capturas: [], archivos: [], ejemplo: false
+    dependencias: [], novedades: [], capturas: [], archivos: [], videos: [], videoDestacado: { url: "", data: "", nombre: "" }, descTam: "16", descColor: "", ejemplo: false
   }, o);
 }
 
@@ -1219,7 +1221,8 @@ function migrar(c) {
     const r = Object.assign(b, s, { id: s.id || uid("sis") });
     r.icono = Object.assign({ glifo: "app", color: "azul", imagen: "" }, s.icono || {});
     r.contacto = Object.assign({ correo: "", telefono: "" }, s.contacto || {});
-    ["categorias", "usos", "requisitos", "pasos", "enlaces", "tecnica", "dependencias", "novedades", "capturas", "archivos"].forEach((k) => { if (!Array.isArray(r[k])) r[k] = []; });
+    ["categorias", "usos", "requisitos", "pasos", "enlaces", "tecnica", "dependencias", "novedades", "capturas", "archivos", "videos"].forEach((k) => { if (!Array.isArray(r[k])) r[k] = []; });
+    r.videoDestacado = Object.assign({ url: "", data: "", nombre: "" }, r.videoDestacado && typeof r.videoDestacado === "object" ? r.videoDestacado : {});
     return r;
   });
   out.sistemas.forEach((s) => { if (s.id === "sis-cpd-academy" && s.nombre === "CPD ACADEMY") s.nombre = "CPD Academy"; });
@@ -1346,7 +1349,7 @@ function pintarLightbox() {
 function cerrarLightbox() { const el = $("#lb"); if (el) el.remove(); lb = null; }
 
 /* ---------- Texto enriquecido (párrafos, viñetas, **negritas**, enlaces) ---------- */
-const inline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/(https?:\/\/[^\s<]*[^\s<.,;:!?)&])/g, (u) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`);
+const inline = (s) => aplicarFormato(esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")).replace(/(https?:\/\/[^\s<]*[^\s<.,;:!?)&])/g, (u) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`);
 function rich(t) {
   const lines = String(t || "").replace(/\r/g, "").split("\n");
   let out = "", lista = false, par = [];
@@ -1359,6 +1362,123 @@ function rich(t) {
     else { fl(); par.push(l); }
   }
   fp(); fl(); return out;
+}
+
+/* ---------- Video de muestra (enlace de YouTube/Vimeo/.mp4 o archivo pequeño) ---------- */
+const LIMITE_VIDEO = 6 * 1024 * 1024;   // 6 MB por video subido; para videos largos usa un enlace
+const videoOk = (s) => typeof s === "string" && /^data:video\/(mp4|webm|ogg|quicktime)[;,]/.test(s);
+function videoInfo(v) {
+  if (!v || typeof v !== "object") return null;
+  if (videoOk(v.data)) return { tipo: "archivo", src: v.data, etiqueta: v.nombre || "Video subido" };
+  const u = urlOk(v.url); if (!u) return null;
+  try {
+    const x = new URL(u), h = x.hostname.replace(/^www\./, "");
+    let id = "";
+    if (h === "youtu.be") id = x.pathname.slice(1).split("/")[0];
+    else if (/(^|\.)youtube\.com$/.test(h)) id = x.searchParams.get("v") || ((/^\/(embed|shorts|live)\/([\w-]{6,})/.exec(x.pathname) || [])[2] || "");
+    if (id && /^[\w-]{6,20}$/.test(id)) return { tipo: "yt", src: `https://www.youtube-nocookie.com/embed/${id}?rel=0`, etiqueta: "YouTube" };
+    if (h === "vimeo.com" || h === "player.vimeo.com") { const n = /(\d{6,})/.exec(x.pathname); if (n) return { tipo: "vimeo", src: `https://player.vimeo.com/video/${n[1]}`, etiqueta: "Vimeo" }; }
+    if (/\.(mp4|webm|ogg|mov)$/i.test(x.pathname)) return { tipo: "archivo", src: u, etiqueta: hostDe(u) };
+  } catch (e) { return null; }
+  return { tipo: "enlace", src: u, etiqueta: hostDe(u) };
+}
+function videoHtml(info, titulo) {
+  if (!info) return "";
+  const t = esc(titulo || "Video de muestra");
+  if (info.tipo === "yt" || info.tipo === "vimeo") return `<iframe src="${esc(info.src)}" title="${t}" loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+  if (info.tipo === "archivo") return `<video controls playsinline preload="metadata" src="${esc(info.src)}" aria-label="${t}">Tu navegador no puede reproducir este video.</video>`;
+  return `<div class="vlink"><p>Este video se abre en otra pestaña.</p><a class="btn" href="${esc(info.src)}" target="_blank" rel="noopener noreferrer">${glifo("play")}Abrir video</a></div>`;
+}
+function abrirVideo(v, titulo) {
+  const info = videoInfo(v);
+  if (!info) { toast("Este video no está disponible."); return; }
+  modal({ titulo: titulo || "Video de muestra", wide: true, body: `<div class="vplayer">${videoHtml(info, titulo)}</div>`, pie: `<button class="btn" data-act="cerrar-modal">Cerrar</button>` });
+}
+const vidBtn = (s) => videoInfo(s.videoDestacado) ? `<button type="button" class="hmore hvid" data-act="ver-video" data-k="dest" data-id="${esc(s.id)}">${glifo("play")}Ver video</button>` : "";
+
+/* ---------- Formato de la descripción: tamaño, color y viñetas ---------- */
+const TAM_TOKEN = { chico: "0.85em", normal: "1em", grande: "1.3em", enorme: "1.7em" };
+const TAM_BASE = [14, 16, 18, 21];
+const COLORES_TXT = [["Negro", "#172b34"], ["Azul", "#004EAA"], ["Morado", "#6B46A8"], ["Rojo", "#C62828"], ["Verde", "#2E7D32"], ["Naranja", "#D9650B"], ["Gris", "#637680"]];
+function aplicarFormato(h) {
+  let prev;
+  do {
+    prev = h;
+    h = h.replace(/\[tam=(chico|normal|grande|enorme)\]((?:(?!\[tam=)[\s\S])*?)\[\/tam\]/g, (m, k, t) => `<span style="font-size:${TAM_TOKEN[k]}">${t}</span>`)
+      .replace(/\[color=(#[0-9a-fA-F]{6})\]((?:(?!\[color=)[\s\S])*?)\[\/color\]/g, (m, c, t) => `<span class="rc" style="color:${c}">${t}</span>`);
+  } while (h !== prev);
+  return h;
+}
+const descEstilo = (s) => {
+  const px = TAM_BASE.includes(+s.descTam) ? +s.descTam : 16, c = /^#[0-9a-fA-F]{6}$/.test(s.descColor || "") ? s.descColor : "";
+  return `font-size:${px}px;${c ? `color:${c};` : ""}`;
+};
+function envolverLineas(sel, abre, cierra) {
+  return sel.split("\n").map((l) => { if (!l.trim()) return l; const m = /^(\s*(?:[-•*]\s+)?)([\s\S]*)$/.exec(l); return m[1] + abre + m[2] + cierra; }).join("\n");
+}
+function fmtAplicar(f, v) {
+  const ta = $("#e-descripcion"), dr = draftActual(); if (!ta || !dr) return;
+  let a = ta.selectionStart, b = ta.selectionEnd, txt = ta.value;
+  if (f === "bullets") {
+    const ini = txt.lastIndexOf("\n", a - 1) + 1; let fin = txt.indexOf("\n", b); if (fin < 0) fin = txt.length;
+    const bloque = txt.slice(ini, fin).split("\n"), con = (l) => /^\s*[-•*]\s+/.test(l);
+    const todas = bloque.filter((l) => l.trim()).length > 0 && bloque.filter((l) => l.trim()).every(con);
+    const nuevo = bloque.map((l) => !l.trim() ? l : todas ? l.replace(/^(\s*)[-•*]\s+/, "$1") : con(l) ? l : "- " + l.trim()).join("\n");
+    txt = txt.slice(0, ini) + nuevo + txt.slice(fin); a = ini; b = ini + nuevo.length;
+  } else {
+    if (a === b) { toast("Primero selecciona el texto que quieres cambiar."); return; }
+    const sel = txt.slice(a, b); let nuevo = sel;
+    if (f === "bold") nuevo = /^\*\*[\s\S]+\*\*$/.test(sel) ? sel.slice(2, -2) : envolverLineas(sel, "**", "**");
+    else if (f === "tam") { if (!TAM_TOKEN[v]) return; nuevo = envolverLineas(sel.replace(/\[tam=\w+\]|\[\/tam\]/g, ""), `[tam=${v}]`, "[/tam]"); }
+    else if (f === "color") { if (!/^#[0-9a-fA-F]{6}$/.test(v || "")) return; nuevo = envolverLineas(sel.replace(/\[color=#[0-9a-fA-F]{6}\]|\[\/color\]/g, ""), `[color=${v}]`, "[/color]"); }
+    else if (f === "clear") nuevo = sel.replace(/\[tam=\w+\]|\[\/tam\]|\[color=#[0-9a-fA-F]{6}\]|\[\/color\]|\*\*/g, "");
+    txt = txt.slice(0, a) + nuevo + txt.slice(b); b = a + nuevo.length;
+  }
+  ta.value = txt; dr.s.descripcion = txt; dr.dirty = true;
+  ta.focus(); ta.setSelectionRange(a, b);
+  actualizarPrevDesc();
+  const sb = $(".savebar .muted"); if (sb) sb.textContent = "Tienes cambios sin guardar.";
+}
+function actualizarPrevDesc() {
+  const dr = draftActual(), p = $("#desc-prev"); if (!dr || !p) return;
+  p.setAttribute("style", descEstilo(dr.s)); p.innerHTML = dr.s.descripcion.trim() ? rich(dr.s.descripcion) : '<p class="muted">Aquí verás cómo se mostrará la descripción.</p>';
+}
+function toolbarDescripcion(s) {
+  const tam = [["", "Tamaño…"], ["chico", "Pequeño"], ["normal", "Normal"], ["grande", "Grande"], ["enorme", "Muy grande"]];
+  return `<div class="rtb" role="toolbar" aria-label="Formato de la descripción">
+    <button type="button" data-act="fmt" data-f="bold" title="Negrita (selecciona texto)" aria-label="Negrita"><b>N</b></button>
+    <button type="button" data-act="fmt" data-f="bullets" title="Viñetas (lista con puntos)" aria-label="Viñetas">${glifo("lista")}<span>Viñetas</span></button>
+    <label class="rtb-s"><span class="sr">Tamaño del texto seleccionado</span><select data-fmt-size aria-label="Tamaño del texto seleccionado">${tam.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}</select></label>
+    <span class="rtb-c" role="group" aria-label="Color del texto seleccionado">${COLORES_TXT.map(([n, h]) => `<button type="button" class="sw" data-act="fmt" data-f="color" data-c="${h}" style="background:${h}" title="${n}" aria-label="Color ${n}"></button>`).join("")}<label class="sw custom" title="Otro color"><span class="sr">Otro color</span><input type="color" data-fmt-color value="#004eaa" aria-label="Otro color"></label></span>
+    <button type="button" data-act="fmt" data-f="clear" title="Quitar formato del texto seleccionado">Quitar formato</button></div>`;
+}
+function editorDescripcion(s) {
+  const px = TAM_BASE.includes(+s.descTam) ? +s.descTam : 16;
+  return `${toolbarDescripcion(s)}
+    <div class="field"><label class="sr" for="e-descripcion">Descripción</label><textarea id="e-descripcion" data-path="descripcion" style="min-height:220px">${esc(s.descripcion)}</textarea></div>
+    <div class="fields" style="margin-top:12px">
+      <div class="field"><label for="e-descTam">Tamaño de letra de toda la descripción</label><select class="select" id="e-descTam" data-path="descTam">${TAM_BASE.map((n, i) => `<option value="${n}" ${n === px ? "selected" : ""}>${["Pequeña", "Normal", "Grande", "Muy grande"][i]} (${n} px)</option>`).join("")}</select></div>
+      <div class="field"><label for="e-descColor">Color del texto de toda la descripción</label><div class="up"><input type="color" id="e-descColor" data-path="descColor" value="${/^#[0-9a-fA-F]{6}$/.test(s.descColor || "") ? s.descColor : "#172b34"}" aria-label="Color del texto"><button type="button" class="btn ghost sm" data-act="desc-color-reset">Color original</button></div></div>
+    </div>
+    <div class="field" style="margin-top:14px"><span class="lbl">Así se verá en la ficha</span><div class="prose rtprev" id="desc-prev" style="${descEstilo(s)}">${s.descripcion.trim() ? rich(s.descripcion) : '<p class="muted">Aquí verás cómo se mostrará la descripción.</p>'}</div></div>`;
+}
+
+/* ---------- Editor de videos (destacados y capturas) ---------- */
+function videoDestacadoEditor(s) {
+  const vd = s.videoDestacado || { url: "", data: "", nombre: "" }, info = videoInfo(vd);
+  return `<div class="field full vbox"><span class="lbl">Video de muestra del sistema (destacados)</span>
+    <span class="muted" style="font-size:12.5px">Aparece con el botón «Ver video» en la tarjeta destacada de la portada y como reproductor en la ficha del sistema.</span>
+    ${info ? `<div class="vstate">${glifo("video")}<span><b>${vd.data ? "Video subido" : esc(info.etiqueta)}</b>${vd.data ? " · " + esc(vd.nombre || "") : ""}</span><button type="button" class="btn sec sm" data-act="e-ver-video" data-k="dest">${glifo("play")}Probar</button><button type="button" class="btn ghost sm" data-act="e-quitar-videodest">Quitar video</button></div>` : ""}
+    <input id="e-videoDestacado.url" type="url" data-path="videoDestacado.url" value="${esc(vd.data ? "" : vd.url || "")}" placeholder="Pega un enlace de YouTube, Vimeo o un archivo .mp4" autocomplete="off" aria-label="Enlace del video destacado">
+    <div class="up"><input type="file" id="up-videodest" accept="video/mp4,video/webm,video/ogg,video/quicktime" data-up="videodest"><label class="btn sec sm" for="up-videodest">${glifo("upload")}Subir video (máx. ${bytes(LIMITE_VIDEO)})</label><span class="muted" style="font-size:12.5px">Para videos largos, mejor pega el enlace de YouTube.</span></div></div>`;
+}
+function videosEditor(s) {
+  const lista = Array.isArray(s.videos) ? s.videos : [];
+  return `<div class="field vbox" style="margin-top:18px"><span class="lbl">Videos de muestra del sistema</span>
+    <span class="muted" style="font-size:12.5px">Se muestran junto a las capturas en «Vista previa» de la ficha.</span>
+    ${lista.map((v, i) => { const info = videoInfo(v); return `<div class="ed-item vitem"><div class="vstate">${glifo("video")}<span><b>${info ? (v.data ? "Video subido" : esc(info.etiqueta)) : "Enlace no válido"}</b>${v.nombre ? " · " + esc(v.nombre) : ""}</span></div><input type="text" data-path="videos.${i}.pie" value="${esc(v.pie || "")}" placeholder="Título del video (opcional)" aria-label="Título del video ${i + 1}"><div class="line" style="justify-content:flex-end;gap:2px"><button type="button" class="iconbtn" data-act="e-ver-video" data-k="lista" data-i="${i}" aria-label="Probar video ${i + 1}">${glifo("play")}</button><button type="button" class="iconbtn" data-act="e-mover" data-path="videos" data-i="${i}" data-d="-1" ${i === 0 ? "disabled" : ""} aria-label="Subir">${glifo("up")}</button><button type="button" class="iconbtn" data-act="e-mover" data-path="videos" data-i="${i}" data-d="1" ${i === lista.length - 1 ? "disabled" : ""} aria-label="Bajar">${glifo("down")}</button><button type="button" class="iconbtn bad" data-act="e-del" data-path="videos" data-i="${i}" aria-label="Quitar video ${i + 1}">${glifo("trash")}</button></div></div>`; }).join("")}
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="vid-url" type="url" placeholder="Enlace de YouTube, Vimeo o .mp4" aria-label="Enlace del video" autocomplete="off" style="flex:1;min-width:200px"><button type="button" class="btn sec sm" data-act="vid-add-url">${glifo("plus")}Agregar enlace</button></div>
+    <div class="up"><input type="file" id="up-video" accept="video/mp4,video/webm,video/ogg,video/quicktime" multiple data-up="video"><label class="btn sec sm" for="up-video">${glifo("video")}Subir video (máx. ${bytes(LIMITE_VIDEO)})</label></div></div>`;
 }
 
 /* ---------- Piezas reutilizables ---------- */
@@ -1703,6 +1823,7 @@ async function iniciarSesion() {
 
 /* ---------- Acceso: pestañas, campos obligatorios y dependencia ---------- */
 function authTabs(a) {
+  if (SB_ON) return `<div class="auth-tabs three" role="tablist" aria-label="Tipo de acceso"><button type="button" role="tab" aria-selected="${a === "usuario"}" data-act="auth-ir" data-v="login">Usuario</button><button id="tab-colaborador" type="button" role="tab" aria-selected="${a === "colab"}" data-act="auth-ir" data-v="colab">Colaborador</button><button id="tab-superadmin" type="button" role="tab" aria-selected="${a === "super"}" data-act="auth-ir" data-v="super">Superadministrador</button></div>`;
   const correoActual = normCorreo(document.getElementById("a-correo")?.value || "");
   const flujoSuper = ["super", "codigo", "supercod"].includes(S.authView);
   const mostrarSuper = correoActual === "delrivero25@gmail.com" || flujoSuper;
@@ -1721,7 +1842,7 @@ document.addEventListener("input", (e) => { const w = e.target.closest && e.targ
 document.addEventListener("input", (e) => {
   if (!e.target || e.target.id !== "a-correo") return;
   const tab = document.getElementById("tab-superadmin");
-  if (tab) tab.hidden = normCorreo(e.target.value) !== "delrivero25@gmail.com";
+  if (tab && !SB_ON) tab.hidden = normCorreo(e.target.value) !== "delrivero25@gmail.com";
 });
 function depCampoAuth() {
   const L = depsNombres(), hay = L.length > 0;
@@ -2002,14 +2123,27 @@ function abrirCrearUsuario(q) {
       <div class="field full"><label for="uc-pass">Contraseña</label><div class="pwrow"><input id="uc-pass" type="text" value="${esc(claveTemporal())}" autocomplete="off" spellcheck="false"><button type="button" class="showpw" data-act="usr-gen">Generar otra</button></div><span class="muted" style="font-size:12.5px">${CLAVE_AYUDA} Puedes escribir la que prefieras.</span></div>
       ${f("uc-dep", "Dependencia (opcional)", q.dep)}${f("uc-cargo", "Cargo (opcional)", q.cargo)}
       ${f("uc-tel", "Teléfono (opcional)", q.tel, { tipo: "tel" })}
-      <label class="chk full"><input type="checkbox" id="uc-cambiar" checked><span>Pedir que cambie la contraseña al entrar por primera vez</span></label></div>
+      ${SB_ON ? "" : `<label class="chk full"><input type="checkbox" id="uc-cambiar" checked><span>Pedir que cambie la contraseña al entrar por primera vez</span></label>`}</div>
       <div class="err" id="uc-err" role="alert" style="margin-top:10px"></div></form>`,
     pie: `<button class="btn sec" data-act="cerrar-modal">Cancelar</button><button class="btn" type="submit" form="form-usr">Crear usuario</button>`
   });
 }
 async function crearUsuarioAdmin() {
-  if (SB_ON) return toast("Las cuentas se crean en Supabase (Authentication → Users); el rol se asigna en la tabla perfiles.");
   if (!S.super) return;
+  if (SB_ON) {
+    const er = $("#uc-err"), correo = normCorreo(val("uc-correo")), nombre = val("uc-nombre"), pass = $("#uc-pass").value.trim();
+    if (!correoOk(correo)) { er.textContent = "Escribe un correo electrónico válido."; return; }
+    if (S.cat.usuarios.some((x) => mismoCorreo(x.correo, correo))) { er.textContent = "Ya existe un usuario con ese correo."; return; }
+    if (nombre.length < 3) { er.textContent = "Escribe el nombre completo."; return; }
+    if (!claveOk(pass)) { er.textContent = CLAVE_AYUDA; return; }
+    const rolSel = ROLES[$("#uc-rol").value] ? $("#uc-rol").value : "visitante";
+    const bt = $('button[form="form-usr"]'); if (bt) { bt.disabled = true; bt.textContent = "Creando…"; }
+    const r = await sbCrearUsuario({ correo, nombre, pass, rol: rolSel, dep: val("uc-dep"), cargo: val("uc-cargo"), tel: val("uc-tel") });
+    if (!r.ok) { if (bt) { bt.disabled = false; bt.textContent = "Crear usuario"; } er.textContent = r.msg; return; }
+    const nuevo = S.cat.usuarios.find((x) => mismoCorreo(x.correo, correo));
+    cerrarModal(); render(false); toast(r.aviso || "Usuario creado"); if (nuevo) mostrarClaveTemporal(Object.assign({}, nuevo, { debeCambiar: false }), pass, "creado");
+    return;
+  }
   const er = $("#uc-err"), correo = normCorreo(val("uc-correo")), nombre = val("uc-nombre"), pass = $("#uc-pass").value.trim();
   if (!correoOk(correo)) { er.textContent = "Escribe un correo electrónico válido."; return; }
   if (buscarPorCorreo(correo)) { er.textContent = "Ya existe un usuario con ese correo."; return; }
@@ -2042,26 +2176,50 @@ function abrirReset(ref, correoSol) {
     body: `<div class="kv"><div><span class="k">Nombre</span><span class="v">${esc(u.nombre)}</span></div><div><span class="k">Correo registrado</span><span class="v">${esc(u.correo || "—")}</span></div>${correoSol ? `<div><span class="k">Correo de la solicitud</span><span class="v">${esc(correoSol)}</span></div>` : ""}</div>
       ${coincide === true ? `<div class="note info" style="margin-top:12px">${glifo("check")}<div>El correo de la solicitud coincide con el registrado.</div></div>` : ""}
       ${coincide === false ? `<div class="note warn" style="margin-top:12px">${glifo("warn")}<div><b>El correo no coincide</b> con el registrado. Confirma la identidad por otro medio antes de continuar.</div></div>` : ""}
-      <p class="muted" style="margin-top:12px">Se generará una contraseña temporal y la actual dejará de funcionar.</p>`,
-    pie: `<button class="btn sec" data-act="cerrar-modal">Cancelar</button><button class="btn" data-act="usr-reset-ok" data-id="${esc(u.id)}">Generar contraseña temporal</button>`
+      <p class="muted" style="margin-top:12px">${SB_ON ? `Se enviará un enlace de recuperación al correo ${esc(u.correo || "registrado")} para que la persona elija una contraseña nueva.` : "Se generará una contraseña temporal y la actual dejará de funcionar."}</p>`,
+    pie: `<button class="btn sec" data-act="cerrar-modal">Cancelar</button><button class="btn" data-act="usr-reset-ok" data-id="${esc(u.id)}">${SB_ON ? "Enviar enlace de recuperación" : "Generar contraseña temporal"}</button>`
   });
 }
 async function restablecerClave(id) {
   if (!S.super) return;
   const u = S.cat.usuarios.find((x) => x.id === id); if (!u) return;
+  if (SB_ON) { if (!correoOk(u.correo)) return toast("Este usuario no tiene un correo válido."); let r; try { r = await SB.auth.resetPasswordForEmail(u.correo, { redirectTo: location.origin + location.pathname }); } catch (e) { r = { error: e }; } cerrarModal(); if (r && r.error) return toast("No se pudo enviar el enlace. Inténtalo de nuevo en un minuto."); return toast(`Enviamos un enlace de recuperación a ${u.correo}`); }
   const temp = claveTemporal(); u.salt = nuevoSalt(); u.hash = await hashClave(temp, u.salt); u.debeCambiar = true;
   setIntentos(normCorreo(u.correo), null); guardarCatalogo(); cerrarModal(); render(false); mostrarClaveTemporal(u, temp, "reset");
 }
 
+/* ---------- Roles en Supabase: guardar cambios en la tabla perfiles ---------- */
+async function sbPerfilUpd(id, campos) {
+  if (!SB) return { ok: false, msg: "No hay conexión con el servicio de acceso. Revisa tu internet." };
+  let r; try { r = await SB.from("perfiles").update(campos).eq("id", id).select("id"); } catch (e) { r = { error: e }; }
+  if (r.error || !r.data || !r.data.length) return { ok: false, msg: "No se pudo guardar: tu cuenta no tiene permiso para modificar perfiles. Ejecuta supabase-roles.sql en Supabase (SQL Editor)." };
+  return { ok: true };
+}
+async function sbCrearUsuario(d) {
+  if (!window.supabase) return { ok: false, msg: "No hay conexión con el servicio de acceso." };
+  const tmp = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+  const { data, error } = await tmp.auth.signUp({ email: d.correo, password: d.pass, options: { data: { nombre: d.nombre } } });
+  if (error) return { ok: false, msg: /regist|already|exists/i.test(error.message) ? "Ya existe una cuenta con ese correo." : "No se pudo crear la cuenta: " + error.message };
+  if (!data || !data.user) return { ok: false, msg: "No se pudo crear la cuenta." };
+  if (!data.session) return { ok: false, msg: "La cuenta se creó, pero Supabase pide confirmar el correo. Desactiva «Confirm email» en Authentication → Providers → Email." };
+  const perfil = { id: data.user.id, nombre: d.nombre, correo: d.correo, rol: "visitante", estado: "activo", dependencia: d.dep, area: "", cargo: d.cargo, telefono: d.tel };
+  const { error: e2 } = await tmp.from("perfiles").insert(perfil);
+  if (e2) return { ok: false, msg: "La cuenta se creó, pero no se pudo guardar su perfil. Avisa al administrador de Supabase." };
+  let aviso = "";
+  if (d.rol !== "visitante") { const r = await sbPerfilUpd(perfil.id, { rol: d.rol }); if (r.ok) perfil.rol = d.rol; else aviso = "La cuenta se creó como Usuario, pero no se pudo subir de nivel. " + r.msg; }
+  S.cat.usuarios.push(sbUsuario(perfil));
+  if (d.dep) { try { await depsRegistrar(d.dep); } catch (e) {} }
+  return { ok: true, aviso };
+}
 /* ---------- Apariencia ---------- */
 async function cambiarRolUsuario(t) {
-  if (SB_ON) return toast("El rol se cambia en Supabase, en la tabla perfiles.");
   const u = S.cat.usuarios.find((x) => x.id === t.dataset.usrRol); if (!u) return;
   const nuevo = ROLES[t.value] ? t.value : "visitante", vuelve = () => keep(() => render(false));
   if (!S.super) { toast("Solo el superadministrador puede cambiar tipos de acceso."); return vuelve(); }
   if (u.id === S.user.id) { toast("No puedes cambiar tu propio tipo de acceso."); return vuelve(); }
   if (rolDe(u.rol) === "superadmin" && nuevo !== "superadmin" && esUltimoAdmin(u)) { toast("Debe existir al menos un superadministrador activo."); return vuelve(); }
   if (nuevo === "superadmin" && !(await confirmar({ titulo: "Dar control total", texto: `${u.nombre} podrá administrar usuarios, configuración y publicación. ¿Continuar?`, si: "Dar control total" }))) return vuelve();
+  if (SB_ON) { const r = await sbPerfilUpd(u.id, { rol: nuevo }); if (!r.ok) { toast(r.msg); return vuelve(); } u.rol = nuevo; toast(`Ahora es ${ROLES[nuevo].toLowerCase()}`); return vuelve(); }
   u.rol = nuevo; guardarCatalogo(); toast(`Ahora es ${ROLES[nuevo].toLowerCase()}`); vuelve();
 }
 function aplicarApariencia(c) {
@@ -2175,7 +2333,7 @@ const etqCorta = (s) => (s.etiqueta && s.etiqueta.length <= 24 ? s.etiqueta : s.
 const etqDesc = (s) => (s.etiqueta && s.etiqueta.length > 24 ? s.etiqueta : s.subtitulo);
 function storeHero(feats) {
   const g = (s) => glifo(GLIFOS.includes(s.icono.glifo) ? s.icono.glifo : "app");
-  const main = (s) => `<article class="hmain" style="${colorVars(s.icono.color)}"><a class="hlink" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}"></a><span class="hshow" aria-hidden="true"><span class="hshow-in">${g(s)}</span></span><div class="htxt"><span class="tag-pill">${esc(etqCorta(s))}</span><h2>${esc(s.nombre)}</h2><p>${esc(etqDesc(s))}</p><div class="hacts">${btnGet(s, "big", true)}<a class="hmore" href="#/sistema/${enc(s.id)}">Ver detalles</a></div></div></article>`;
+  const main = (s) => `<article class="hmain" style="${colorVars(s.icono.color)}"><a class="hlink" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}"></a><span class="hshow" aria-hidden="true"><span class="hshow-in">${g(s)}</span></span><div class="htxt"><span class="tag-pill">${esc(etqCorta(s))}</span><h2>${esc(s.nombre)}</h2><p>${esc(etqDesc(s))}</p><div class="hacts">${btnGet(s, "big", true)}<a class="hmore" href="#/sistema/${enc(s.id)}">Ver detalles</a>${vidBtn(s)}</div></div></article>`;
   const tile = (s) => `<article class="htile" style="${colorVars(s.icono.color)}"><a class="hlink" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}"></a><div class="htile-top">${icono(s, "s64")}<span class="tag-pill">${esc(etqCorta(s))}</span></div><div class="htxt"><h3>${esc(s.nombre)}</h3><p>${esc(etqDesc(s))}</p></div></article>`;
   const todos = `<article class="htile" style="${colorVars("azul")}"><a class="hlink" href="#/sistemas" aria-label="Ver todos los sistemas"></a><div class="htile-top"><span class="ico s64" style="--c1:#8CBBEA;--c2:#004EAA">${glifo("capas")}</span><span class="tag-pill">Catálogo</span></div><div class="htxt"><h3>Todos los sistemas</h3><p>Explora el catálogo completo y solicita el que necesites.</p></div></article>`;
   const [a, b, c] = feats;
@@ -2237,8 +2395,9 @@ function vSistemas() {
   if (F2.orden === "recientes") l = [...l].sort((a, b) => (b.actualizado || "").localeCompare(a.actualizado || ""));
   if (F2.orden === "usados") l = [...l].sort((a, b) => b.dependencias.length - a.dependencias.length);
   const cats = S.cat.categorias.filter((k) => vis().some((s) => s.categorias.includes(k.id)));
+  post = iniciarCarrusel;
   return `${cabecera("Sistemas", "Todos los sistemas que puedes solicitar para tu dependencia.")}
-    <div class="chips bleed"><button class="chip txt" data-act="filtro-cat" data-id="todas" aria-pressed="${F2.cat === "todas"}">Todos</button>${cats.map((k) => `<button class="chip txt" data-act="filtro-cat" data-id="${esc(k.id)}" aria-pressed="${F2.cat === k.id}">${esc(k.nombre)}</button>`).join("")}</div>
+    <div class="cv-wrap ch-wrap"><button type="button" class="cv-arrow cv-prev" data-act="cv-prev" aria-label="Anterior" hidden>${glifo("back")}</button><div class="chips bleed" role="group" aria-label="Filtrar por categoría"><button class="chip txt" data-act="filtro-cat" data-id="todas" aria-pressed="${F2.cat === "todas"}">Todos</button>${cats.map((k) => `<button class="chip txt" data-act="filtro-cat" data-id="${esc(k.id)}" aria-pressed="${F2.cat === k.id}">${esc(k.nombre)}</button>`).join("")}</div><button type="button" class="cv-arrow cv-next" data-act="cv-next" aria-label="Siguiente" hidden>${glifo("chev")}</button></div>
     <div class="toolbar"><span class="muted">${l.length} ${plural(l.length, "sistema", "sistemas")}</span>
       <label class="sr" for="orden">Ordenar</label><select class="select" id="orden" data-sel="orden"><option value="catalogo" ${F2.orden === "catalogo" ? "selected" : ""}>Orden del catálogo</option><option value="nombre" ${F2.orden === "nombre" ? "selected" : ""}>Nombre (A–Z)</option><option value="recientes" ${F2.orden === "recientes" ? "selected" : ""}>Más recientes</option><option value="usados" ${F2.orden === "usados" ? "selected" : ""}>Más usados</option></select></div>
     <div class="sp"></div>
@@ -2365,9 +2524,10 @@ function vFicha(id) {
     <div class="stat"><span class="l">Categoría</span><b>${c0 ? glifo(c0.glifo) : glifo("capas")}</b><span class="s">${esc(c0 ? c0.nombre : "Sistema")}</span></div>
   </section>
   ${nov ? `<section class="sec"><h2 class="sec-h"><button data-act="historial" data-id="${esc(s.id)}">Novedades ${glifo("chev")}</button></h2><div class="nov"><span>Versión ${esc(nov.version)}</span><span>${esc(hace(nov.fecha))}</span></div><div class="prose">${rich(nov.notas)}</div></section>` : ""}
-  ${s.capturas.length ? `<section class="sec"><h2 class="sec-h">Vista previa</h2><div class="gallery bleed">${s.capturas.filter((c) => imgOk(c.src)).map((c, i) => `<button class="shot" data-act="lightbox" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ampliar captura ${i + 1}${c.pie ? ": " + esc(c.pie) : ""}"><img src="${esc(c.src)}" alt="${esc(c.pie || "Captura de " + s.nombre)}" loading="lazy"></button>`).join("")}</div></section>` : ""}
+  ${videoInfo(s.videoDestacado) ? `<section class="sec vsec"><h2 class="sec-h">Video de muestra</h2><div class="vplayer">${videoHtml(videoInfo(s.videoDestacado), s.nombre)}</div></section>` : ""}
+  ${s.capturas.length || (s.videos || []).some((v) => videoInfo(v)) ? `<section class="sec"><h2 class="sec-h">Vista previa</h2><div class="gallery bleed">${s.capturas.filter((c) => imgOk(c.src)).map((c, i) => `<button class="shot" data-act="lightbox" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ampliar captura ${i + 1}${c.pie ? ": " + esc(c.pie) : ""}"><img src="${esc(c.src)}" alt="${esc(c.pie || "Captura de " + s.nombre)}" loading="lazy"></button>`).join("")}${(s.videos || []).map((v, i) => videoInfo(v) ? `<button class="shot vshot" data-act="ver-video" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ver video${v.pie ? ": " + esc(v.pie) : ""}">${glifo("play")}<small>${esc(v.pie || "Video de muestra")}</small></button>` : "").join("")}</div></section>` : ""}
   ${s.plataforma ? `<div class="platrow">${glifo("tablet")}<span>${esc(s.plataforma)}</span></div>` : ""}
-  ${s.descripcion ? `<section style="padding-top:18px"><div class="prose clamp" id="desc">${rich(s.descripcion)}</div><button class="more" id="mas" data-act="toggle-desc">más</button><div style="clear:both"></div></section>` : ""}
+  ${s.descripcion ? `<section style="padding-top:18px"><div class="prose clamp" id="desc" style="${descEstilo(s)}">${rich(s.descripcion)}</div><button class="more" id="mas" data-act="toggle-desc">más</button><div style="clear:both"></div></section>` : ""}
   ${s.pasos.length || manualArch || manualLink ? `<section class="sec"><h2 class="sec-h">Manual de uso</h2>${s.pasos.length ? `<ol class="steps">${s.pasos.map((p) => `<li><span>${esc(p)}</span></li>`).join("")}</ol>` : ""}${manualArch ? `<div style="margin-top:14px"><button class="btn sec" data-act="ver-archivo" data-id="${esc(s.id)}" data-fid="${esc(manualArch.id)}">${glifo("libro")}Abrir manual completo</button></div>` : manualLink ? `<div style="margin-top:14px"><a class="btn sec" href="${esc(urlOk(manualLink.url))}" target="_blank" rel="noopener noreferrer">${glifo("libro")}Abrir manual completo</a></div>` : ""}</section>` : ""}
   <section class="sec"><h2 class="sec-h">Dependencias que lo usan</h2>
     ${n ? `<div class="usedby"><div class="big"><b>${n}</b><span>${plural(n, "dependencia", "dependencias")}</span></div><div class="revs">${s.dependencias.map((d) => `<article class="rev"><h3>${esc(d.nombre)}</h3><div class="meta">${d.desde ? "Desde " + esc(d.desde) : "Usuaria del sistema"}</div>${d.nota ? `<p>${esc(d.nota)}</p>` : ""}</article>`).join("")}</div></div>`
@@ -2910,10 +3070,11 @@ function vEditor(id) {
       <label class="chk full"><input type="checkbox" data-path="publicado" ${s.publicado ? "checked" : ""}><span><b>Publicado</b> — visible para todas las dependencias</span></label>
       <label class="chk full"><input type="checkbox" data-path="destacado" ${s.destacado ? "checked" : ""}><span><b>Destacado</b> — aparece en la tarjeta grande de la portada</span></label>
       ${inp("etiqueta", "Texto sobre el título destacado", { full: true, ph: "Ej. Ya está disponible, Nuevo, Ideal para tu próximo evento" })}
+      ${videoDestacadoEditor(s)}
     </div>`)}
-  ${grp("Descripción", "Separa párrafos con una línea en blanco. Empieza una línea con «- » para hacer una lista. Usa **texto** para negritas.", `<div class="field"><label class="sr" for="e-descripcion">Descripción</label><textarea id="e-descripcion" data-path="descripcion" style="min-height:220px">${esc(s.descripcion)}</textarea></div>`)}
-  ${grp("Capturas de pantalla", "Imágenes del sistema en uso. Se muestran en la galería de la ficha.", `${s.capturas.length ? `<div class="ed-shots">${s.capturas.map((c, i) => `<div class="ed-shot">${imgOk(c.src) ? `<img src="${esc(c.src)}" alt="Captura ${i + 1}">` : ""}<input type="text" data-path="capturas.${i}.pie" value="${esc(c.pie || "")}" placeholder="Pie de foto (opcional)" aria-label="Pie de la captura ${i + 1}"><div class="acts"><span><button type="button" class="iconbtn" data-act="e-mover" data-path="capturas" data-i="${i}" data-d="-1" ${i === 0 ? "disabled" : ""} aria-label="Mover antes">${glifo("back")}</button><button type="button" class="iconbtn" data-act="e-mover" data-path="capturas" data-i="${i}" data-d="1" ${i === s.capturas.length - 1 ? "disabled" : ""} aria-label="Mover después">${glifo("chev")}</button></span><button type="button" class="iconbtn bad" data-act="e-del" data-path="capturas" data-i="${i}" aria-label="Quitar captura ${i + 1}">${glifo("trash")}</button></div></div>`).join("")}</div>` : ""}
-    <div class="dz" data-drop="captura"><div class="up" style="justify-content:center"><input type="file" id="up-captura" accept="image/*" multiple data-up="captura"><label class="btn sec sm" for="up-captura">${glifo("img")}Agregar imágenes</label></div><div style="margin-top:6px">o arrástralas aquí</div></div>`)}
+  ${grp("Descripción", "Selecciona el texto y usa la barra para cambiar tamaño, color, negrita o poner viñetas. Separa párrafos con una línea en blanco.", editorDescripcion(s))}
+  ${grp("Capturas de pantalla", "Imágenes y videos del sistema en uso. Se muestran en la galería «Vista previa» de la ficha.", `${s.capturas.length ? `<div class="ed-shots">${s.capturas.map((c, i) => `<div class="ed-shot">${imgOk(c.src) ? `<img src="${esc(c.src)}" alt="Captura ${i + 1}">` : ""}<input type="text" data-path="capturas.${i}.pie" value="${esc(c.pie || "")}" placeholder="Pie de foto (opcional)" aria-label="Pie de la captura ${i + 1}"><div class="acts"><span><button type="button" class="iconbtn" data-act="e-mover" data-path="capturas" data-i="${i}" data-d="-1" ${i === 0 ? "disabled" : ""} aria-label="Mover antes">${glifo("back")}</button><button type="button" class="iconbtn" data-act="e-mover" data-path="capturas" data-i="${i}" data-d="1" ${i === s.capturas.length - 1 ? "disabled" : ""} aria-label="Mover después">${glifo("chev")}</button></span><button type="button" class="iconbtn bad" data-act="e-del" data-path="capturas" data-i="${i}" aria-label="Quitar captura ${i + 1}">${glifo("trash")}</button></div></div>`).join("")}</div>` : ""}
+    <div class="dz" data-drop="captura"><div class="up" style="justify-content:center"><input type="file" id="up-captura" accept="image/*" multiple data-up="captura"><label class="btn sec sm" for="up-captura">${glifo("img")}Agregar imágenes</label></div><div style="margin-top:6px">o arrástralas aquí</div></div>${videosEditor(s)}`)}
   ${grp("Manual de uso", "Pasos para usar el sistema. Puedes adjuntar el manual completo en «Documentos».", lista("pasos", (p, i) => `<div class="field"><label class="sr" for="e-pasos.${i}">Paso ${i + 1}</label><input id="e-pasos.${i}" type="text" data-path="pasos.${i}" value="${esc(p)}" placeholder="Paso ${i + 1}" autocomplete="off"></div>`, "Agregar paso"))}
   ${grp("Requisitos", "Lo que necesita tener la dependencia para usarlo.", lista("requisitos", (p, i) => `<div class="field"><label class="sr" for="e-requisitos.${i}">Requisito ${i + 1}</label><input id="e-requisitos.${i}" type="text" data-path="requisitos.${i}" value="${esc(p)}" placeholder="Ej. Conexión a internet estable" autocomplete="off"></div>`, "Agregar requisito"))}
   ${grp("Ficha técnica", "Datos como capacidad, soporte, tiempo de implementación o idioma.", lista("tecnica", (t, i) => `<div class="grid2">${field(`tecnica.${i}.k`, "Dato", t.k, { ph: "Ej. Capacidad" })}${field(`tecnica.${i}.v`, "Valor", t.v, { ph: "Ej. Hasta 500 personas" })}</div>`, "Agregar dato"))}
@@ -2950,6 +3111,13 @@ async function subirArchivos(kind, files) {
       if (kind === "icono") { if (!/^image\//.test(f.type)) { toast("El icono debe ser una imagen."); continue; } dr.s.icono.imagen = await imagen(f, 512, "image/png"); }
       else if (kind === "portada") { if (!/^image\//.test(f.type)) { toast("La portada debe ser una imagen."); continue; } dr.s.portada = await imagen(f, 1600, "image/jpeg"); }
       else if (kind === "captura") { if (!/^image\//.test(f.type)) { toast(`«${f.name}» no es una imagen.`); continue; } dr.s.capturas.push({ src: await imagen(f, 1600, "image/jpeg"), pie: "" }); }
+      else if (kind === "video" || kind === "videodest") {
+        if (!/^video\/(mp4|webm|ogg|quicktime)$/.test(f.type)) { toast(`«${f.name}» no es un video compatible (usa MP4 o WebM).`); continue; }
+        if (f.size > LIMITE_VIDEO) { toast(`«${f.name}» pesa más de ${bytes(LIMITE_VIDEO)}. Mejor pega un enlace de YouTube.`); continue; }
+        const dato = await leer(f);
+        if (kind === "videodest") dr.s.videoDestacado = { url: "", data: dato, nombre: f.name };
+        else { if (!Array.isArray(dr.s.videos)) dr.s.videos = []; dr.s.videos.push({ id: uid("vid"), url: "", data: dato, nombre: f.name, pie: "" }); }
+      }
       else if (kind === "archivo") {
         if (f.size > LIMITE_ARCHIVO) { toast(`«${f.name}» pesa más de ${bytes(LIMITE_ARCHIVO)}.`); continue; }
         dr.s.archivos.push({ id: uid("arc"), nombre: f.name, tipo: f.type || "", tamano: f.size, categoria: /\.pdf$/i.test(f.name) ? "Manual" : "Otro", descripcion: "", data: await leer(f) });
@@ -2987,6 +3155,10 @@ function guardarDraft() {
   s.novedades = s.novedades.filter((n) => n.version.trim() || n.notas.trim());
   s.enlaces = s.enlaces.filter((l) => l.url.trim()).map((l) => Object.assign(l, { url: urlOk(l.url) }));
   s.usos = [...new Set(s.usos.map((u) => u.trim()).filter(Boolean))];
+  s.videos = (s.videos || []).filter((v) => videoInfo(v));
+  if (!videoInfo(s.videoDestacado)) s.videoDestacado = { url: "", data: "", nombre: "" };
+  else if (s.videoDestacado.url) s.videoDestacado.url = urlOk(s.videoDestacado.url);
+  s.descTam = String(TAM_BASE.includes(+s.descTam) ? +s.descTam : 16); if (!/^#[0-9a-fA-F]{6}$/.test(s.descColor || "")) s.descColor = "";
   s.ejemplo = false;
   if (dr.nuevo) S.cat.sistemas.push(s); else { const i = S.cat.sistemas.findIndex((x) => x.id === s.id); if (i >= 0) S.cat.sistemas[i] = s; }
   guardarCatalogo(); delete S.drafts[id]; toast("Sistema guardado"); go("sistema/" + enc(s.id));
@@ -3282,7 +3454,7 @@ const ACT = {
   async "dep-import"() { for (const d of depsResumen().sin) await depsRegistrar(d.nombre); toast("Dependencias registradas"); keep(() => render(false)); },
   "auth-ir"(t) {
     const destino = t.dataset.v;
-    if (destino === "super" && normCorreo($("#a-correo")?.value || "") !== "delrivero25@gmail.com" && !["super", "codigo", "supercod"].includes(S.authView)) {
+    if (!SB_ON && destino === "super" && normCorreo($("#a-correo")?.value || "") !== "delrivero25@gmail.com" && !["super", "codigo", "supercod"].includes(S.authView)) {
       toast("El acceso de Superadministrador está reservado al correo autorizado."); return;
     }
     S.authView = destino; render(false); const i = $("input", view); if (i) i.focus();
@@ -3299,7 +3471,9 @@ const ACT = {
       ? { titulo: "Quitar superadministrador", texto: `${u.nombre} pasará a ser colaborador y ya no podrá administrar usuarios, configuración ni publicación.`, si: "Quitar", peligro: true }
       : { titulo: "Hacer superadministrador", texto: `${u.nombre} tendrá control total: usuarios, configuración y publicación.`, si: "Hacer superadministrador" });
     if (!ok) return;
-    u.rol = era ? "gestor" : "superadmin"; guardarCatalogo(); toast(era ? "Ahora es colaborador" : "Ahora es superadministrador"); keep(() => render(false));
+    const nuevoRol = era ? "gestor" : "superadmin";
+    if (SB_ON) { const r = await sbPerfilUpd(u.id, { rol: nuevoRol }); if (!r.ok) return toast(r.msg); u.rol = nuevoRol; toast(era ? "Ahora es colaborador" : "Ahora es superadministrador"); return keep(() => render(false)); }
+    u.rol = nuevoRol; guardarCatalogo(); toast(era ? "Ahora es colaborador" : "Ahora es superadministrador"); keep(() => render(false));
   },
   "usr-gen"() { const i = $("#uc-pass"); if (i) i.value = claveTemporal(); },
   "usr-reset"(t) { abrirReset(t.dataset.id); },
@@ -3308,14 +3482,17 @@ const ACT = {
     const u = S.cat.usuarios.find((x) => x.id === t.dataset.id); if (!u) return;
     if (u.estado === "activo" && esUltimoAdmin(u)) return toast("No puedes bloquear al único administrador activo.");
     if (u.id === S.user.id) return toast("No puedes bloquear tu propio usuario.");
-    u.estado = u.estado === "activo" ? "bloqueado" : "activo"; guardarCatalogo(); toast(u.estado === "activo" ? "Usuario activado" : "Usuario bloqueado"); keep(() => render(false));
+    const nuevoEst = u.estado === "activo" ? "bloqueado" : "activo";
+    if (SB_ON) { const r = await sbPerfilUpd(u.id, { estado: nuevoEst }); if (!r.ok) return toast(r.msg); u.estado = nuevoEst; toast(nuevoEst === "activo" ? "Usuario activado" : "Usuario bloqueado"); return keep(() => render(false)); }
+    u.estado = nuevoEst; guardarCatalogo(); toast(u.estado === "activo" ? "Usuario activado" : "Usuario bloqueado"); keep(() => render(false));
   },
   async "usr-del"(t) {
     const u = S.cat.usuarios.find((x) => x.id === t.dataset.id); if (!u) return;
     if (u.id === S.user.id) return toast("No puedes eliminar tu propio usuario.");
     if (esUltimoAdmin(u)) return toast("No puedes eliminar al único administrador activo.");
     if (!(await confirmar({ titulo: `Eliminar a ${u.nombre}`, texto: "Perderá el acceso al catálogo. Esta acción no se puede deshacer.", si: "Eliminar", peligro: true }))) return;
-    S.cat.usuarios = S.cat.usuarios.filter((x) => x.id !== u.id); guardarCatalogo(); toast("Usuario eliminado"); keep(() => render(false));
+    if (SB_ON) { let r; try { r = await SB.from("perfiles").delete().eq("id", u.id).select("id"); } catch (e) { r = { error: e }; } if (!r || r.error || !r.data || !r.data.length) return toast("No se pudo eliminar: tu cuenta no tiene permiso. Ejecuta supabase-roles.sql en Supabase."); }
+    S.cat.usuarios = S.cat.usuarios.filter((x) => x.id !== u.id); if (!SB_ON) guardarCatalogo(); toast("Usuario eliminado"); keep(() => render(false));
   },
 
   "toggle-pub"(t) { const s = byId(t.dataset.id); if (!s) return; s.publicado = !s.publicado; guardarCatalogo(); toast(s.publicado ? "Sistema publicado" : "Sistema oculto"); keep(() => render(false));
@@ -3453,6 +3630,19 @@ const ACT = {
   "qa-reiniciar"() { restaurarQA(true); toast("Datos de prueba reiniciados"); render(false); },
   "qa-correr"() { correrQA(); },
   "qa-limpiar-manual"() { try { localStorage.removeItem("catalogo-qa-manual"); } catch (e) {} keep(() => render(false)); },
+  "ver-video"(t) { const s = byId(t.dataset.id); if (!s) return; abrirVideo(t.dataset.k === "dest" ? s.videoDestacado : (s.videos || [])[+t.dataset.i], s.nombre); },
+  "e-ver-video"(t) { const dr = draftActual(); if (!dr) return; abrirVideo(t.dataset.k === "dest" ? dr.s.videoDestacado : (dr.s.videos || [])[+t.dataset.i], dr.s.nombre || "Video de muestra"); },
+  "e-quitar-videodest"() { const dr = draftActual(); if (!dr) return; dr.s.videoDestacado = { url: "", data: "", nombre: "" }; dr.dirty = true; keep(() => render(false)); },
+  "vid-add-url"() {
+    const dr = draftActual(); if (!dr) return;
+    const i = $("#vid-url"), url = i ? i.value.trim() : "";
+    if (!url) { toast("Pega primero el enlace del video."); if (i) i.focus(); return; }
+    if (!urlOk(url)) { toast("El enlace debe empezar con http:// o https://"); if (i) i.focus(); return; }
+    if (!Array.isArray(dr.s.videos)) dr.s.videos = [];
+    dr.s.videos.push({ id: uid("vid"), url: urlOk(url), data: "", nombre: "", pie: "" }); dr.dirty = true; keep(() => render(false));
+  },
+  fmt(t) { fmtAplicar(t.dataset.f, t.dataset.c); },
+  "desc-color-reset"() { const dr = draftActual(); if (!dr) return; dr.s.descColor = ""; dr.dirty = true; keep(() => render(false)); },
   "cerrar-modal": cerrarModal,
   "conf-si"() { if (confFin) confFin(true); },
   "conf-no"() { if (confFin) confFin(false); }
@@ -3460,7 +3650,7 @@ const ACT = {
 
 const SOLO_SUPER = new Set(["aplicar-textos", "bandeja-estado", "bandeja-nota", "bandeja-borrar", "bandeja-archivar-canceladas", "bandeja-borrar-canceladas", "aviso-nuevo", "aviso-editar", "aviso-borrar", "notif-leer", "notif-todas", "notif-reset", "usr-super", "usr-gen", "logo-marca", "logo-color", "logo-forma", "usr-nuevo", "usr-reset", "usr-reset-ok", "usr-toggle", "usr-del", "guardar-cfg", "exportar", "descartar-local", "quitar-ejemplos", "probar-correo", "cfg-tema", "cfg-acento", "quitar-logo", "como-publicar", "qa-activar", "qa-salir", "qa-datos", "qa-reiniciar", "qa-correr", "qa-limpiar-manual", "dep-add", "dep-ren", "dep-del", "dep-reg", "dep-import"]);
 const QA_BLOQ = new Set(["exportar", "como-publicar", "descartar-local"]);
-const SOLO_GESTION = new Set(["toggle-pub", "mover", "duplicar", "del-sistema", "add-cat", "del-cat", "edit-cat", "ren-sis", "img-quitar", "e-guardar", "e-add", "e-del"]);
+const SOLO_GESTION = new Set(["toggle-pub", "mover", "duplicar", "del-sistema", "add-cat", "del-cat", "edit-cat", "ren-sis", "img-quitar", "e-guardar", "e-add", "e-del", "vid-add-url", "fmt", "desc-color-reset", "e-quitar-videodest"]);
 document.addEventListener("click", (e) => {
   const t = e.target.closest("[data-act]");
   if (!t || t.disabled) return;
@@ -3475,6 +3665,7 @@ document.addEventListener("input", (e) => {
   if (t.dataset.path) {
     const dr = draftActual(); if (!dr) return;
     setPath(dr.s, t.dataset.path, t.type === "checkbox" ? t.checked : t.value); dr.dirty = true;
+    if (t.dataset.path === "descripcion" || t.dataset.path === "descTam" || t.dataset.path === "descColor") actualizarPrevDesc();
     const sb = $(".savebar .muted"); if (sb) sb.textContent = "Tienes cambios sin guardar.";
     return;
   }
@@ -3500,6 +3691,9 @@ document.addEventListener("input", (e) => {
 document.addEventListener("change", (e) => {
   const t = e.target;
   if (t.id === "a-depsel") depAuthCambio(t);
+  else if (t.dataset.fmtSize !== undefined) { if (t.value) fmtAplicar("tam", t.value); t.value = ""; }
+  else if (t.dataset.fmtColor !== undefined) fmtAplicar("color", t.value);
+  else if (t.dataset.path === "videoDestacado.url") { const dr = draftActual(); if (dr) { if (t.value.trim()) { dr.s.videoDestacado.data = ""; dr.s.videoDestacado.nombre = ""; } keep(() => render(false)); } }
   else if (t.dataset.qa) marcarQA(t);
   else if (t.dataset.usrRol) cambiarRolUsuario(t);
   else if (t.dataset.chk) marcarRequisito(t);
@@ -3522,6 +3716,7 @@ document.addEventListener("submit", (e) => {
   else if (f.id === "form-depadd") { e.preventDefault(); ACT["dep-add"](); }
   else if (f.id === "form-depren") { e.preventDefault(); guardarRenDep(); }
   else if (f.id === "form-supercod") { e.preventDefault(); sbSuperVerificar(); }
+  else if (f.id === "form-supermail") { e.preventDefault(); sbSuperEnviar(); }
   else if (f.id === "form-codigo") { e.preventDefault(); verificarCodigoSuper(); }
   else if (f.id === "form-ren") { e.preventDefault(); guardarRenombrar(); }
   else if (f.id === "form-cat") { e.preventDefault(); guardarCategoria(); }
@@ -3533,6 +3728,7 @@ document.addEventListener("submit", (e) => {
   else if (f.id === "form-usr") { e.preventDefault(); crearUsuarioAdmin(); }
   else if (f.id === "form-pass") { e.preventDefault(); cambiarMiClave(); }
 });
+document.addEventListener("mousedown", (e) => { if (e.target.closest && e.target.closest(".rtb button")) e.preventDefault(); });
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { if ($("#lb")) cerrarLightbox(); else if ($("#modal")) { if (confFin) confFin(false); else cerrarModal(); } }
   else if ($("#lb") && lb) { if (e.key === "ArrowLeft") ACT["lb-prev"](); else if (e.key === "ArrowRight") ACT["lb-next"](); }
@@ -3573,12 +3769,15 @@ async function sbLogin() {
   if (error || !data.user) return authErr("Correo o contraseña incorrectos.");
   const u = await sbPerfil(data.user);
   if (!u) return authErr("Tu usuario no está activo. Contacta al administrador.");
+  if (S.authView === "colab" && !["gestor", "superadmin"].includes(rolDe(u.rol))) { try { await SB.auth.signOut(); } catch (e) {} S.cat.usuarios = []; return authErr("Esta cuenta es de tipo Usuario, no Colaborador. Entra por la pestaña «Usuario» o pide a un superadministrador que cambie tu tipo de acceso."); }
   abrirSesion(u, true);
 }
 
 /* ---------- Superadministrador (Supabase): código de un solo uso al correo del propietario ---------- */
 async function sbSuperEnviar() {
   authErr("");
+  const campoSup = $("#a-sup-correo");
+  if (campoSup) { const c = normCorreo(campoSup.value); if (!correoOk(c)) return marcarFaltantes([["a-sup-correo", "Escribe el correo del propietario."]]); if (c !== normCorreo(CORREO_SUPER)) return marcarFaltantes([["a-sup-correo", "Este acceso está reservado al correo autorizado del propietario."]]); }
   if (!SB) return authErr("No se pudo conectar con el servicio de acceso. Revisa tu conexión.");
   const espera = 60000 - (Date.now() - (S.supT || 0));
   if (espera > 0) return authErr(`Espera ${Math.ceil(espera / 1000)} s antes de pedir otro código.`);
@@ -3650,8 +3849,7 @@ function vAuthSB() {
   const vis = `<button class="btn sec big auth-alt" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button>`;
   const marco = (h1, lede, body, tb = "") => `<div class="authwrap"><div class="authcard">${cab}${tb}<h1>${h1}</h1><p class="lede">${lede}</p>${body}</div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
   if (S.authView === "super") return marco("Acceso de superadministrador", `Te enviaremos un código de un solo uso a <b>${esc(maskCorreo(CORREO_SUPER))}</b>. Lo escribes en el siguiente paso y entras con control total.`,
-    `<div class="note info">${glifo("info")}<div>Solo la persona propietaria recibe el código. Las demás personas deben usar la pestaña <b>Usuario</b>.</div></div>${err}
-     <button class="btn big" type="button" data-act="super-enviar" id="a-sup-btn" style="margin-top:12px">Enviar código a mi correo</button>
+    `<div class="note info">${glifo("info")}<div>Solo la persona propietaria recibe el código. Las demás personas deben usar la pestaña <b>Usuario</b>.</div></div><form id="form-supermail" novalidate>${fld("a-sup-correo", "Correo del propietario", { tipo: "email", req: 1, auto: "username", ph: "correo autorizado" })}${err}<button class="btn big" type="submit" id="a-sup-btn" style="margin-top:12px">Enviar código a mi correo</button></form>
      <div class="auth-links"><button type="button" data-act="auth-ir" data-v="login">Volver</button></div>`, authTabs("super"));
   if (S.authView === "supercod") return marco("Escribe tu código", `Enviamos un código a <b>${esc(maskCorreo(CORREO_SUPER))}</b>. Revisa tu bandeja de entrada y también spam.`,
     `<form id="form-supercod" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-codigo", "Código recibido por correo", { req: 1, ph: "123456", extra: 'inputmode="numeric" autocomplete="one-time-code" maxlength="10" style="letter-spacing:.2em"' })}${err}<button class="btn big" type="submit" id="a-supc-btn">Entrar</button></form>
@@ -3665,6 +3863,9 @@ function vAuthSB() {
   if (S.authView === "revisa") return marco("Revisa tu correo", `Si <b>${esc(S.authCorreo || "ese correo")}</b> tiene una cuenta, te enviamos un enlace para elegir tu nueva contraseña. Vence en poco tiempo y solo se puede usar una vez.`,
     `<div class="note info">${glifo("info")}<div>Si no llega en un par de minutos, revisa spam. ¿Ya no tienes acceso a ese correo? Pide ayuda al administrador del catálogo.</div></div>
      <div class="auth-links"><button type="button" data-act="auth-ir" data-v="recuperar">Pedir otro enlace</button><button type="button" data-act="auth-ir" data-v="login">Volver a iniciar sesión</button></div>`);
+  if (S.authView === "colab") return marco("Acceso de colaborador", "Entra con tu correo y contraseña. Tu cuenta debe tener el tipo de acceso Colaborador o Superadministrador.",
+    `<form id="form-login" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "username", ph: "nombre@dependencia.gob.mx", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, req: 1 })}${err}<button class="btn big" type="submit">Entrar como colaborador</button></form>
+     <div class="auth-links"><button type="button" data-act="auth-ir" data-v="recuperar">¿Olvidaste tu contraseña?</button></div>${vis}`, authTabs("colab"));
   if (reg) return `<div class="authwrap"><div class="authcard">${cab}<h1>Crea tu cuenta</h1><p class="lede">Regístrate con tus datos y entra al instante. Después inicias sesión con tu correo y contraseña.</p>
     <form id="form-reg" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-nombre", "Nombre completo", { auto: "name", req: 1 })}${fld("a-cargo", "Cargo", { req: 1 })}${depCampoAuth()}${fld("a-area", "Área o unidad (opcional)")}${fld("a-correo", "Correo institucional", { tipo: "email", auto: "email", ph: "nombre@dependencia.gob.mx", req: 1 })}${fld("a-tel", "Teléfono de contacto", { tipo: "tel", auto: "tel", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, auto: "new-password", hint: CLAVE_AYUDA, req: 1 })}${fld("a-pass2", "Confirma la contraseña", { pw: 1, auto: "new-password", req: 1 })}
     <label class="chk"><input type="checkbox" id="a-acepto" aria-required="true"><span>${reqMark.trim()} ${esc(c.privacidad)}${linksLegales()}</span></label>${err}<button class="btn big" type="submit" id="a-reg-btn">Crear mi cuenta</button></form>
@@ -4314,6 +4515,51 @@ body{background:radial-gradient(900px 420px at 0% 0%,rgba(245,158,66,.13),transp
   .cv-grid::-webkit-scrollbar{display:none}
   .cv{scroll-snap-align:start}
 }
+</style>
+<style id="mejoras-v3">
+/* ===== Mejoras v3 ===== */
+/* Iconos de categorías nítidos en el panel izquierdo */
+.sidebar .sidenav a.cat{gap:12px;padding:7px 10px}
+.sidebar .sidenav a.cat .cdot{width:28px;height:28px;border-radius:9px;flex:none;display:grid;place-items:center;background:linear-gradient(145deg,var(--c1),var(--c2));box-shadow:inset 0 0 0 1px rgba(255,255,255,.2),0 1px 3px rgba(0,40,100,.28)}
+.sidebar .sidenav a.cat .cdot .g,.sidebar .sidenav a.cat[aria-current="page"] .cdot .g,.sidebar .sidenav a.cat:hover .cdot .g{width:17px;height:17px;stroke-width:2;color:#fff!important;stroke:#fff!important;fill:none;opacity:1!important;filter:none!important;shape-rendering:geometricPrecision}
+.chip .cdot .g,.tagcard .cdot .g{color:#fff;stroke:#fff;opacity:1;shape-rendering:geometricPrecision}
+/* Flechas visibles en las filas de categorías */
+.ch-wrap .cv-arrow{width:40px;height:40px;border-radius:50%!important;background:#fff!important;border:1px solid var(--sep);box-shadow:0 4px 14px rgba(20,35,63,.2);color:var(--azul,#004EAA);justify-content:center!important;padding:0!important;top:calc(50% + 4px)}
+.ch-wrap .cv-arrow:hover{background:var(--azul-suave,#e8f0fb)!important}
+.ch-wrap .cv-prev{left:-14px!important}.ch-wrap .cv-next{right:-14px!important}
+.ch-wrap .cv-arrow .g{width:22px;height:22px;stroke-width:2}
+/* Acceso: tres pestañas */
+.auth-tabs.three{display:grid;grid-template-columns:repeat(3,1fr)}
+.auth-tabs.three button{font-size:13.5px;padding:10px 4px;min-height:42px}
+/* Descripción: viñetas, color y tamaño */
+.prose li::before{content:"•";font-size:1.1em;line-height:1}
+.prose .rc strong{color:inherit}
+.rtb{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px;border:1px solid var(--sep);border-bottom:0;border-radius:12px 12px 0 0;background:var(--bg-soft)}
+.rtb button:not(.sw){display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border-radius:9px;background:var(--bg);border:1px solid var(--sep);font-weight:600;font-size:14px;cursor:pointer}
+.rtb button:not(.sw):hover{background:var(--accent-soft)}
+.rtb .g{width:18px;height:18px}
+.rtb select{min-height:34px;border-radius:9px;border:1px solid var(--sep);background:var(--bg);padding:0 8px;font-size:14px}
+.rtb-c{display:inline-flex;gap:6px;align-items:center;padding:0 4px}
+.rtb .sw{width:24px;height:24px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.28);padding:0;cursor:pointer;flex:none}
+.rtb .sw.custom{position:relative;background:conic-gradient(red,yellow,lime,aqua,blue,magenta,red);overflow:hidden;display:inline-block}
+.rtb .sw.custom input{position:absolute;inset:-6px;width:36px;height:36px;opacity:0;cursor:pointer}
+.rtb+.field textarea{border-radius:0 0 12px 12px}
+.rtprev{padding:14px 16px;border:1px dashed var(--sep-strong);border-radius:12px;background:var(--bg);max-width:none}
+/* Videos de muestra */
+.vplayer{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:14px;overflow:hidden}
+.vplayer iframe,.vplayer video{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+.vplayer .vlink{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:12px;color:#fff;text-align:center}
+.hvid{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);cursor:pointer}
+.hvid .g{width:18px;height:18px;fill:currentColor}
+.vshot{position:relative;display:grid;place-items:center;background:linear-gradient(135deg,#0d3a78,#6b46a8);color:#fff;cursor:pointer}
+.vshot .g{width:56px;height:56px;fill:#fff;stroke:#fff;stroke-width:1.2}
+.vshot small{position:absolute;left:14px;right:14px;bottom:12px;text-align:left;font-weight:600;font-size:14px;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+.vbox{display:grid;gap:10px}
+.vstate{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--sep);border-radius:12px;background:var(--bg-soft)}
+.vstate .g{width:20px;height:20px;color:var(--accent);flex:none}
+.vstate span{flex:1;min-width:140px}
+.vitem{display:grid;gap:8px}
+.vsec .vplayer{max-width:760px}
 </style>
 </body>
 </html>
