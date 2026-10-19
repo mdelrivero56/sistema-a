@@ -2357,10 +2357,18 @@ function storeHero(feats) {
 function iniciarCarrusel() {
   $$(".cv-wrap").forEach((w) => {
     const g = $(".cv-grid, .chips", w), p = $(".cv-prev", w), n = $(".cv-next", w);
-    const act = () => { p.hidden = g.scrollLeft <= 2; n.hidden = g.scrollLeft >= g.scrollWidth - g.clientWidth - 2; };
+    if (!g || !p || !n) return;
+    const act = () => {
+      const max = g.scrollWidth - g.clientWidth;
+      p.hidden = max <= 4 || g.scrollLeft <= 2;
+      n.hidden = max <= 4 || g.scrollLeft >= max - 2;
+    };
     g.addEventListener("scroll", act, { passive: true });
-    if ("ResizeObserver" in window) new ResizeObserver(act).observe(g);
-    act();
+    if ("ResizeObserver" in window) { const ro = new ResizeObserver(act); ro.observe(g); Array.from(g.children).forEach((c) => ro.observe(c)); }
+    window.addEventListener("resize", act, { passive: true });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(act);
+    window.addEventListener("load", act, { once: true });
+    act(); requestAnimationFrame(act); setTimeout(act, 300); setTimeout(act, 1200);
   });
 }
 function cardVer(s) {
@@ -4624,5 +4632,23 @@ body{background:radial-gradient(900px 420px at 0% 0%,rgba(245,158,66,.13),transp
 .vitem{display:grid;gap:8px}
 .vsec .vplayer{max-width:760px}
 </style>
+<style id="fix-categorias">
+/* ===== Fix: categorías completas y flechas visibles (también en GitHub Pages / móvil) ===== */
+.ch-wrap{position:relative;min-width:0}
+.ch-wrap .chips{scroll-behavior:smooth;scroll-snap-type:x proximity;overscroll-behavior-x:contain}
+.ch-wrap .chips>*{scroll-snap-align:start}
+.ch-wrap .chips::after{content:"";flex:none;width:56px}
+/* flechas dentro del área visible: nunca se recortan en el borde de la página */
+.ch-wrap .cv-arrow{display:grid!important;z-index:6;width:38px;height:38px;top:calc(50% + 4px)}
+.ch-wrap .cv-arrow[hidden]{display:none!important}
+.ch-wrap .cv-prev{left:2px!important}
+.ch-wrap .cv-next{right:2px!important}
+@media(max-width:900px){
+  .ch-wrap .cv-arrow{display:grid!important;width:34px;height:34px}
+  .ch-wrap .cv-arrow[hidden]{display:none!important}
+  .ch-wrap .cv-arrow .g{width:20px;height:20px}
+}
+</style>
+
 </body>
 </html>
