@@ -3617,6 +3617,7 @@ const ACT = {
   "cambiar-pass"() { abrirCambiarClave(); },
   "cerrar-sesion"() { cerrarModal(); limpiarSesion(); location.hash = "#/"; render(false); toast("Sesión cerrada"); },
   "super-enviar"() { sbSuperEnviar(); },
+  "google-login"() { sbGoogle(); },
   async "dep-add"() { if (!S.super) return; const i = $("#dep-nueva"), n = i ? i.value.trim() : ""; if (n.length < 2) { toast("Escribe el nombre de la dependencia."); return; } if (depsNombres().some((x) => norm(x) === norm(n))) { toast("Esa dependencia ya está en el registro."); return; } await depsRegistrar(n); toast("Dependencia registrada"); keep(() => render(false)); },
   "dep-ren"(t) { abrirRenDep(t.dataset.n); },
   async "dep-del"(t) { if (!(await confirmar({ titulo: "Eliminar dependencia", texto: `«${t.dataset.n}» dejará de aparecer en la lista. Las solicitudes y cuentas anteriores no se modifican.`, si: "Eliminar", peligro: true }))) return; if (await depsEliminar(t.dataset.n)) { toast("Dependencia eliminada"); keep(() => render(false)); } else toast("No se pudo eliminar."); },
@@ -3943,8 +3944,19 @@ async function sbIniciar() {
 }
 async function sbCatalogo() { if (!SB) return null; try { const { data, error } = await SB.from("catalogo").select("data").eq("id", 1).maybeSingle(); S.catErr = error ? error.message || "error" : ""; return data && catValido(data.data) ? data.data : null; } catch (e) { S.catErr = "red"; return null; } }
 const sbUsuario = (p, au) => ({ id: p.id, nombre: p.nombre || (au && au.email) || p.correo, correo: p.correo || (au && au.email) || "", rol: rolDe(p.rol), estado: p.estado || "activo", dependencia: p.dependencia || "", area: p.area || "", cargo: p.cargo || "", telefono: p.telefono || "", sb: true, salt: "", hash: "" });
+const esGoogle = (au) => !!au && ((au.app_metadata && ((au.app_metadata.providers || []).includes("google") || au.app_metadata.provider === "google")) || (au.identities || []).some((i) => i.provider === "google"));
 async function sbPerfil(au) {
-  const { data: p } = await SB.from("perfiles").select("*").eq("id", au.id).maybeSingle();
+  let { data: p } = await SB.from("perfiles").select("*").eq("id", au.id).maybeSingle();
+  if (esGoogle(au)) {
+    /* Google: solo correos permitidos (el propietario siempre entra). El perfil y el rol de administrador los asigna el servidor (supabase-google.sql). */
+    if (!correoPermitido(au.email)) { S.googleErr = avisoDominio(); await SB.auth.signOut(); return null; }
+    const esDueno = normCorreo(au.email) === normCorreo(CORREO_SUPER);
+    if (!p || (esDueno && (rolDe(p.rol) !== "superadmin" || p.estado !== "activo"))) {
+      let rr; try { rr = await SB.rpc("asegurar_perfil_google"); } catch (e) { rr = { error: e }; }
+      if (rr && rr.error) S.googleErr = "No se pudo preparar tu perfil. Ejecuta supabase-google.sql en Supabase (SQL Editor).";
+      ({ data: p } = await SB.from("perfiles").select("*").eq("id", au.id).maybeSingle());
+    }
+  }
   if (!p || p.estado !== "activo") { await SB.auth.signOut(); return null; }
   const u = sbUsuario(p, au); let lista = [u];
   if (rolDe(p.rol) === "superadmin") { const { data } = await SB.from("perfiles").select("*"); if (data) lista = data.map((x) => sbUsuario(x)); }
@@ -3963,6 +3975,20 @@ async function sbLogin() {
   if (S.authView === "colab" && !["gestor", "superadmin"].includes(rolDe(u.rol))) { try { await SB.auth.signOut(); } catch (e) {} S.cat.usuarios = []; return authErr("Esta cuenta es de tipo Usuario, no Colaborador. Entra por la pestaña «Usuario» o pide a un superadministrador que cambie tu tipo de acceso."); }
   abrirSesion(u, true);
 }
+
+async function sbGoogle() {
+  authErr("");
+  if (!SB) return authErr("No se pudo conectar con el servicio de acceso. Revisa tu conexión.");
+  const b = $("#a-google-btn"), tx = b && b.querySelector("span"), orig = tx ? tx.textContent : "";
+  if (b) { b.disabled = true; if (tx) tx.textContent = "Conectando con Google…"; }
+  let error = null;
+  try { ({ error } = await SB.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname, queryParams: { prompt: "select_account" } } })); } catch (e) { error = e; }
+  if (error) {
+    if (b) { b.disabled = false; if (tx) tx.textContent = orig; }
+    authErr(/not enabled|unsupported provider/i.test(error.message || "") ? "El acceso con Google aún no está activado en Supabase (Authentication → Providers → Google)." : "No se pudo iniciar con Google. Inténtalo de nuevo.");
+  }
+}
+window.addEventListener("pageshow", (e) => { if (e.persisted) { const b = $("#a-google-btn"); if (b) { b.disabled = false; const t = b.querySelector("span"); if (t && b.dataset.txt) t.textContent = b.dataset.txt; } } });
 
 async function sbLoginSuper() {
   authErr("");
@@ -4057,6 +4083,7 @@ function vAuthSB() {
   const fld = (id, label, o = {}) => `<div class="field"><label for="${id}">${label}${o.req ? reqMark : ""}</label>${o.pw ? `<div class="pwrow"><input id="${id}" type="password" autocomplete="${o.auto || "current-password"}" ${o.req ? 'aria-required="true"' : ""}><button type="button" class="showpw" data-act="ver-pass" aria-label="Mostrar u ocultar contraseña">Mostrar</button></div>` : `<input id="${id}" type="${o.tipo || "text"}" autocomplete="${o.auto || "off"}" placeholder="${esc(o.ph || "")}" ${o.extra || ""} ${o.req ? 'aria-required="true"' : ""}>`}${o.hint ? `<span class="muted" style="font-size:12.5px">${o.hint}</span>` : ""}</div>`;
   const cab = `<div class="auth-brand"><span class="auth-logo${imgOk(c.logo) ? "" : " lg"}">${logo}</span><div><b>${esc(c.nombre)}</b><small>${esc(c.organizacion)}</small></div></div>`;
   const vis = `<button class="btn sec big auth-alt" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button>`;
+  const gBtn = (t) => `<button type="button" class="btn-google" id="a-google-btn" data-act="google-login" data-txt="${esc(t)}"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12 c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24 c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657 C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36 c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571 c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path></svg><span>${esc(t)}</span></button><div class="auth-or" role="separator"><span>o</span></div>`;
   const marco = (h1, lede, body, tb = "") => `<div class="authwrap"><div class="authcard">${cab}${tb}<h1>${h1}</h1><p class="lede">${lede}</p>${body}</div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
   if (S.authView === "super") return marco("Acceso de superadministrador", `Entra con tu correo y contraseña. Si aún no tienes contraseña, usa «Entrar con código por correo» (se envía a <b>${esc(maskCorreo(CORREO_SUPER))}</b>) y luego créala en Mi cuenta → Cambiar contraseña.`,
     `<div class="note info">${glifo("info")}<div>Solo la persona propietaria recibe el código. Las demás personas deben usar la pestaña <b>Usuario</b>.</div></div><form id="form-superpass" novalidate>${fld("a-sup-correo", "Correo del propietario", { tipo: "email", req: 1, auto: "username", ph: "correo autorizado" })}${fld("a-sup-pass", "Contraseña", { pw: 1, req: 1 })}${err}<button class="btn big" type="submit" id="a-supp-btn" style="margin-top:12px">Entrar como superadministrador</button></form>
@@ -4077,11 +4104,13 @@ function vAuthSB() {
   if (S.authView === "colab") return marco("Acceso de colaborador", "Entra con tu correo y contraseña. Tu cuenta debe tener el tipo de acceso Colaborador o Superadministrador.",
     `<form id="form-login" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "username", ph: "nombre@dependencia.gob.mx", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, req: 1 })}${err}<button class="btn big" type="submit">Entrar como colaborador</button></form>
      <div class="auth-links"><button type="button" data-act="auth-ir" data-v="recuperar">¿Olvidaste tu contraseña?</button></div>${vis}`, authTabs("colab"));
-  if (reg) return `<div class="authwrap"><div class="authcard">${cab}<h1>Crea tu cuenta</h1><p class="lede">Regístrate con tus datos y entra al instante. Después inicias sesión con tu correo y contraseña.</p>
+  if (reg) return `<div class="authwrap"><div class="authcard">${cab}<h1>Crea tu cuenta</h1><p class="lede">Regístrate con tu cuenta de Google o con tus datos y entra al instante.</p>
+    ${gBtn("Registrarse con Google")}
     <form id="form-reg" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-nombre", "Nombre completo", { auto: "name", req: 1 })}${fld("a-cargo", "Cargo", { req: 1 })}${depCampoAuth()}${fld("a-area", "Área o unidad (opcional)")}${fld("a-correo", "Correo institucional", { tipo: "email", auto: "email", ph: "nombre@dependencia.gob.mx", req: 1 })}${fld("a-tel", "Teléfono de contacto", { tipo: "tel", auto: "tel", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, auto: "new-password", hint: CLAVE_AYUDA, req: 1 })}${fld("a-pass2", "Confirma la contraseña", { pw: 1, auto: "new-password", req: 1 })}
     <label class="chk"><input type="checkbox" id="a-acepto" aria-required="true"><span>${reqMark.trim()} ${esc(c.privacidad)}${linksLegales()}</span></label>${err}<button class="btn big" type="submit" id="a-reg-btn">Crear mi cuenta</button></form>
     <div class="auth-links"><button type="button" data-act="auth-ir" data-v="login">Ya tengo cuenta</button></div>${vis}</div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
-  return `<div class="authwrap"><div class="authcard">${cab}${authTabs("usuario")}<h1>Iniciar sesión</h1><p class="lede">Entra con tu correo y contraseña, o explora el catálogo como visualizador. ¿Aún no tienes cuenta? Usa «Registrarse».${DOMINIO_PERMITIDO ? ` Solo se aceptan correos institucionales que terminen en <b>${esc(DOMINIO_PERMITIDO)}</b>.` : ""}</p>
+  return `<div class="authwrap"><div class="authcard">${cab}${authTabs("usuario")}<h1>Iniciar sesión</h1><p class="lede">Entra con tu cuenta de Google o con tu correo y contraseña, o explora el catálogo como visualizador. ¿Aún no tienes cuenta? Usa «Registrarse».${DOMINIO_PERMITIDO ? ` Solo se aceptan correos institucionales que terminen en <b>${esc(DOMINIO_PERMITIDO)}</b>.` : ""}</p>
+  ${gBtn("Iniciar sesión con Google")}
   <form id="form-login" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "username", ph: "nombre@dependencia.gob.mx", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, req: 1 })}${err}<button class="btn big" type="submit">Iniciar sesión</button></form>
   <div class="auth-links"><button type="button" data-act="auth-ir" data-v="recuperar">¿Olvidaste tu contraseña?</button></div>
   <div class="auth-links" id="a-owner" style="display:none"><button type="button" data-act="super-enviar">Entrar con código por correo</button></div>
@@ -4203,7 +4232,12 @@ async function boot() {
   if (SB && S.admin && local && local.sinPublicar && catValido(local)) { const nn = S.cat.notificaciones, uu = S.cat.usuarios; S.cat = migrar(local); S.cat.notificaciones = nn; S.cat.usuarios = uu; S.cat.editado = true; catRev++; sbEnCola(); setTimeout(() => toast("Recuperamos cambios que no se habían publicado (categorías y sistemas) y los estamos publicando."), 900); }
   await cargarDeps();
   if (URL_RECUP) { S.recup = true; S.authView = "nueva"; history.replaceState(null, "", location.pathname + "#/acceso"); }
-  else if (URL_ERR) { S.authView = "recuperar"; history.replaceState(null, "", location.pathname + "#/acceso"); setTimeout(() => toast("El enlace venció o ya se usó. Pide uno nuevo."), 600); }
+  else if (URL_ERR) {
+    const deGoogle = /access_denied|oauth|provider|identity/i.test(location.hash + location.search);
+    S.authView = deGoogle ? "login" : "recuperar"; history.replaceState(null, "", location.pathname + "#/acceso");
+    setTimeout(() => toast(deGoogle ? "No se completó el inicio de sesión con Google." : "El enlace venció o ya se usó. Pide uno nuevo."), 600);
+  }
+  if (S.googleErr) setTimeout(() => toast(S.googleErr), 900);
   window.addEventListener("hashchange", () => render(true));
   render(true);
 }
@@ -4807,6 +4841,17 @@ body{background:radial-gradient(900px 420px at 0% 0%,rgba(245,158,66,.13),transp
 .icb[aria-pressed="true"]{border-color:var(--azul,#004EAA);background:#e8f0fb;color:var(--azul,#004EAA);box-shadow:0 0 0 2px rgba(0,78,170,.2)}
 .cdot.has-img,.sidebar .sidenav a.cat .cdot.has-img{background:#fff!important;padding:0;overflow:hidden;box-shadow:0 0 0 1px var(--sep)}
 .cdot img,.ico img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
+</style>
+<style id="google-auth">
+/* ===== Acceso con Google (basado en el login de Suma Impacto) ===== */
+.btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:50px;padding:12px 18px;border-radius:13px;background:#fff;border:1px solid #d3dce2;color:#2b3a45;font:inherit;font-weight:650;font-size:16px;cursor:pointer;box-shadow:0 1px 2px rgba(20,45,65,.06);transition:background .16s,border-color .16s,box-shadow .16s,transform .16s}
+.btn-google svg{width:20px;height:20px;flex:none}
+.btn-google:hover{background:#f7fafb;border-color:#b9c8d1;box-shadow:0 7px 18px rgba(20,45,65,.10);transform:translateY(-1px)}
+.btn-google:active{transform:none}
+.btn-google:focus-visible{outline:3px solid rgba(39,134,154,.35);outline-offset:3px}
+.btn-google[disabled]{opacity:.7;cursor:progress;transform:none;box-shadow:none}
+.auth-or{display:flex;align-items:center;gap:12px;margin:18px 0 16px;color:#8696a1;font-size:13.5px}
+.auth-or::before,.auth-or::after{content:"";flex:1;height:1px;background:#e3eaf0}
 </style>
 </body>
 </html>
