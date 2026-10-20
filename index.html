@@ -827,13 +827,14 @@ button.avatar{font:inherit;font-weight:700}
 (function () {
 "use strict";
 
+const FORMATO_AUTOMATICO = true;   // por el momento: da formato automático a todas las descripciones al cargar (pon false para desactivarlo)
+
 const CONFIG_BASE = {
   nombre: "Catálogo de Sistemas",
   organizacion: "Coordinación de Política Digital",
   correoDestino: "delrivero25@gmail.com",          // ← correo que recibe las solicitudes
   endpoint: "",               // ← opcional: URL de Formspree / Apps Script
   telefono: "",
-  whatsapp: "",               // WhatsApp que recibe las dudas (solo dígitos con código de país, ej. 5215512345678)
   privacidad: "Usaremos tus datos únicamente para atender esta solicitud y ponernos en contacto contigo.",
   pinHash: "",
   correoAdmin: "delrivero25@gmail.com",   // recibe solicitudes de usuario y de recuperación de contraseña
@@ -1241,6 +1242,7 @@ function migrar(c) {
   c = c || {};
   const base = datosEjemplo();
   const out = { formato: 2, editado: !!c.editado, actualizado: c.actualizado || hoyISO(), config: Object.assign({}, CONFIG_BASE, c.config || {}) };
+  delete out.config.whatsapp;
   if (!String(out.config.correoDestino || "").trim()) out.config.correoDestino = CONFIG_BASE.correoDestino;
   if (!String(out.config.correoAdmin || "").trim()) out.config.correoAdmin = CONFIG_BASE.correoAdmin;
   out.usuarios = Array.isArray(c.usuarios) ? c.usuarios.filter((u) => u && (u.correo || u.rfc) && u.hash).map((u) => Object.assign({}, u, { rol: rolDe(u.rol) })) : [];
@@ -1256,6 +1258,7 @@ function migrar(c) {
     r.contacto = Object.assign({ correo: "", telefono: "" }, s.contacto || {});
     ["categorias", "usos", "requisitos", "pasos", "enlaces", "tecnica", "dependencias", "novedades", "capturas", "archivos", "videos"].forEach((k) => { if (!Array.isArray(r[k])) r[k] = []; });
     r.videoDestacado = Object.assign({ url: "", data: "", nombre: "" }, r.videoDestacado && typeof r.videoDestacado === "object" ? r.videoDestacado : {});
+    if (FORMATO_AUTOMATICO && typeof r.descripcion === "string") r.descripcion = formatoAuto(r.descripcion, r.nombre);
     return r;
   });
   out.sistemas.forEach((s) => { if (s.id === "sis-cpd-academy" && s.nombre === "CPD ACADEMY") s.nombre = "CPD Academy"; });
@@ -1390,7 +1393,7 @@ function rich(t) {
   const fp = () => { if (par.length) { out += "<p>" + par.map(inline).join("<br>") + "</p>"; par = []; } };
   const fl = () => { if (lista) { out += "</ul>"; lista = false; } };
   for (const l of lines) {
-    const m = /^\s*[-•*]\s+(.*)$/.exec(l);
+    const m = /^\s*(?:[-•*]\s+|[>›»→▸►]+\s*)(.*)$/.exec(l);
     if (m) { fp(); if (!lista) { out += "<ul>"; lista = true; } out += "<li>" + inline(m[1]) + "</li>"; }
     else if (!l.trim()) { fp(); fl(); }
     else { fl(); par.push(l); }
@@ -1447,31 +1450,47 @@ const descEstilo = (s) => {
   const px = TAM_BASE.includes(+s.descTam) ? +s.descTam : 16, c = /^#[0-9a-fA-F]{6}$/.test(s.descColor || "") ? s.descColor : "";
   return `font-size:${px}px;${c ? `color:${c};` : ""}`;
 };
-function formatoSigta(txt, nombre) {
+const MARCA_VINETA = /^\s*(?:[-•*–—▪◦●·]\s+|[>›»→▸►]+\s*)(.*)$/;
+const CONECTOR = /^(?:de|del|la|las|el|los|un|una|unos|unas|para|en|con|y|e|o|a|al|por|según|mediante|que|como|desde|hasta|sobre|entre|su|sus|tu|tus)$/i;
+function negritaInicio(c) {
+  if (/^[\[*]/.test(c)) return c;
+  const pal = c.split(/\s+/); if (pal.length < 3 || CONECTOR.test(pal[0])) return c;
+  let k = 1; while (k < pal.length && k < 3 && !CONECTOR.test(pal[k])) k++;
+  const m = /^([\s\S]*?)([.,;:]*)$/.exec(pal.slice(0, k).join(" "));
+  return `**${m[1]}**${m[2]} ${pal.slice(k).join(" ")}`.trim();
+}
+function formatoAuto(txt, nombre) {
   const enNoNeg = (s, fn) => s.split("**").map((seg, i) => (i % 2 === 0 ? fn(seg) : seg)).join("**");
   let r = String(txt || "").replace(/\r/g, "").split("\n").map((raw) => {
     const l = raw.replace(/\s+$/g, ""); if (!l.trim()) return "";
-    const b = /^\s*[-•*–—]\s+(.*)$/.exec(l);
-    if (b) { let c = b[1].trim(); if (!c.includes("**")) { const m = /^([^:]{3,48}):\s+(.+)$/.exec(c); if (m) c = `**${m[1]}:** ${m[2]}`; } return "- " + c; }
+    const b = MARCA_VINETA.exec(l);
+    if (b) {
+      let c = b[1].trim(); if (!c) return "";
+      if (!c.includes("**")) { const m = /^([^:]{3,48}):\s+(.+)$/.exec(c); c = m ? `**${m[1]}:** ${m[2]}` : negritaInicio(c); }
+      return "- " + c;
+    }
     const x = l.trim(); return !x.includes("**") && x.length <= 70 && /:$/.test(x) ? `**${x}**` : x;
   }).join("\n").replace(/\n{3,}/g, "\n\n").trim();
   const nom = String(nombre || "").trim();
-  if (nom.length > 2) { let hecho = false; const re = new RegExp(nom.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")); r = enNoNeg(r, (s) => (hecho ? s : s.replace(re, (m) => { hecho = true; return `**${m}**`; }))); }
+  if (nom.length > 2 && !r.split("**").some((seg, i) => i % 2 === 1 && seg.includes(nom))) {
+    let hecho = false; const re = new RegExp(nom.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    r = enNoNeg(r, (s) => (hecho ? s : s.replace(re, (m) => { hecho = true; return `**${m}**`; })));
+  }
   r = enNoNeg(r, (s) => s.replace(/\b[A-ZÁÉÍÓÚÑ]{3,}\b/g, (m) => `**${m}**`));
   return r;
 }
 function envolverLineas(sel, abre, cierra) {
-  return sel.split("\n").map((l) => { if (!l.trim()) return l; const m = /^(\s*(?:[-•*]\s+)?)([\s\S]*)$/.exec(l); return m[1] + abre + m[2] + cierra; }).join("\n");
+  return sel.split("\n").map((l) => { if (!l.trim()) return l; const m = /^(\s*(?:(?:[-•*]\s+)|(?:[>›»→▸►]+\s*))?)([\s\S]*)$/.exec(l); return m[1] + abre + m[2] + cierra; }).join("\n");
 }
 function fmtAplicar(f, v) {
   const ta = $("#e-descripcion"), dr = draftActual(); if (!ta || !dr) return;
   let a = ta.selectionStart, b = ta.selectionEnd, txt = ta.value;
-  if (f === "sigta") { txt = formatoSigta(txt, dr.s.nombre); a = b = txt.length; }
+  if (f === "auto") { txt = formatoAuto(txt, dr.s.nombre); a = b = txt.length; }
   else if (f === "bullets") {
     const ini = txt.lastIndexOf("\n", a - 1) + 1; let fin = txt.indexOf("\n", b); if (fin < 0) fin = txt.length;
-    const bloque = txt.slice(ini, fin).split("\n"), con = (l) => /^\s*[-•*]\s+/.test(l);
+    const bloque = txt.slice(ini, fin).split("\n"), con = (l) => /^\s*(?:[-•*]\s+|[>›»→▸►]+\s*)/.test(l);
     const todas = bloque.filter((l) => l.trim()).length > 0 && bloque.filter((l) => l.trim()).every(con);
-    const nuevo = bloque.map((l) => !l.trim() ? l : todas ? l.replace(/^(\s*)[-•*]\s+/, "$1") : con(l) ? l : "- " + l.trim()).join("\n");
+    const nuevo = bloque.map((l) => !l.trim() ? l : todas ? l.replace(/^(\s*)(?:[-•*]\s+|[>›»→▸►]+\s*)/, "$1") : con(l) ? l : "- " + l.trim()).join("\n");
     txt = txt.slice(0, ini) + nuevo + txt.slice(fin); a = ini; b = ini + nuevo.length;
   } else {
     if (a === b) { toast("Primero selecciona el texto que quieres cambiar."); return; }
@@ -1499,7 +1518,7 @@ function toolbarDescripcion(s) {
     <label class="rtb-s"><span class="sr">Tamaño del texto seleccionado</span><select data-fmt-size aria-label="Tamaño del texto seleccionado">${tam.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}</select></label>
     <span class="rtb-c" role="group" aria-label="Color del texto seleccionado">${COLORES_TXT.map(([n, h]) => `<button type="button" class="sw" data-act="fmt" data-f="color" data-c="${h}" style="background:${h}" title="${n}" aria-label="Color ${n}"></button>`).join("")}<label class="sw custom" title="Otro color"><span class="sr">Otro color</span><input type="color" data-fmt-color value="#004eaa" aria-label="Otro color"></label></span>
     <button type="button" data-act="fmt" data-f="clear" title="Quitar formato del texto seleccionado">Quitar formato</button>
-    <button type="button" data-act="fmt" data-f="sigta" title="Negrita azul en nombre, siglas y títulos; ordena las viñetas">Estilo SIGTA</button></div>`;
+    <button type="button" data-act="fmt" data-f="auto" title="Formato automático: negrita azul en palabras importantes y viñetas azules en lugar de «>» o guiones">Formato automático</button></div>`;
 }
 function editorDescripcion(s) {
   const px = TAM_BASE.includes(+s.descTam) ? +s.descTam : 16;
@@ -2348,7 +2367,6 @@ function render(nav) {
       case "solicitudes": html = S.super ? vBandeja() : vSolicitudes(); break;
       case "avisos": html = vAvisos(); break;
       case "ayuda": html = vAyuda(); break;
-      case "dudas": html = vDudas(b); break;
       case "contacto": html = vContacto(); break;
       case "privacidad": case "terminos": html = vLegal(a); break;
       case "admin": html = vAdmin(b, c); break;
@@ -2374,7 +2392,7 @@ function renderChrome(a) {
   const c = cfg();
   $("#brand").setAttribute("aria-label", `${c.nombre} · inicio`);
   $("#brand").innerHTML = `${logoHtml(c)}<span><b>${esc(c.nombre)}</b><small>${esc(c.organizacion)}</small></span>`;
-  const act = { "": "", sistema: "sistemas", sistemas: "sistemas", uso: "sistemas", categorias: "categorias", categoria: "categorias", solicitar: "solicitudes", gracias: "solicitudes", solicitudes: "solicitudes", buscar: "buscar", ayuda: "ayuda", dudas: "dudas", admin: "admin" }[a] ?? "";
+  const act = { "": "", sistema: "sistemas", sistemas: "sistemas", uso: "sistemas", categorias: "categorias", categoria: "categorias", solicitar: "solicitudes", gracias: "solicitudes", solicitudes: "solicitudes", buscar: "buscar", ayuda: "ayuda", admin: "admin" }[a] ?? "";
   const cur = (k) => (act === k ? ' aria-current="page"' : "");
   const catActiva = a === "categoria" ? hashParts()[1] : null;
   const cats = S.cat.categorias.slice();
@@ -2384,7 +2402,6 @@ function renderChrome(a) {
     <a href="#/solicitudes"${cur("solicitudes")}>${glifo("send")}${S.super ? "Solicitudes" : "Mis solicitudes"}${misSols().length && !S.super ? ` <span class="badge acc" style="margin-left:auto">${misSols().length}</span>` : ""}</a>
     <a href="#/categorias"${cur("categorias")}>${glifo("grid")}Categorías</a>
     <a href="#/ayuda"${cur("ayuda")}>${glifo("info")}Cómo solicitar</a>
-    <a href="#/dudas"${cur("dudas")}>${glifo("mensaje")}Dudas por WhatsApp</a>
     ${cats.length ? `<h6 class="cat">Categorías</h6>` : ""}
     ${cats.map((k) => `<a class="cat" href="#/categoria/${enc(k.id)}" ${catActiva === k.id ? 'aria-current="page"' : ""}><span class="cdot${catCls(k)}" style="${colorVars(k.color)}">${catInner(k)}</span>${esc(k.nombre)}</a>`).join("")}`;
   $("#sidefoot").innerHTML = `<div class="mode">${S.user ? esc(S.user.nombre) + " · " + ROLES[rolDe(S.user.rol)] : "Visualizador"}</div>`
@@ -2491,16 +2508,75 @@ function vLista(tipo, id) {
     ${tipo === "categoria" && S.admin ? `<div class="cat-tools" style="margin-top:12px"><button class="btn sm sec" data-act="edit-cat" data-id="${esc(id)}">${glifo("edit")}Renombrar / editar categoría</button><button class="btn sm danger" data-act="del-cat" data-id="${esc(id)}">${glifo("trash")}Eliminar categoría</button></div>` : ""}<div class="sp"></div>${l.length ? `<div class="rows">${l.map((s) => fila(s)).join("")}</div>` : vacio("Sin sistemas todavía", "Aún no hay sistemas en esta categoría.")}`;
 }
 
+const SINONIMOS = [
+  ["votacion", "voto", "votar", "elecciones", "eleccion", "sufragio", "consulta"],
+  ["documento", "archivo", "oficio", "expediente", "papel"],
+  ["encuesta", "formulario", "cuestionario", "sondeo"],
+  ["gafete", "credencial", "identificacion", "tarjeta"],
+  ["curso", "capacitacion", "taller", "academia", "academy", "aprendizaje", "formacion"],
+  ["correo", "email", "mail", "mensajeria"],
+  ["reporte", "informe", "estadistica", "indicador", "tablero", "dashboard"],
+  ["evento", "registro", "asistencia", "acreditacion"],
+  ["gestion", "administracion", "administrativo", "control"],
+  ["firma", "firmar", "firmado"],
+  ["usuario", "cuenta", "acceso", "permiso"],
+  ["mapa", "ubicacion", "geografico", "georreferencia"],
+  ["pago", "factura", "finanza", "presupuesto"],
+  ["soporte", "ayuda", "incidencia", "asistencia"],
+  ["sistema", "plataforma", "aplicacion", "app", "herramienta"]
+];
+const rBusq = (t) => String(t || "").replace(/\*\*|\[\/?(?:tam|color)[^\]]*\]/g, " ");
+const txtDe = (x) => typeof x === "string" ? x : x && typeof x === "object" ? Object.values(x).filter((v) => typeof v === "string" && v.length < 600 && !/^data:/.test(v)).join(" ") : "";
+const raiz = (w) => (w.length > 4 ? w.replace(/(?:es|s)$/, "") : w.replace(/s$/, ""));
+const palabrasDe = (t) => norm(rBusq(t)).replace(/[^a-z0-9]+/g, " ").split(" ").filter(Boolean).map(raiz);
+function distMax(a, b, max) {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i]; let mn = i;
+    for (let j = 1; j <= b.length; j++) { const v = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); cur.push(v); if (v < mn) mn = v; }
+    if (mn > max) return max + 1; prev = cur;
+  }
+  return prev[b.length];
+}
+function indiceBusqueda(s) {
+  const cats = s.categorias.map((c) => (catById(c) || {}).nombre || "");
+  const campos = [
+    [10, [s.nombre, ...(s.alias || [])]],
+    [5, [s.subtitulo, s.etiqueta]],
+    [4, [...cats, ...s.usos]],
+    [3, [s.area, s.plataforma, s.estado, ...s.dependencias.map((d) => d.nombre), ...s.tecnica.map(txtDe)]],
+    [2, [s.descripcion]],
+    [1, [...s.requisitos.map(txtDe), ...s.pasos.map(txtDe), ...s.novedades.map(txtDe), s.contacto && s.contacto.correo]]
+  ];
+  return campos.map(([peso, ts]) => { const txt = norm(rBusq(ts.filter(Boolean).join(" "))).replace(/[^a-z0-9]+/g, " "); return { peso, txt, pal: palabrasDe(ts.filter(Boolean).join(" ")) }; });
+}
+function puntajeToken(t, idx) {
+  const rt = raiz(t), sin = SINONIMOS.find((g) => g.some((w) => w === t || raiz(w) === rt));
+  let mejor = 0;
+  for (const f of idx) {
+    let v = 0;
+    if (f.pal.includes(rt)) v = 1;
+    else if (rt.length >= 2 && (f.pal.some((w) => w.startsWith(rt)) || (rt.length >= 3 && f.txt.includes(t)))) v = 0.75;
+    else if (sin && sin.some((w) => f.pal.includes(raiz(w)) || f.pal.some((x) => x.startsWith(raiz(w))))) v = 0.55;
+    else if (rt.length >= 4) { const m = rt.length >= 8 ? 2 : 1; if (f.pal.some((w) => w.length >= 3 && distMax(rt, w, m) <= m)) v = 0.45; }
+    mejor = Math.max(mejor, v * f.peso);
+  }
+  return mejor;
+}
 function buscar(q) {
-  const tk = norm(q).split(/\s+/).filter(Boolean);
+  const tk = norm(q).replace(/[^a-z0-9]+/g, " ").split(" ").filter(Boolean);
   if (!tk.length) return [];
-  return vis().map((s) => {
-    const nombre = norm(s.nombre + " " + s.subtitulo);
-    const resto = norm([s.descripcion, s.usos.join(" "), s.area, s.plataforma, s.categorias.map((c) => (catById(c) || {}).nombre || "").join(" "), s.dependencias.map((d) => d.nombre).join(" ")].join(" "));
-    let p = 0;
-    for (const t of tk) { if (nombre.includes(t)) p += 5; else if (resto.includes(t)) p += 1; else return null; }
-    return { s, p };
-  }).filter(Boolean).sort((a, b) => b.p - a.p).map((o) => o.s);
+  const frase = tk.join(" ");
+  const filas = vis().map((s) => {
+    const idx = indiceBusqueda(s), pts = tk.map((t) => puntajeToken(t, idx));
+    const n = pts.filter((x) => x > 0).length; let p = pts.reduce((a, b) => a + b, 0);
+    if (tk.length > 1 && idx[0].txt.includes(frase)) p += 8;
+    return { s, n, p };
+  }).filter((o) => o.n > 0);
+  const completos = filas.filter((o) => o.n === tk.length).sort((a, b) => b.p - a.p);
+  const parciales = tk.length > 1 ? filas.filter((o) => o.n < tk.length).sort((a, b) => b.n - a.n || b.p - a.p) : [];
+  return [...completos, ...parciales].map((o) => o.s);
 }
 function htmlBusqueda() {
   const q = S.q.trim();
@@ -2511,7 +2587,7 @@ function htmlBusqueda() {
   }
   const r = buscar(q);
   return r.length ? `<div class="sp"></div><div class="rows" style="margin-top:12px">${r.map((s) => fila(s)).join("")}</div>`
-    : vacio(`Sin resultados para «${q}»`, "Revisa la ortografía o prueba con otra palabra, por ejemplo: eventos, votación o documentos.");
+    : vacio(`Sin resultados para «${q}»`, "Prueba con otra palabra o con menos palabras, por ejemplo: eventos, votación o documentos.");
 }
 function vBuscar() {
   post = () => { const i = $("#qv"); if (i && window.matchMedia("(max-width:900px)").matches) i.focus({ preventScroll: true }); };
@@ -2610,7 +2686,6 @@ function vFicha(id) {
       ${prim ? `<div><a class="lr" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">Sitio del sistema ${glifo("out")}</a></div>` : ""}
       <div><button class="lr" data-act="contacto" data-id="${esc(s.id)}">Contactar al área responsable ${glifo("correo")}</button></div>
       <div><button class="lr" data-act="contacto" data-id="${esc(s.id)}" data-problema="1">Reportar un problema ${glifo("warn")}</button></div>
-      <div><a class="lr" href="#/dudas/${enc(s.id)}">Tengo una duda (WhatsApp) ${glifo("mensaje")}</a></div>
     </div></section>
   ${s.usos.length ? `<section class="sec"><h2 class="sec-h">Parte de</h2><div class="tagcards">${s.usos.map((u) => `<a class="tagcard" href="#/uso/${enc(u)}"><span class="cdot" style="${colorVars(s.icono.color)}">${glifo("tag")}</span>${esc(u)}</a>`).join("")}</div></section>` : ""}
   ${rel.length ? `<section class="sec"><h2 class="sec-h"><a href="#/sistemas">También te podría interesar ${glifo("chev")}</a></h2><div class="rows">${rel.map((x) => fila(x, motivo(s, x))).join("")}</div></section>` : ""}
@@ -2622,7 +2697,6 @@ function vContacto() {
   const tel = (t) => String(t || "").replace(/[^\d+]/g, "");
   const med = [
     c.correoDestino && `<a class="ctc" href="mailto:${esc(c.correoDestino)}">${glifo("correo")}<span><b>Correo</b>${esc(c.correoDestino)}</span></a>`,
-    waNum() && `<a class="ctc" href="https://wa.me/${waNum()}" target="_blank" rel="noopener noreferrer">${glifo("mensaje")}<span><b>WhatsApp</b>Enviar una duda</span></a>`,
     c.telefono && `<a class="ctc" href="tel:${esc(tel(c.telefono))}">${glifo("mensaje")}<span><b>Teléfono</b>${esc(c.telefono)}</span></a>`,
     c.horario && `<div class="ctc">${glifo("reloj")}<span><b>Horario</b>${esc(c.horario)}</span></div>`
   ].filter(Boolean).join("");
@@ -2631,20 +2705,6 @@ function vContacto() {
   return `${cabecera("Contacto", "Escríbenos o llámanos; respondemos en " + (c.tiempoRespuesta || "unos días") + ".")}
     <div class="ctcs">${med || vacio("Aún no hay datos de contacto", S.admin ? "Agrégalos en Administración → Configuración." : "Vuelve pronto.")}</div>
     <h2 class="dir-h">Directorio</h2>${pers ? `<ul class="dir">${pers}</ul>` : vacio("El directorio está vacío", S.admin ? "Agrega a las personas responsables abajo." : "Pronto publicaremos a las personas responsables.")}${ed}`;
-}
-const waNum = () => String(cfg().whatsapp || "").replace(/\D/g, "");
-function vDudas(id) {
-  const c = cfg(), num = waNum(), u = S.user || {}, sel = byId(id) ? id : "";
-  const lista = vis().map((s) => `<option value="${esc(s.id)}" ${s.id === sel ? "selected" : ""}>${esc(s.nombre)}</option>`).join("");
-  const aviso = num ? "" : `<div class="note warn" style="margin-bottom:14px">${glifo("warn")}<div>${S.super ? `Aún no has configurado tu WhatsApp. <a href="#/admin/config/solicitudes">Agrégalo en Configuración → Solicitudes</a>.` : "El WhatsApp de atención todavía no está configurado. Mientras tanto puedes escribirnos por correo."}${c.correoDestino ? ` <a href="${esc(gmailCompose(c.correoDestino, "Duda sobre el catálogo de sistemas", ""))}" target="_blank" rel="noopener noreferrer">Escribir por correo</a>` : ""}</div></div>`;
-  return `${cabecera("Dudas por WhatsApp", "Escribe tu pregunta y se abrirá WhatsApp con el mensaje listo para enviarnos. Respondemos en " + (c.tiempoRespuesta || "unos días") + ".")}
-    ${aviso}<div class="card" style="padding:18px;display:grid;gap:14px;max-width:640px">
-      <div class="field"><label for="d-nombre">Tu nombre <span class="req" aria-hidden="true">*</span></label><input id="d-nombre" type="text" value="${esc(u.nombre || "")}" autocomplete="name"></div>
-      <div class="field"><label for="d-dep">Dependencia (opcional)</label><input id="d-dep" type="text" value="${esc(u.dependencia || "")}" autocomplete="organization"></div>
-      <div class="field"><label for="d-sis">Sistema relacionado (opcional)</label><select class="select" id="d-sis"><option value="">Ninguno en particular</option>${lista}</select></div>
-      <div class="field"><label for="d-msg">Tu duda <span class="req" aria-hidden="true">*</span></label><textarea id="d-msg" style="min-height:130px" placeholder="Escribe aquí tu pregunta"></textarea></div>
-      <div><button type="button" class="btn big" data-act="dudas-enviar" ${num ? "" : "disabled"}>${glifo("send")}Enviar por WhatsApp</button></div>
-      <p class="muted" style="font-size:13px">Se abrirá WhatsApp en tu teléfono o computadora y tú pulsas «Enviar». No guardamos tu mensaje en este sitio.</p></div>`;
 }
 function vAyuda() {
   const c = cfg();
@@ -3063,7 +3123,6 @@ function vAdminConfig(sec) {
     panel = `<section class="grp"><h2>Recepción de solicitudes</h2><p class="hint">Define a dónde llegan las solicitudes de las dependencias y cómo se envían.</p><div class="card"><div class="fields">
       ${f("correoAdmin", "Correo del administrador (solicitudes de usuario y recuperación)", { tipo: "email", ph: "admin@tudependencia.gob.mx", full: true, hint: "Aquí llegan las solicitudes de nuevos usuarios y de recuperación de contraseña." })}
       ${f("correoDestino", "Correo que recibe las solicitudes de sistemas", { tipo: "email", ph: "solicitudes@tudependencia.gob.mx", full: true, hint: "Al enviar, se abre el correo del solicitante con el mensaje ya redactado hacia esta dirección." })}
-      ${f("whatsapp", "WhatsApp para dudas", { tipo: "tel", ph: "5215512345678", full: true, hint: "Número con código de país, solo dígitos (México: 52 + 1 + 10 dígitos). Las dudas del apartado «Dudas por WhatsApp» abren un chat con este número." })}
       ${f("endpoint", "Envío automático (opcional)", { tipo: "url", ph: "https://formspree.io/f/xxxxxxx", full: true, hint: "Si pegas la URL de un servicio de formularios (Formspree, Apps Script…), la solicitud se envía sin que el solicitante abra su correo." })}
       <div class="field full"><div><button type="button" class="btn sec sm" data-act="probar-correo">${glifo("correo")}Enviar correo de prueba</button></div></div>
     </div></div></section>
@@ -3096,7 +3155,7 @@ function vAdminConfig(sec) {
         <button class="btn sec sm" data-act="como-publicar">Cómo publicar</button>
         ${S.pub && S.cat.editado ? `<button class="btn danger sm" data-act="descartar-local">Descartar mis cambios y usar el publicado</button>` : ""}
       </div></section>
-    <section class="grp"><h2>Textos de los sistemas</h2><p class="hint">Aplica los textos resumidos (frase corta de máximo 5 palabras, texto destacado y descripción con negritas y guiones) a los sistemas del catálogo y agrega los que falten.</p><div class="card"><button class="btn sm" data-act="aplicar-textos">Actualizar textos de los sistemas</button> <button class="btn sm sec" data-act="sigta-todos">Dar estilo SIGTA a todas las descripciones</button></div></section>
+    <section class="grp"><h2>Textos de los sistemas</h2><p class="hint">Aplica los textos resumidos (frase corta de máximo 5 palabras, texto destacado y descripción con negritas y guiones) a los sistemas del catálogo y agrega los que falten.</p><div class="card"><button class="btn sm" data-act="aplicar-textos">Actualizar textos de los sistemas</button> <button class="btn sm sec" data-act="formato-todos">Dar formato automático a todas las descripciones</button></div></section>
     <section class="grp"><h2>Contenido de ejemplo</h2><p class="hint">${ej ? `Hay ${ej} ${plural(ej, "sistema de ejemplo", "sistemas de ejemplo")} en el catálogo.` : "No hay sistemas de ejemplo."}</p>${ej ? `<div class="card"><button class="btn danger sm" data-act="quitar-ejemplos">${glifo("trash")}Quitar sistemas de ejemplo</button></div>` : ""}</section>`;
   }
   const nav = `<nav class="cfg-nav" aria-label="Secciones de configuración">${SECS.map(([k, l, ic]) => `<a href="#/admin/config/${k}"${k === sec ? ' aria-current="page"' : ""}>${glifo(ic)}${l}</a>`).join("")}</nav>`;
@@ -3640,8 +3699,6 @@ const ACT = {
     const c = S.cfgDraft; if (!c) return;
     if (c.correoDestino && !correoOk(c.correoDestino)) return toast("El correo de destino no es válido.");
     if (c.endpoint && !urlOk(c.endpoint)) return toast("La URL de envío automático debe empezar con https://");
-    c.whatsapp = String(c.whatsapp || "").replace(/\D/g, "");
-    if (c.whatsapp && !/^\d{10,15}$/.test(c.whatsapp)) return toast("El WhatsApp debe tener entre 10 y 15 dígitos, con código de país.");
     Object.assign(S.cat.config, c, { correoDestino: c.correoDestino.trim(), endpoint: c.endpoint.trim(), nombre: c.nombre.trim() || CONFIG_BASE.nombre, organizacion: c.organizacion.trim() || CONFIG_BASE.organizacion });
     S.cat.config.tiempoRespuesta = (S.cat.config.tiempoRespuesta || "").trim(); S.cat.config.reunion = (S.cat.config.reunion || "").trim(); S.cat.config.horario = (S.cat.config.horario || "").trim();
     guardarCatalogo(); S.cfgDraft = null; aplicarApariencia(); toast("Configuración guardada"); render(false);
@@ -3743,15 +3800,6 @@ const ACT = {
   "qa-reiniciar"() { restaurarQA(true); toast("Datos de prueba reiniciados"); render(false); },
   "qa-correr"() { correrQA(); },
   "qa-limpiar-manual"() { try { localStorage.removeItem("catalogo-qa-manual"); } catch (e) {} keep(() => render(false)); },
-  "dudas-enviar"() {
-    const num = waNum(); if (!num) return toast("El WhatsApp de atención aún no está configurado.");
-    const nombre = val("d-nombre"), dep = val("d-dep"), msg = val("d-msg"), s = byId(val("d-sis"));
-    if (nombre.length < 3) { toast("Escribe tu nombre."); const i = $("#d-nombre"); if (i) i.focus(); return; }
-    if (msg.length < 5) { toast("Escribe tu duda."); const i = $("#d-msg"); if (i) i.focus(); return; }
-    const texto = [`Hola, tengo una duda sobre el ${cfg().nombre}.`, "", `Nombre: ${nombre}`, dep ? `Dependencia: ${dep}` : null, s ? `Sistema: ${s.nombre}` : null, "", msg].filter((x) => x !== null).join("\n");
-    const w = window.open(`https://wa.me/${num}?text=${enc(texto)}`, "_blank", "noopener");
-    toast(w ? "Abriendo WhatsApp…" : "Tu navegador bloqueó la ventana. Permite ventanas emergentes e inténtalo de nuevo.");
-  },
   "ver-video"(t) { const s = byId(t.dataset.id); if (!s) return; abrirVideo(t.dataset.k === "dest" ? s.videoDestacado : (s.videos || [])[+t.dataset.i], s.nombre); },
   "e-ver-video"(t) { const dr = draftActual(); if (!dr) return; abrirVideo(t.dataset.k === "dest" ? dr.s.videoDestacado : (dr.s.videos || [])[+t.dataset.i], dr.s.nombre || "Video de muestra"); },
   "e-quitar-videodest"() { const dr = draftActual(); if (!dr) return; dr.s.videoDestacado = { url: "", data: "", nombre: "" }; dr.dirty = true; keep(() => render(false)); },
@@ -3782,13 +3830,13 @@ const ACT = {
   async "notif-borrar-leidas"() { const ids = (S.cat.notificaciones || []).filter((n) => n.leida).map((n) => n.id); if (ids.length && await confirmar({ titulo: "Eliminar notificaciones leídas", texto: `Se borrarán ${ids.length} ${plural(ids.length, "notificación leída", "notificaciones leídas")}.`, si: "Eliminar", peligro: true })) borrarNotifs(ids); },
   async "notif-borrar-todas"() { const ids = (S.cat.notificaciones || []).map((n) => n.id); if (ids.length && await confirmar({ titulo: "Eliminar todas las notificaciones", texto: `Se borrarán ${ids.length} ${plural(ids.length, "notificación", "notificaciones")}. No se puede deshacer.`, si: "Eliminar todas", peligro: true })) borrarNotifs(ids); },
   async "aviso-borrar-todos"() { const n = (S.cat.avisos || []).length; if (n && await confirmar({ titulo: "Eliminar todos los avisos", texto: `Se borrarán ${n} ${plural(n, "aviso", "avisos")} para todas las personas. No se puede deshacer.`, si: "Eliminar todos", peligro: true })) { S.cat.avisos = []; guardarCatalogo(); refrescarCampana(); keep(() => render(false)); toast("Avisos eliminados"); } },
-  async "sigta-todos"() { if (!(await confirmar({ titulo: "Estilo SIGTA en todas las descripciones", texto: "Se pondrán en negrita azul el nombre del sistema, las siglas y los títulos, y se ordenarán las viñetas de TODAS las descripciones. Tu texto no se borra.", si: "Aplicar" }))) return; let n = 0; S.cat.sistemas.forEach((s) => { const nv = formatoSigta(s.descripcion, s.nombre); if (nv !== s.descripcion) { s.descripcion = nv; n++; } }); guardarCatalogo(); keep(() => render(false)); toast(n ? `Estilo aplicado en ${n} ${plural(n, "sistema", "sistemas")}` : "Las descripciones ya tenían el estilo"); },
+  async "formato-todos"() { if (!(await confirmar({ titulo: "Formato automático en todas las descripciones", texto: "Se pondrán en negrita azul las palabras importantes (nombre del sistema, siglas y términos clave) y los símbolos «>» o guiones se cambiarán por viñetas azules en TODAS las descripciones. Tu texto no se borra.", si: "Aplicar" }))) return; let n = 0; S.cat.sistemas.forEach((s) => { const nv = formatoAuto(s.descripcion, s.nombre); if (nv !== s.descripcion) { s.descripcion = nv; n++; } }); guardarCatalogo(); keep(() => render(false)); toast(n ? `Formato aplicado en ${n} ${plural(n, "sistema", "sistemas")}` : "Las descripciones ya tenían el formato"); },
   "cerrar-modal": cerrarModal,
   "conf-si"() { if (confFin) confFin(true); },
   "conf-no"() { if (confFin) confFin(false); }
 };
 
-const SOLO_SUPER = new Set(["notif-borrar", "notif-borrar-leidas", "notif-borrar-todas", "aviso-borrar-todos", "sigta-todos", "aplicar-textos", "bandeja-estado", "bandeja-nota", "bandeja-borrar", "bandeja-archivar-canceladas", "bandeja-borrar-canceladas", "aviso-nuevo", "aviso-editar", "aviso-borrar", "notif-leer", "notif-todas", "notif-reset", "usr-super", "usr-gen", "logo-marca", "logo-color", "logo-forma", "usr-nuevo", "usr-reset", "usr-reset-ok", "usr-toggle", "usr-del", "guardar-cfg", "exportar", "descartar-local", "quitar-ejemplos", "probar-correo", "cfg-tema", "cfg-acento", "quitar-logo", "como-publicar", "qa-activar", "qa-salir", "qa-datos", "qa-reiniciar", "qa-correr", "qa-limpiar-manual", "dep-add", "dep-ren", "dep-del", "dep-reg", "dep-import"]);
+const SOLO_SUPER = new Set(["notif-borrar", "notif-borrar-leidas", "notif-borrar-todas", "aviso-borrar-todos", "formato-todos", "aplicar-textos", "bandeja-estado", "bandeja-nota", "bandeja-borrar", "bandeja-archivar-canceladas", "bandeja-borrar-canceladas", "aviso-nuevo", "aviso-editar", "aviso-borrar", "notif-leer", "notif-todas", "notif-reset", "usr-super", "usr-gen", "logo-marca", "logo-color", "logo-forma", "usr-nuevo", "usr-reset", "usr-reset-ok", "usr-toggle", "usr-del", "guardar-cfg", "exportar", "descartar-local", "quitar-ejemplos", "probar-correo", "cfg-tema", "cfg-acento", "quitar-logo", "como-publicar", "qa-activar", "qa-salir", "qa-datos", "qa-reiniciar", "qa-correr", "qa-limpiar-manual", "dep-add", "dep-ren", "dep-del", "dep-reg", "dep-import"]);
 const QA_BLOQ = new Set(["exportar", "como-publicar", "descartar-local"]);
 const SOLO_GESTION = new Set(["toggle-pub", "mover", "duplicar", "del-sistema", "add-cat", "del-cat", "edit-cat", "ren-sis", "img-quitar", "e-guardar", "e-add", "e-del", "demo-media", "vid-add-url", "fmt", "desc-color-reset", "e-quitar-videodest"]);
 document.addEventListener("click", (e) => {
@@ -4742,7 +4790,7 @@ body{background:radial-gradient(900px 420px at 0% 0%,rgba(245,158,66,.13),transp
 .searchbox{border:1.5px solid transparent;transition:border-color .15s,box-shadow .15s,background .15s}
 .searchbox:focus-within{background:#fff!important;border-color:var(--azul,#004EAA)!important;box-shadow:0 0 0 3px rgba(0,78,170,.15)!important}
 .searchbox input[type=search]::-webkit-search-cancel-button{cursor:pointer;margin-left:6px}
-/* Descripción: viñetas y negritas azules como SIGTA */
+/* Descripción: viñetas y negritas azules (formato automático) */
 .prose ul{list-style:none;margin:10px 0 14px;padding:0;display:grid;gap:9px}
 .prose li{position:relative;padding-left:28px;line-height:1.55}
 .prose li::before{content:"";position:absolute;left:5px;top:.5em;width:9px;height:9px;border-radius:50%;background:linear-gradient(145deg,#3B82D6,#004EAA);box-shadow:0 0 0 4px rgba(0,78,170,.12);font-size:0}
