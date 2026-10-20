@@ -2733,7 +2733,7 @@ function vAccesoParaSolicitar(id) {
   return `${navbar()}${cabecera("Inicia sesión para solicitar", s0 ? "Quieres solicitar: " + s0.nombre : "Solo las personas con cuenta pueden solicitar un sistema.")}
     <div class="sp"></div>
     <div class="card" style="max-width:560px"><p style="margin:0 0 10px">Para evitar mensajes no deseados, <b>solicitar un sistema requiere iniciar sesión con tu correo</b>. Puedes seguir explorando el catálogo sin cuenta.</p>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"><button class="get big" data-act="ir-login">Iniciar sesión</button><button class="btn sec" data-act="ir-registro">Registrarse</button><a class="btn ghost" href="#/sistemas">Seguir explorando</a></div>
+    <div class="acciones"><button class="btn" data-act="ir-login">Iniciar sesión</button><button class="btn sec" data-act="ir-registro">Registrarse</button><a class="btn ghost" href="#/sistemas">Seguir explorando</a></div>
     <p class="muted" style="font-size:13.5px;margin:16px 0 0">¿Primera vez? Regístrate con tus datos: toma un minuto y entras al instante.</p></div>`;
 }
 function vSolicitar(id) {
@@ -3000,7 +3000,7 @@ function misSols() { return S.user ? S.sols.filter((x) => normCorreo((x.datos ||
 function vSesionRequerida(titulo, sub, texto) {
   return `${cabecera(titulo, sub)}<div class="sp"></div>
     <div class="card" style="max-width:560px"><p style="margin:0 0 10px">${texto}</p>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"><button class="get big" data-act="ir-login">Iniciar sesión</button><button class="btn sec" data-act="ir-registro">Registrarse</button><a class="btn ghost" href="#/sistemas">Seguir explorando</a></div></div>`;
+    <div class="acciones"><button class="btn" data-act="ir-login">Iniciar sesión</button><button class="btn sec" data-act="ir-registro">Registrarse</button><a class="btn ghost" href="#/sistemas">Seguir explorando</a></div></div>`;
 }
 function vSolicitudes() {
   if (!S.user) return vSesionRequerida("Mis solicitudes", "Inicia sesión para ver tu historial.", "Tus solicitudes se muestran solo cuando inicias sesión con tu correo, para proteger tu información. Puedes seguir explorando el catálogo sin cuenta.");
@@ -3052,7 +3052,7 @@ function vAdminBase(sub, id) {
   const permitidas = S.super ? ["categorias", "config", "usuarios", "notificaciones", "avisos", "qa"] : ["categorias"], tab = permitidas.includes(sub) ? sub : "sistemas";
   const cur = (k) => (tab === k ? ' aria-current="page"' : "");
   const cab = `${cabecera("Administración", S.super ? "Control total del catálogo, usuarios y configuración." : "Como colaborador puedes editar sistemas y categorías.")}
-    <div class="admbar"><nav class="seg" aria-label="Secciones de administración"><a href="#/admin"${cur("sistemas")}>Sistemas</a><a href="#/admin/categorias"${cur("categorias")}>Categorías</a>${S.super ? `<a href="#/admin/notificaciones"${cur("notificaciones")}>Notificaciones${nNoLeidas() ? ` <span class="badge acc">${nNoLeidas()}</span>` : ""}</a><a href="#/admin/avisos"${cur("avisos")}>Avisos</a><a href="#/admin/usuarios"${cur("usuarios")}>Usuarios</a><a href="#/admin/config"${cur("config")}>Configuración</a><a href="#/admin/qa"${cur("qa")}>Pruebas QA${S.qa ? " ●" : ""}</a>` : ""}</nav><button class="btn sec sm" data-act="cerrar-sesion">${glifo("unlock")}Cerrar sesión</button></div><!--panel-->`;
+    <div class="admbar adm-flota"><nav class="seg" aria-label="Secciones de administración"><a href="#/admin"${cur("sistemas")}>Sistemas</a><a href="#/admin/categorias"${cur("categorias")}>Categorías</a>${S.super ? `<a href="#/admin/notificaciones"${cur("notificaciones")}>Notificaciones${nNoLeidas() ? ` <span class="badge acc">${nNoLeidas()}</span>` : ""}</a><a href="#/admin/avisos"${cur("avisos")}>Avisos</a><a href="#/admin/usuarios"${cur("usuarios")}>Usuarios</a><a href="#/admin/config"${cur("config")}>Configuración</a><a href="#/admin/qa"${cur("qa")}>Pruebas QA${S.qa ? " ●" : ""}</a>` : ""}</nav><button class="btn sec sm" data-act="cerrar-sesion">${glifo("unlock")}Cerrar sesión</button></div><!--panel-->`;
   if (tab === "categorias") return cab + vAdminCategorias();
   if (tab === "notificaciones") return cab + vAdminNotif();
   if (tab === "avisos") return cab + vAdminAvisos();
@@ -4874,6 +4874,36 @@ button{text-align:center}
 .authcard .auth-links button{justify-content:center}
 .authcard .auth-tabs button{flex:1;justify-content:center}
 .auth-foot{text-align:center}
+</style>
+<style id="acciones-uniformes">
+/* Botones de acción: mismo tamaño y misma forma, distinta jerarquía de color */
+.acciones{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+.acciones .btn{
+  flex:1 1 170px;
+  min-height:46px;
+  padding:12px 20px;
+  border-radius:12px!important;
+  font-size:15px;
+  font-weight:700;
+  line-height:1.2;
+  display:inline-flex;align-items:center;justify-content:center;text-align:center;
+  border:1.5px solid var(--azul)!important;
+}
+.acciones .btn:not(.sec):not(.ghost){background:var(--azul)!important;color:#fff!important}
+.acciones .btn.sec{background:#fff!important;color:var(--azul)!important}
+.acciones .btn.ghost{background:transparent!important;color:var(--azul)!important;border-color:var(--azul-borde)!important}
+.acciones .btn.sec:hover,.acciones .btn.ghost:hover{background:var(--azul-suave)!important}
+@media(max-width:560px){.acciones .btn{flex:1 1 100%}}
+</style>
+<style id="admin-flotante">
+/* Barra del panel de administración: flota mientras se baja */
+.adm-flota{position:sticky!important;top:66px;z-index:25;margin-block:14px 18px!important;padding:10px 14px!important;border-radius:16px!important;
+  background:rgba(255,255,255,.92)!important;border:1px solid #c8dce8!important;
+  -webkit-backdrop-filter:saturate(160%) blur(14px);backdrop-filter:saturate(160%) blur(14px);
+  box-shadow:0 8px 24px rgba(15,35,65,.14)!important}
+.adm-flota .seg{background:#eaf3f8}
+@media(max-width:900px){.adm-flota{top:58px;padding:8px 10px!important}}
+@media(max-width:560px){.adm-flota{gap:8px}.adm-flota .btn{padding:8px 12px}}
 </style>
 </body>
 </html>
