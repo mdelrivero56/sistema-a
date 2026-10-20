@@ -864,7 +864,7 @@ const URL_ERR = SB_ON && /[#&?](error_code|error_description)=/.test(location.ha
 const ARCHIVO_PUBLICADO = "catalogo.json";   // catálogo compartido con todos los visitantes
 const LIMITE_ARCHIVO = 10 * 1024 * 1024;      // 10 MB por adjunto
 const CORREO_SUPER = "delrivero25@gmail.com";  // único correo autorizado para Superadministrador
-const DOMINIO_PERMITIDO = "gob.mx";  // ← por ahora vacío = se acepta cualquier correo. Cuando quieras limitar el acceso, escribe "gob.mx" (el propietario siempre puede entrar)
+const DOMINIO_PERMITIDO = "";  // ← por ahora vacío = se acepta cualquier correo. Cuando quieras limitar el acceso, escribe "gob.mx" (el propietario siempre puede entrar)
 const correoPermitido = (c) => { const x = String(c || "").trim().toLowerCase(); return !DOMINIO_PERMITIDO || x === String(CORREO_SUPER).toLowerCase() || x.endsWith("@" + DOMINIO_PERMITIDO) || x.endsWith("." + DOMINIO_PERMITIDO); };
 const avisoDominio = () => `Solo se aceptan correos institucionales que terminen en ${DOMINIO_PERMITIDO}.`;
 const ROLES = { visitante: "Usuario", gestor: "Colaborador", superadmin: "Superadministrador" };
