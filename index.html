@@ -3957,7 +3957,7 @@ async function sbPerfil(au) {
       ({ data: p } = await SB.from("perfiles").select("*").eq("id", au.id).maybeSingle());
     }
   }
-  if (!p || p.estado !== "activo") { await SB.auth.signOut(); return null; }
+  if (!p || p.estado !== "activo") { if (esGoogle(au) && !S.googleErr) S.googleErr = p ? "Tu usuario no está activo. Contacta al administrador." : "No se encontró tu perfil. Ejecuta supabase-google.sql en Supabase (SQL Editor)."; await SB.auth.signOut(); return null; }
   const u = sbUsuario(p, au); let lista = [u];
   if (rolDe(p.rol) === "superadmin") { const { data } = await SB.from("perfiles").select("*"); if (data) lista = data.map((x) => sbUsuario(x)); }
   S.cat.usuarios = lista; if (rolDe(p.rol) === "superadmin") { await sbNotifs(); if (S.catErr && S.catErr !== "red") setTimeout(() => toast("Los visualizadores no pueden leer el catálogo publicado. Ejecuta supabase-visualizador.sql en Supabase."), 1500); } return lista.find((x) => x.id === u.id) || u;
