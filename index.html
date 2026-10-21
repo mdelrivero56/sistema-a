@@ -5390,6 +5390,18 @@ body.auth .col,body.auth main{background:transparent}
 .gal-wrap .gal2-arrow:active{transform:translateY(-50%) scale(.92)}
 .gal-wrap .gal2-arrow[disabled]{opacity:.35;pointer-events:none}
 </style>
+<style id="galeria-flechas-fuera">
+/* Flechas en carriles laterales, fuera de las imágenes y centradas en vertical */
+.gal-wrap{padding-inline:56px;--gw:min(430px,78cqw)}
+.gal-wrap .gallery.bleed{margin-inline:0!important;padding-inline:calc(50cqw - var(--gw)/2)!important;scroll-padding-inline:0!important;border-radius:20px}
+.gal-wrap .gal2-prev{left:8px;right:auto}
+.gal-wrap .gal2-next{right:8px;left:auto}
+@media(max-width:700px){
+  .gal-wrap{padding-inline:42px;--gw:100cqw}
+  .gal-wrap .gal2-arrow{width:32px;height:32px}
+  .gal-wrap .gal2-prev{left:4px}.gal-wrap .gal2-next{right:4px}
+}
+</style>
 <script id="galeria-flechas-v2-js">
 (function(){
   var SVGL='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
