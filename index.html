@@ -863,6 +863,8 @@ const CONFIG_BASE = {
   terminos: ""                // términos y condiciones (opcional)
 };
 /* Supabase: pega aquí la URL y la clave pública (anon) de tu proyecto. Nunca uses la clave service_role. */
+/* Texto de la casilla al registrarse o completar el perfil (la solicitud de sistemas conserva el suyo) */
+const TEXTO_PRIVACIDAD_ACCESO = "Usaremos tus datos para identificar a quien consulta el catálogo y para contactarte.";
 const SUPABASE_URL = "https://owdeglulxmamvbpbqiog.supabase.co";
 const SUPABASE_KEY = "sb_publishable_33l2WIbJHQ96J7McaPbgXQ_XH3tKmAL";
 const SB_ON = !!(SUPABASE_URL && SUPABASE_KEY);
@@ -3656,6 +3658,7 @@ const ACT = {
   "cambiar-pass"() { abrirCambiarClave(); },
   "cerrar-sesion"() { cerrarModal(); limpiarSesion(); location.hash = "#/"; render(false); toast("Sesión cerrada"); },
   "super-enviar"() { sbSuperEnviar(); },
+  "codigo-enviar"() { sbCodigoEnviar(); },
   "google-login"() { sbGoogle(); },
   async "dep-add"() { if (!S.super) return; const i = $("#dep-nueva"), n = i ? i.value.trim() : ""; if (n.length < 2) { toast("Escribe el nombre de la dependencia."); return; } if (depsNombres().some((x) => norm(x) === norm(n))) { toast("Esa dependencia ya está en el registro."); return; } await depsRegistrar(n); toast("Dependencia registrada"); keep(() => render(false)); },
   "dep-ren"(t) { abrirRenDep(t.dataset.n); },
@@ -3954,6 +3957,7 @@ document.addEventListener("submit", (e) => {
   else if (f.id === "form-reg") { e.preventDefault(); registrarse(); }
   else if (f.id === "form-rec") { e.preventDefault(); solicitarRecuperacion(); }
   else if (f.id === "form-nueva") { e.preventDefault(); sbGuardarNueva(); }
+  else if (f.id === "form-usercod") { e.preventDefault(); sbCodigoVerificar(); }
   else if (f.id === "form-completar") { e.preventDefault(); sbCompletarPerfil(); }
   else if (f.id === "form-aviso") { e.preventDefault(); guardarAviso(f); }
   else if (f.id === "form-usr") { e.preventDefault(); crearUsuarioAdmin(); }
@@ -4003,6 +4007,34 @@ async function sbPerfil(au) {
   u.completar = esGoogle(au) && rolDe(p.rol) !== "superadmin" && !(p.dependencia && p.cargo && p.telefono);
   if (rolDe(p.rol) === "superadmin") { const { data } = await SB.from("perfiles").select("*"); if (data) lista = data.map((x) => sbUsuario(x)); }
   S.cat.usuarios = lista; if (rolDe(p.rol) === "superadmin") { await sbNotifs(); if (S.catErr && S.catErr !== "red") setTimeout(() => toast("Los visualizadores no pueden leer el catálogo publicado. Ejecuta supabase-visualizador.sql en Supabase."), 1500); } return lista.find((x) => x.id === u.id) || u;
+}
+/* Entrar con código por correo (sirve también para cuentas creadas con Google que no tienen contraseña) */
+async function sbCodigoEnviar() {
+  authErr("");
+  const reenvio = S.authView === "usercod";
+  const correo = reenvio ? S.codCorreo : normCorreo(val("a-correo"));
+  if (!correoOk(correo)) return marcarFaltantes([["a-correo", "Escribe tu correo electrónico válido."]]);
+  if (correo === normCorreo(CORREO_SUPER)) return sbSuperEnviar();
+  if (!SB) return authErr("No se pudo conectar con el servicio de acceso. Revisa tu conexión.");
+  const espera = 60000 - (Date.now() - (S.codT || 0));
+  if (espera > 0 && S.codCorreo === correo) return authErr(`Espera ${Math.ceil(espera / 1000)} s antes de pedir otro código.`);
+  const { error } = await SB.auth.signInWithOtp({ email: correo, options: { shouldCreateUser: false } });
+  if (error && /rate|seconds|too many|limit/i.test(error.message)) return authErr("Se pidieron demasiados códigos. Espera un minuto e inténtalo de nuevo.");
+  /* Si el correo no tiene cuenta no se avisa, para no revelar quién está registrado */
+  S.codT = Date.now(); S.codCorreo = correo; S.authView = "usercod"; render(false);
+  if (reenvio) toast("Te enviamos un código nuevo.");
+}
+async function sbCodigoVerificar() {
+  const tok = val("a-codigo").replace(/\s/g, ""); authErr("");
+  if (!/^\d{6,10}$/.test(tok)) return marcarFaltantes([["a-codigo", "Escribe el código numérico que llegó a tu correo."]]);
+  if (!SB || !S.codCorreo) return authErr("No se pudo conectar con el servicio de acceso. Revisa tu conexión.");
+  const btn = $("#a-usc-btn"); if (btn) { btn.disabled = true; btn.textContent = "Verificando…"; }
+  const libre = () => { if (btn) { btn.disabled = false; btn.textContent = "Entrar"; } };
+  const r = await SB.auth.verifyOtp({ email: S.codCorreo, token: tok, type: "email" });
+  if (r.error || !r.data || !r.data.user) { libre(); return authErr("Código incorrecto o vencido. Pide uno nuevo con «Reenviar código»."); }
+  const u = await sbPerfil(r.data.user);
+  if (!u) { libre(); return authErr("Tu usuario no está activo o no tiene perfil. Contacta al administrador."); }
+  abrirSesion(u, true);
 }
 /* Primer ingreso con Google: guarda cargo, dependencia y teléfono (usa la función completar_perfil de supabase-completar-perfil.sql) */
 async function sbCompletarPerfil() {
@@ -4056,20 +4088,22 @@ async function sbLogin() {
   if (!correoPermitido(correo)) return marcarFaltantes([["a-correo", avisoDominio()]]);
   if (!SB) return authErr("No se pudo conectar con el servicio de acceso. Revisa tu conexión.");
   const { data, error } = await SB.auth.signInWithPassword({ email: correo, password: pass });
-  if (error || !data.user) return authErr("Correo o contraseña incorrectos.");
+  if (error || !data.user) return authErr("Correo o contraseña incorrectos. Si entraste antes con Google, usa «Continuar con Google» o «Entrar con código por correo».");
   const u = await sbPerfil(data.user);
   if (!u) return authErr("Tu usuario no está activo. Contacta al administrador.");
   if (S.authView === "colab" && !["gestor", "superadmin"].includes(rolDe(u.rol))) { try { await SB.auth.signOut(); } catch (e) {} S.cat.usuarios = []; return authErr("Esta cuenta es de tipo Usuario, no Colaborador. Entra por la pestaña «Usuario» o pide a un superadministrador que cambie tu tipo de acceso."); }
   abrirSesion(u, true);
 }
 
+/* Si ya escribieron su correo, Google lo preselecciona; si no, deja elegir la cuenta */
+const loginHint = () => { const c = normCorreo(val("a-correo") || ""); return correoOk(c) ? { login_hint: c } : { prompt: "select_account" }; };
 async function sbGoogle() {
   authErr("");
   if (!SB) return authErr("No se pudo conectar con el servicio de acceso. Revisa tu conexión.");
   const b = $("#a-google-btn"), tx = b && b.querySelector("span"), orig = tx ? tx.textContent : "";
   if (b) { b.disabled = true; if (tx) tx.textContent = "Conectando con Google…"; }
   let error = null;
-  try { ({ error } = await SB.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname, queryParams: { prompt: "select_account" } } })); } catch (e) { error = e; }
+  try { ({ error } = await SB.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname, queryParams: loginHint() } })); } catch (e) { error = e; }
   if (error) {
     if (b) { b.disabled = false; if (tx) tx.textContent = orig; }
     authErr(/not enabled|unsupported provider/i.test(error.message || "") ? "El acceso con Google aún no está activado en Supabase (Authentication → Providers → Google)." : "No se pudo iniciar con Google. Inténtalo de nuevo.");
@@ -4176,9 +4210,12 @@ function vAuthSB() {
     const u = S.user, nom = u.nombre && u.nombre !== u.correo ? u.nombre : "";
     return marco("Completa tu perfil", `Entraste con <b>${esc(u.correo)}</b>. Necesitamos unos datos para que tus solicitudes lleguen al área correcta. Solo se piden esta vez.`,
       `<form id="form-completar" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-nombre", "Nombre completo", { auto: "name", req: 1, extra: `value="${esc(nom)}"` })}${fld("a-cargo", "Cargo", { req: 1 })}${depCampoAuth()}${fld("a-area", "Área o unidad (opcional)")}${fld("a-tel", "Teléfono de contacto", { tipo: "tel", auto: "tel", req: 1 })}
-      <label class="chk"><input type="checkbox" id="a-acepto" aria-required="true"><span>${reqMark.trim()} ${esc(c.privacidad)}${linksLegales()}</span></label>${err}<button class="btn big" type="submit" id="a-comp-btn">Guardar y entrar</button></form>
+      <label class="chk"><input type="checkbox" id="a-acepto" aria-required="true"><span>${reqMark.trim()} ${esc(TEXTO_PRIVACIDAD_ACCESO)}${linksLegales()}</span></label>${err}<button class="btn big" type="submit" id="a-comp-btn">Guardar y entrar</button></form>
       <div class="auth-links"><button type="button" data-act="cerrar-sesion">Cancelar y cerrar sesión</button></div>`);
   }
+  if (S.authView === "usercod") return marco("Escribe tu código", `Si <b>${esc(S.codCorreo || "ese correo")}</b> tiene una cuenta, le enviamos un código. Revisa tu bandeja de entrada y también spam.`,
+    `<form id="form-usercod" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-codigo", "Código recibido por correo", { req: 1, ph: "123456", extra: 'inputmode="numeric" autocomplete="one-time-code" maxlength="10" style="letter-spacing:.2em"' })}${err}<button class="btn big" type="submit" id="a-usc-btn">Entrar</button></form>
+     <div class="auth-links"><button type="button" data-act="codigo-enviar">Reenviar código</button><button type="button" data-act="auth-ir" data-v="login">Cancelar</button></div>`);
   if (S.authView === "super") return marco("Acceso de superadministrador", `Entra con tu correo y contraseña. Si aún no tienes contraseña, usa «Entrar con código por correo» (se envía a <b>${esc(maskCorreo(CORREO_SUPER))}</b>) y luego créala en Mi cuenta → Cambiar contraseña.`,
     `<div class="note info">${glifo("info")}<div>Solo la persona propietaria recibe el código. Las demás personas deben usar la pestaña <b>Usuario</b>.</div></div><form id="form-superpass" novalidate>${fld("a-sup-correo", "Correo del propietario", { tipo: "email", req: 1, auto: "username", ph: "correo autorizado" })}${fld("a-sup-pass", "Contraseña", { pw: 1, req: 1 })}${err}<button class="btn big" type="submit" id="a-supp-btn" style="margin-top:12px">Entrar como superadministrador</button></form>
      <div class="auth-links"><button type="button" data-act="super-enviar" id="a-sup-btn">Entrar con código por correo</button></div>
@@ -4204,7 +4241,7 @@ function vAuthSB() {
       <fieldset class="fgrp"><legend>Tus datos</legend><div class="fgrid">${fld("a-nombre", "Nombre completo", { auto: "name", req: 1 })}${fld("a-cargo", "Cargo", { req: 1 })}</div></fieldset>
       <fieldset class="fgrp"><legend>Tu dependencia</legend><div class="fgrid">${depCampoAuth()}${fld("a-area", "Área o unidad (opcional)")}</div></fieldset>
       <fieldset class="fgrp"><legend>Contacto y acceso</legend><div class="fgrid">${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "email", ph: "tucorreo@ejemplo.com", req: 1 })}${fld("a-tel", "Teléfono de contacto", { tipo: "tel", auto: "tel", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, auto: "new-password", hint: CLAVE_AYUDA, req: 1 })}${fld("a-pass2", "Confirma la contraseña", { pw: 1, auto: "new-password", req: 1 })}</div></fieldset>
-      <label class="chk"><input type="checkbox" id="a-acepto" aria-required="true"><span>${reqMark.trim()} ${esc(c.privacidad)}${linksLegales()}</span></label>${err}<button class="btn big" type="submit" id="a-reg-btn">Crear mi cuenta</button></form>
+      <label class="chk"><input type="checkbox" id="a-acepto" aria-required="true"><span>${reqMark.trim()} ${esc(TEXTO_PRIVACIDAD_ACCESO)}${linksLegales()}</span></label>${err}<button class="btn big" type="submit" id="a-reg-btn">Crear mi cuenta</button></form>
     <p class="auth-switch">¿Ya tienes cuenta? <button type="button" class="linkbtn" data-act="auth-ir" data-v="login">Inicia sesión</button></p>
     <div class="auth-divider" role="separator"></div><button class="btn ghost big auth-alt auth-visor" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button></div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
   const visor = `<div class="auth-divider" role="separator"></div><button class="btn ghost big auth-alt auth-visor" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button><p class="auth-note">Como visualizador puedes ver todo el catálogo. Para solicitar un sistema necesitas iniciar sesión.</p>`;
@@ -4216,7 +4253,8 @@ function vAuthSB() {
     <div class="lg-paso" id="lg-p2" hidden>
       ${fld("a-pass", "Contraseña", { pw: 1, req: 1 })}<div class="pw-help"><button type="button" class="linkbtn" data-act="auth-ir" data-v="recuperar">¿Olvidaste tu contraseña?</button></div>
       <button class="btn big" type="submit">Iniciar sesión</button>
-      <div class="auth-links" id="a-owner" style="display:none"><button type="button" data-act="super-enviar">Entrar con código por correo</button></div>
+      <p class="auth-switch" style="margin:0">¿Esta cuenta es de Google? <button type="button" class="linkbtn" data-act="google-login">Continuar con Google</button></p>
+      <div class="auth-links"><button type="button" data-act="codigo-enviar">Entrar con código por correo</button></div><p class="auth-note" style="margin-top:2px">¿Entraste antes con Google y no tienes contraseña? Pide un código a tu correo.</p>
       <p class="auth-switch">¿No tienes cuenta? <button type="button" class="linkbtn" data-act="auth-ir" data-v="registro">Crear cuenta</button></p>
     </div>${err}</form>
   ${visor}</div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
