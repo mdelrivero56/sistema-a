@@ -5386,5 +5386,43 @@ body.auth .col,body.auth main{background:transparent}
 .feat-bar .get{white-space:nowrap}
 @media(max-width:560px){.feat-bar .t{display:none!important}.feat-bar .get-wrap{flex:1}.feat-bar .get-wrap .get{width:100%}}
 </style>
+<style id="galeria-flechas-v2">
+.gal-wrap{position:relative}
+.gal-wrap .gal-arrow{display:none!important}
+.gal-wrap .gal2-arrow{position:absolute;top:calc(50% - 4px);transform:translateY(-50%);z-index:30;width:36px;height:36px;border-radius:50%;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+  background:#fff;color:#004EAA;border:1.5px solid rgba(0,78,170,.4);box-shadow:0 3px 12px rgba(11,27,58,.4);transition:transform .15s,opacity .15s,background .15s,color .15s}
+.gal-wrap .gal2-arrow svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round}
+.gal-wrap .gal2-prev{left:10px}
+.gal-wrap .gal2-next{right:10px}
+.gal-wrap .gal2-arrow:hover{background:#004EAA;color:#fff}
+.gal-wrap .gal2-arrow:active{transform:translateY(-50%) scale(.92)}
+.gal-wrap .gal2-arrow[disabled]{opacity:.35;pointer-events:none}
+</style>
+<script id="galeria-flechas-v2-js">
+(function(){
+  var SVGL='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+      SVGR='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+  function paso(g){var a=g.children[0],b=g.children[1];return a&&b?(b.offsetLeft-a.offsetLeft):g.clientWidth;}
+  function mk(cls,lbl,html){var b=document.createElement('button');b.type='button';b.className='gal2-arrow '+cls;b.setAttribute('aria-label',lbl);b.innerHTML=html;return b;}
+  function setup(g){
+    if(g.__gal2) return; g.__gal2=true;
+    var w=g.closest('.gal-wrap')||g.parentElement; if(!w) return;
+    if(!w.classList.contains('gal-wrap')) w.classList.add('gal-wrap');
+    var p=mk('gal2-prev','Imagen anterior',SVGL), n=mk('gal2-next','Imagen siguiente',SVGR);
+    w.appendChild(p); w.appendChild(n);
+    function act(){var max=g.scrollWidth-g.clientWidth; p.disabled=g.scrollLeft<=2; n.disabled=g.scrollLeft>=max-2;}
+    p.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();g.scrollBy({left:-paso(g),behavior:'smooth'});});
+    n.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();g.scrollBy({left:paso(g),behavior:'smooth'});});
+    g.addEventListener('scroll',act,{passive:true});
+    if('ResizeObserver' in window) new ResizeObserver(act).observe(g);
+    g.addEventListener('load',act,true);
+    act(); setTimeout(act,300);
+  }
+  function scan(){var l=document.querySelectorAll('.gallery');for(var i=0;i<l.length;i++) setup(l[i]);}
+  new MutationObserver(scan).observe(document.documentElement,{childList:true,subtree:true});
+  scan();
+})();
+</script>
 </body>
 </html>
