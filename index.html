@@ -5285,15 +5285,6 @@ button{text-align:center}
   padding-inline:calc(50cqw - var(--gw)/2);
   scroll-snap-type:x mandatory}
 .gallery .shot{scroll-snap-align:center;scroll-snap-stop:always}
-.gal-wrap .gal-arrow,.gal-wrap .gal-arrow[hidden]{display:inline-flex!important;position:absolute;top:calc(50% - 4px);transform:translateY(-50%);z-index:20;
-  width:34px;height:34px;border-radius:50%;opacity:1;pointer-events:auto;
-  background:#fff;color:#004EAA;border:1.5px solid rgba(0,78,170,.35);
-  box-shadow:0 3px 12px rgba(11,27,58,.4)}
-.gal-wrap .gal-arrow .g{width:18px;height:18px;stroke-width:2.6}
-.gal-wrap .gal-prev{left:8px;right:auto}
-.gal-wrap .gal-next{right:8px;left:auto}
-.gal-wrap .gal-arrow:disabled{opacity:.4;pointer-events:none}
-@media(min-width:900px){.gal-wrap .gal-prev{left:14px}.gal-wrap .gal-next{right:14px}}
 </style>
 <style id="marca-centrada">
 /* Marca centrada en el panel lateral: logo grande arriba, nombre y organización centrados debajo */
@@ -5407,7 +5398,7 @@ body.auth .col,body.auth main{background:transparent}
   function mk(cls,lbl,html){var b=document.createElement('button');b.type='button';b.className='gal2-arrow '+cls;b.setAttribute('aria-label',lbl);b.innerHTML=html;return b;}
   function setup(g){
     if(g.__gal2) return; g.__gal2=true;
-    var w=g.closest('.gal-wrap')||g.parentElement; if(!w) return;
+    var w=g.closest('.gal-wrap')||g.parentElement; if(!w) return; var olds=w.querySelectorAll('.gal-arrow'); for(var k=0;k<olds.length;k++) olds[k].remove();
     if(!w.classList.contains('gal-wrap')) w.classList.add('gal-wrap');
     var p=mk('gal2-prev','Imagen anterior',SVGL), n=mk('gal2-next','Imagen siguiente',SVGR);
     w.appendChild(p); w.appendChild(n);
