@@ -716,6 +716,11 @@ button.avatar{font:inherit;font-weight:700}
 }
 :root[data-theme="dark"]{color-scheme:light;--bg:#f7f9fc;--bg-soft:#edf3f8;--bg-card:#fff;--bg-input:#fff;--label:#203047;--label-2:#53657b;--label-3:#718198;--sep:#dce5ef;--sep-strong:#b8c9dc;--accent:#176b87;--accent-ink:#fff;--accent-soft:#e0f2f5;--pill:#e7f0f6;--pill-ink:#155b78;--glass:rgba(255,255,255,.96);--sidebar:#edf3f8;--sel:#dfeaf3;--shadow:0 2px 8px rgba(34,65,92,.06);--shadow-pop:0 12px 32px rgba(34,65,92,.14);--scrim:rgba(25,45,65,.22)}
 
+.tipo-tag{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:1px 8px;margin-right:6px;vertical-align:1px;white-space:nowrap}
+.tipo-tag.t-sistema{background:var(--accent-soft);color:var(--accent)}
+.tipo-tag.t-web{background:var(--ok-soft);color:var(--ok)}
+.fhead .cats .tipo-tag{font-size:12.5px;padding:3px 10px;align-self:center;margin-right:0}
+.chips.tipos{margin:12px 0 4px;display:flex;gap:8px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -958,7 +963,7 @@ const VIDEO_DEMO = "data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW
 function sistemaBase(o) {
   return Object.assign({
     id: uid("sis"), nombre: "", subtitulo: "", icono: { glifo: "app", color: "azul", imagen: "" }, portada: "",
-    categorias: [], usos: [], estado: "Disponible", publicado: true, destacado: false, etiqueta: "",
+    categorias: [], usos: [], estado: "Disponible", publicado: true, destacado: false, etiqueta: "", tipoSis: "", ligados: [],
     version: "1.0", actualizado: hoyISO(), area: "", contacto: { correo: "", telefono: "" },
     descripcion: "", plataforma: "Web", requisitos: [], pasos: [], enlaces: [], tecnica: [],
     dependencias: [], novedades: [], capturas: [], archivos: [], videos: [], videoDestacado: { url: "", data: "", nombre: "" }, descTam: "16", descColor: "", ejemplo: false
@@ -1574,7 +1579,7 @@ function btnGet(s, cls = "", sinNota = false) {
 }
 function fila(s, sub) {
   const aviso = !s.publicado ? `<span class="tag">No publicado</span>` : "";
-  return `<div class="row"><a class="row-main" href="#/sistema/${enc(s.id)}">${icono(s, "s64")}<span class="row-t"><b>${esc(s.nombre)}</b><small>${aviso}${esc(sub ?? s.subtitulo)}</small></span></a>${btnGet(s)}</div>`;
+  return `<div class="row"><a class="row-main" href="#/sistema/${enc(s.id)}">${icono(s, "s64")}<span class="row-t"><b>${esc(s.nombre)}</b><small>${aviso}${tipoTag(s)}${esc(sub ?? s.subtitulo)}</small></span></a>${btnGet(s)}</div>`;
 }
 function feat(s) {
   const cap = s.capturas[0];
@@ -1582,7 +1587,7 @@ function feat(s) {
     ? `<img src="${esc(s.portada)}" alt="">`
     : `<span class="feat-glyph">${glifo(GLIFOS.includes(s.icono.glifo) ? s.icono.glifo : "app")}</span>${cap && imgOk(cap.src) ? `<span class="feat-shot"><img src="${esc(cap.src)}" alt=""></span>` : ""}`;
   return `<article class="feat" style="${colorVars(s.icono.color)}">
-    <a class="feat-txt" href="#/sistema/${enc(s.id)}"><span class="eyebrow">${esc(s.etiqueta || "Ya está disponible")}</span><strong>${esc(s.nombre)}</strong><span class="sub">${esc(s.subtitulo)}</span></a>
+    <a class="feat-txt" href="#/sistema/${enc(s.id)}"><span class="eyebrow">${esc(etqCorta(s))}</span><strong>${esc(s.nombre)}</strong><span class="sub">${esc(s.subtitulo)}</span></a>
     <div class="feat-card"><a class="feat-art" href="#/sistema/${enc(s.id)}" tabindex="-1" aria-hidden="true">${art}</a>
       <div class="feat-bar">${icono(s, "s48")}<span class="t"><b>${esc(s.nombre)}</b><small>${esc(s.subtitulo)}</small></span>${btnGet(s, "glass")}</div></div></article>`;
 }
@@ -1614,6 +1619,15 @@ function logoSvg(c) {
 const logoInner = (c) => imgOk(c.logo) ? `<img src="${esc(c.logo)}" alt="">` : logoSvg(c);
 const logoHtml = (c) => `<span class="ico s40${imgOk(c.logo) ? "" : " lg"}" style="${colorVars("azul")}">${logoInner(c)}</span>`;
 
+const TIPOS = { sistema: "Sistema", web: "Página web / Portal" };
+const tipoDe = (s) => (TIPOS[s.tipoSis] ? s.tipoSis : (s.categorias || []).includes("portales") ? "web" : "sistema");
+const tipoNom = (s) => TIPOS[tipoDe(s)];
+const tipoTag = (s) => `<span class="tipo-tag t-${tipoDe(s)}">${esc(tipoNom(s))}</span>`;
+function ligadosDe(s) {
+  const ids = new Set(Array.isArray(s.ligados) ? s.ligados : []);
+  vis().forEach((x) => { if (x.id !== s.id && Array.isArray(x.ligados) && x.ligados.includes(s.id)) ids.add(x.id); });
+  return [...ids].map((i) => byId(i)).filter((x) => x && x.id !== s.id && (x.publicado || S.admin));
+}
 function relacionados(s, n = 6) {
   const pts = (x) => { let p = 0; x.usos.forEach((u) => { if (s.usos.includes(u)) p += 3; }); x.categorias.forEach((c) => { if (s.categorias.includes(c)) p += 2; }); return p; };
   const otros = vis().filter((x) => x.id !== s.id);
@@ -2341,7 +2355,7 @@ function aplicarApariencia(c) {
 const hashParts = () => location.hash.replace(/^#\/?/, "").split("?")[0].split("/").filter(Boolean).map((d) => { try { return decodeURIComponent(d); } catch (e) { return d; } });
 const go = (p) => { location.hash = "#/" + p; };
 let post = null, io = null;
-const F2 = { cat: "todas", orden: "catalogo" };
+const F2 = { cat: "todas", orden: "catalogo", tipo: "todos" };
 
 let rutaPrev = ["", ""];
 function pestanear(parcial, sub) {
@@ -2432,7 +2446,7 @@ function renderChrome(a) {
 }
 
 /* ---------- Vistas públicas ---------- */
-const etqCorta = (s) => (s.etiqueta && s.etiqueta.length <= 24 ? s.etiqueta : s.estado === "Disponible" ? "Ya está disponible" : s.estado);
+const etqCorta = (s) => (s.etiqueta && s.etiqueta.length <= 24 ? s.etiqueta : s.estado === "Disponible" ? tipoNom(s) : s.estado);
 const etqDesc = (s) => (s.etiqueta && s.etiqueta.length > 24 ? s.etiqueta : s.subtitulo);
 function storeHero(feats) {
   const g = (s) => glifo(GLIFOS.includes(s.icono.glifo) ? s.icono.glifo : "app");
@@ -2494,7 +2508,7 @@ function cardVer(s) {
   const art = imgOk(s.portada)
     ? `<img class="cv-img" src="${esc(s.portada)}" alt="">`
     : `<span class="cv-glyph">${glifo(GLIFOS.includes(s.icono.glifo) ? s.icono.glifo : "app")}</span>${cap && imgOk(cap.src) ? `<span class="cv-shot"><img src="${esc(cap.src)}" alt=""></span>` : ""}`;
-  return `<article class="cv"><span class="cv-eye">${esc(etqCorta(s))}</span><div class="cv-card"><a class="cv-art" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}">${art}<span class="cv-over">${k ? `<small>${esc(k.nombre)}</small>` : ""}<b>${esc(s.subtitulo || s.nombre)}</b></span></a><div class="cv-bar">${icono(s, "s48")}<span class="cv-t"><b>${esc(s.nombre)}</b><small>Versión ${esc(s.version)}${s.area ? " · " + esc(s.area) : ""}</small></span>${btnGet(s, "sm", true)}</div></div></article>`;
+  return `<article class="cv"><span class="cv-eye">${esc(etqCorta(s))}</span><div class="cv-card"><a class="cv-art" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}">${art}<span class="cv-over">${k ? `<small>${esc(k.nombre)}</small>` : ""}<b>${esc(s.subtitulo || s.nombre)}</b></span></a><div class="cv-bar">${icono(s, "s48")}<span class="cv-t"><b>${esc(s.nombre)}</b><small>${esc(tipoNom(s))} · Versión ${esc(s.version)}${s.area ? " · " + esc(s.area) : ""}</small></span>${btnGet(s, "sm", true)}</div></div></article>`;
 }
 function vHome() {
   const lista = vis(), hoy = new Date();
@@ -2531,18 +2545,21 @@ function vHome() {
 
 function vSistemas() {
   let l = vis();
+  const nSis = l.filter((s) => tipoDe(s) === "sistema").length, nWeb = l.length - nSis;
+  if (F2.tipo !== "todos") l = l.filter((s) => tipoDe(s) === F2.tipo);
   if (F2.cat !== "todas") l = l.filter((s) => s.categorias.includes(F2.cat));
   if (F2.orden === "nombre") l = [...l].sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
   if (F2.orden === "recientes") l = [...l].sort((a, b) => (b.actualizado || "").localeCompare(a.actualizado || ""));
   if (F2.orden === "usados") l = [...l].sort((a, b) => b.dependencias.length - a.dependencias.length);
   const cats = S.cat.categorias.slice();
   post = iniciarCarrusel;
-  return `${cabecera("Sistemas", "Todos los sistemas que puedes solicitar para tu dependencia.")}
+  return `${cabecera("Sistemas", "Sistemas, páginas web y portales del catálogo. Cada uno indica de qué tipo es.")}
+    <div class="chips tipos" role="group" aria-label="Filtrar por tipo"><button class="chip txt" data-act="filtro-tipo" data-id="todos" aria-pressed="${F2.tipo === "todos"}">Todos (${nSis + nWeb})</button><button class="chip txt" data-act="filtro-tipo" data-id="sistema" aria-pressed="${F2.tipo === "sistema"}">Sistemas (${nSis})</button><button class="chip txt" data-act="filtro-tipo" data-id="web" aria-pressed="${F2.tipo === "web"}">Páginas web / Portales (${nWeb})</button></div>
     <div class="cv-wrap ch-wrap"><button type="button" class="cv-arrow cv-prev" data-act="cv-prev" aria-label="Anterior" hidden>${glifo("back")}</button><div class="chips bleed" role="group" aria-label="Filtrar por categoría"><button class="chip txt" data-act="filtro-cat" data-id="todas" aria-pressed="${F2.cat === "todas"}">Todos</button>${cats.map((k) => `<button class="chip txt" data-act="filtro-cat" data-id="${esc(k.id)}" aria-pressed="${F2.cat === k.id}">${esc(k.nombre)}</button>`).join("")}</div><button type="button" class="cv-arrow cv-next" data-act="cv-next" aria-label="Siguiente" hidden>${glifo("chev")}</button></div>
-    <div class="toolbar"><span class="muted">${l.length} ${plural(l.length, "sistema", "sistemas")}</span>
+    <div class="toolbar"><span class="muted">${l.length} ${plural(l.length, "resultado", "resultados")}</span>
       <label class="sr" for="orden">Ordenar</label><select class="select" id="orden" data-sel="orden"><option value="catalogo" ${F2.orden === "catalogo" ? "selected" : ""}>Orden del catálogo</option><option value="nombre" ${F2.orden === "nombre" ? "selected" : ""}>Nombre (A–Z)</option><option value="recientes" ${F2.orden === "recientes" ? "selected" : ""}>Más recientes</option><option value="usados" ${F2.orden === "usados" ? "selected" : ""}>Más usados</option></select></div>
     <div class="sp"></div>
-    ${l.length ? `<div class="rows">${l.map((s) => fila(s)).join("")}</div>` : vacio("Sin sistemas en esta categoría", "Prueba con otra categoría.")}`;
+    ${l.length ? `<div class="rows">${l.map((s) => fila(s)).join("")}</div>` : vacio("Sin resultados con este filtro", "Prueba con otro tipo o categoría.")}`;
 }
 
 function vCategorias() {
@@ -2684,7 +2701,7 @@ function vFicha(id) {
   const nov = s.novedades[0];
   const manualArch = s.archivos.find((a) => a.categoria === "Manual");
   const manualLink = s.enlaces.find((l) => l.tipo === "manual" && urlOk(l.url));
-  const rel = relacionados(s, 6);
+  const rel = relacionados(s, 6), lig = ligadosDe(s);
   const c0 = cats[0];
   const correo = s.contacto.correo || cfg().correoDestino;
 
@@ -2700,7 +2717,7 @@ function vFicha(id) {
   };
   const right = (S.admin ? `<a class="btn sm sec" href="#/admin/editar/${enc(s.id)}">${glifo("edit")}Editar</a>` : "") + `<button class="circ" data-act="compartir" data-id="${esc(s.id)}" aria-label="Copiar enlace del sistema">${glifo("share")}</button>` + btnGet(s, "sm", true);
 
-  const filasTec = [["Categoría", cats.map((c) => c.nombre).join(", ")], ["Plataforma", s.plataforma], ["Disponibilidad", s.estado]]
+  const filasTec = [["Tipo", tipoNom(s)], ["Categoría", cats.map((c) => c.nombre).join(", ")], ["Plataforma", s.plataforma], ["Disponibilidad", s.estado]]
     .concat(s.tecnica.map((t) => [t.k, t.v])).filter(([, v]) => v);
   const adj = s.archivos.map((a) => {
     const [cl, et] = tipoArchivo(a);
@@ -2714,9 +2731,9 @@ function vFicha(id) {
     <div class="fhead-t">
       <h1>${esc(s.nombre)}</h1>
       <p class="sub">${esc(s.subtitulo)}</p>
-      ${cats.length ? `<div class="cats">${cats.map((c) => `<a href="#/categoria/${enc(c.id)}">${esc(c.nombre)}</a>`).join("")}</div>` : ""}
+      <div class="cats">${tipoTag(s)}${cats.map((c) => `<a href="#/categoria/${enc(c.id)}">${esc(c.nombre)}</a>`).join("")}</div>
       ${!s.publicado ? `<div><span class="badge warn">No publicado · solo lo ves tú</span></div>` : ""}
-      <div class="fhead-actions" id="mainget">${btnGet(s, "big")}${prim ? `<a class="btn2" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">Abrir sistema ${glifo("out")}</a>` : ""}<button class="circ" data-act="compartir" data-id="${esc(s.id)}" aria-label="Copiar enlace del sistema" style="color:var(--accent)">${glifo("share")}</button></div>
+      <div class="fhead-actions" id="mainget">${btnGet(s, "big")}${prim ? `<a class="btn2" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">Abrir ${tipoDe(s) === "web" ? "página web" : "sistema"} ${glifo("out")}</a>` : ""}<button class="circ" data-act="compartir" data-id="${esc(s.id)}" aria-label="Copiar enlace del sistema" style="color:var(--accent)">${glifo("share")}</button></div>
       ${S.admin ? `<div class="manage" role="group" aria-label="Gestionar este sistema"><button type="button" class="mbtn" data-act="gestionar" data-modo="info" data-id="${esc(s.id)}">${glifo("edit")}Editar información</button><button type="button" class="mbtn" data-act="gestionar" data-modo="imagen" data-id="${esc(s.id)}">${glifo("img")}Cambiar imagen</button><button type="button" class="mbtn" data-act="ren-sis" data-id="${esc(s.id)}">${glifo("edit")}Cambiar nombre</button><button type="button" class="mbtn" data-act="del-sistema" data-id="${esc(s.id)}">${glifo("trash")}Eliminar</button></div>${prim ? "" : `<div class="note warn" style="margin-top:12px">${glifo("warn")}<div>Este sistema aún no tiene enlace para «Abrir sistema». <a href="#/admin/editar/${enc(s.id)}">Agregar el enlace</a></div></div>`}` : ""}
     </div></section>
   <section class="stats" aria-label="Datos del sistema">
@@ -2743,6 +2760,7 @@ function vFicha(id) {
       <div><button class="lr" data-act="contacto" data-id="${esc(s.id)}" data-problema="1">Reportar un problema ${glifo("warn")}</button></div>
     </div></section>
   ${s.usos.length ? `<section class="sec"><h2 class="sec-h">Parte de</h2><div class="tagcards">${s.usos.map((u) => `<a class="tagcard" href="#/uso/${enc(u)}"><span class="cdot" style="${colorVars(s.icono.color)}">${glifo("tag")}</span>${esc(u)}</a>`).join("")}</div></section>` : ""}
+  ${lig.length ? `<section class="sec"><h2 class="sec-h">Ligado con</h2><p class="muted" style="margin:-4px 0 10px">Sistemas y páginas que forman parte de este mismo conjunto o se conectan con él.</p><div class="rows">${lig.map((x) => fila(x)).join("")}</div></section>` : ""}
   ${rel.length ? `<section class="sec"><h2 class="sec-h"><a href="#/sistemas">También te podría interesar ${glifo("chev")}</a></h2><div class="rows">${rel.map((x) => fila(x, motivo(s, x))).join("")}</div></section>` : ""}
   <div class="cta-end"><div><b>¿Te sirve ${esc(s.nombre)}?</b><p>Envía tu solicitud y nos pondremos en contacto con tu dependencia para coordinar una reunión.${correo ? "" : ""}</p></div>${btnGet(s, "big", true)}</div>`;
 }
@@ -2910,7 +2928,7 @@ async function enviarSolicitud() {
   };
   if (SB) {
     try {
-      const { error } = await SB.from("solicitudes").insert({ folio: sol.folio, dependencia: sol.datos.dependencia, datos: sol.datos, sistemas: sol.sistemas.map((x) => ({ id: x.id, nombre: x.nombre, version: x.version || "" })) });
+      const { error } = await conLimite(SB.from("solicitudes").insert({ folio: sol.folio, dependencia: sol.datos.dependencia, datos: sol.datos, sistemas: sol.sistemas.map((x) => ({ id: x.id, nombre: x.nombre, version: x.version || "" })) }), 15000, { error: { message: "tiempo" } });
       if (!error) { sol.estado = "enviada"; sol.canal = "Supabase"; }
     } catch (err) { /* sigue con el correo */ }
   }
@@ -3265,8 +3283,10 @@ function vEditor(id) {
         <div class="tagedit">${s.usos.map((u) => `<span class="chip txt">${esc(u)}<button type="button" data-act="tag-del" data-t="${esc(u)}" aria-label="Quitar ${esc(u)}">${glifo("x")}</button></span>`).join("")}</div>
         <div style="display:flex;gap:8px;margin-top:8px"><input id="tag-in" type="text" placeholder="Ej. Eventos, Reuniones, Trámites" aria-label="Nueva etiqueta" autocomplete="off"><button type="button" class="btn sec sm" data-act="tag-add">${glifo("plus")}Agregar</button></div>
         ${sinUsar.length ? `<div class="selchips" style="margin-top:8px">${sinUsar.slice(0, 8).map((u) => `<button type="button" class="chip txt" data-act="tag-add" data-t="${esc(u)}" style="font-size:13px;padding:5px 12px">+ ${esc(u)}</button>`).join("")}</div>` : ""}</div>
+      <div class="field"><label for="e-tipoSis">Tipo</label><select class="select" id="e-tipoSis" data-path="tipoSis"><option value="" ${!s.tipoSis ? "selected" : ""}>Automático (${esc(TIPOS[tipoDe(Object.assign({}, s, { tipoSis: "" }))])})</option><option value="sistema" ${s.tipoSis === "sistema" ? "selected" : ""}>Sistema</option><option value="web" ${s.tipoSis === "web" ? "selected" : ""}>Página web / Portal</option></select><span class="muted" style="font-size:12.5px">Es lo que el visitante ve como «Sistema» o «Página web / Portal».</span></div>
       <div class="field"><label for="e-estado">Disponibilidad</label><select class="select" id="e-estado" data-path="estado">${optSel(ESTADOS, s.estado)}</select></div>
       ${inp("plataforma", "Plataforma", { ph: "Ej. Web · Tablets · Teléfonos" })}
+      <div class="field full"><span class="lbl">Ligado con (opcional)</span><div class="selchips" role="group">${S.cat.sistemas.filter((x) => x.id !== s.id).map((x) => `<button type="button" class="chip txt" data-act="e-lig" data-id="${esc(x.id)}" aria-pressed="${(s.ligados || []).includes(x.id)}">${esc(x.nombre)} · ${esc(tipoNom(x))}</button>`).join("") || '<span class="muted">Aún no hay otros elementos.</span>'}</div><span class="muted" style="font-size:12.5px">Los que marques aparecen en la ficha como «Ligado con» (y en la ficha del otro también).</span></div>
       <label class="chk full"><input type="checkbox" data-path="publicado" ${s.publicado ? "checked" : ""}><span><b>Publicado</b> — visible para todas las dependencias</span></label>
       <label class="chk full"><input type="checkbox" data-path="destacado" ${s.destacado ? "checked" : ""}><span><b>Destacado</b> — aparece en la tarjeta grande de la portada</span></label>
       ${inp("etiqueta", "Texto sobre el título destacado", { full: true, ph: "Ej. Ya está disponible, Nuevo, Ideal para tu próximo evento" })}
@@ -3644,6 +3664,7 @@ const ACT = {
   "ver-archivo"(t) { const s = byId(t.dataset.id); abrirArchivo(s && s.archivos.find((x) => x.id === t.dataset.fid)); },
   "bajar-archivo"(t) { const s = byId(t.dataset.id), a = s && s.archivos.find((x) => x.id === t.dataset.fid); if (!a) return; const b = dataToBlob(a.data); if (!b) return toast("No se pudo descargar el archivo."); const u = URL.createObjectURL(b); descargar(u, a.nombre); setTimeout(() => URL.revokeObjectURL(u), 5000); },
   "filtro-cat"(t) { F2.cat = t.dataset.id; render(false); },
+  "filtro-tipo"(t) { F2.tipo = t.dataset.id; render(false); },
 
   /* solicitud */
   "quitar-sel"(t) { F.sel = F.sel.filter((x) => x !== t.dataset.id); keep(() => render(false)); },
@@ -3796,6 +3817,7 @@ const ACT = {
   "e-color"(t) { const dr = draftActual(); if (!dr) return; dr.s.icono.color = t.dataset.c; dr.dirty = true; keep(() => render(false)); },
   "e-quitar-icono"() { const dr = draftActual(); if (!dr) return; dr.s.icono.imagen = ""; dr.dirty = true; keep(() => render(false)); },
   "e-quitar-portada"() { const dr = draftActual(); if (!dr) return; dr.s.portada = ""; dr.dirty = true; keep(() => render(false)); },
+  "e-lig"(t) { const dr = draftActual(); if (!dr) return; if (!Array.isArray(dr.s.ligados)) dr.s.ligados = []; const a = dr.s.ligados, i = a.indexOf(t.dataset.id); if (i >= 0) a.splice(i, 1); else a.push(t.dataset.id); dr.dirty = true; keep(() => render(false)); },
   "e-cat"(t) { const dr = draftActual(); if (!dr) return; const a = dr.s.categorias, i = a.indexOf(t.dataset.id); if (i >= 0) a.splice(i, 1); else a.push(t.dataset.id); dr.dirty = true; keep(() => render(false)); },
   "tag-add"(t) { agregarTag(t.dataset.t); },
   "tag-del"(t) { const dr = draftActual(); if (!dr) return; dr.s.usos = dr.s.usos.filter((u) => u !== t.dataset.t); dr.dirty = true; keep(() => render(false)); },
@@ -3997,13 +4019,24 @@ window.addEventListener("scroll", () => { const nb = $("#nb"); if (nb) nb.classL
 /* ---------- Arranque ---------- */
 /* ---------- Supabase: catálogo público + acceso real (Auth + RLS) ---------- */
 let SB = null;
-const cargarScript = (src) => new Promise((ok, no) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
+const conLimite = (p, ms, def) => { let t; return Promise.race([Promise.resolve(p).catch(() => def), new Promise((r) => { t = setTimeout(() => r(def), ms); })]).finally(() => clearTimeout(t)); };
+const cargarScript = (src, ms = 7000) => new Promise((ok, no) => { const s = document.createElement("script"); const t = setTimeout(() => { s.remove(); no(new Error("tiempo")); }, ms); s.src = src; s.onload = () => { clearTimeout(t); ok(); }; s.onerror = () => { clearTimeout(t); s.remove(); no(new Error("red")); }; document.head.appendChild(s); });
 const catPublico = () => { const o = JSON.parse(JSON.stringify(Object.assign({}, S.cat, { editado: false }))); delete o.usuarios; delete o.notificaciones; if (o.config) { delete o.config.pinHash; delete o.config.correoAdmin; } return o; };
 async function sbIniciar() {
   if (!SB_ON) return;
-  try { await cargarScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"); SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } }); } catch (e) { SB = null; }
+  /* Si una red institucional bloquea o tarda con un servidor, se prueba el otro y, si ninguno responde, el catálogo se muestra igual. */
+  const fuentes = ["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js", "https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"];
+  try {
+    await new Promise((ok, no) => {
+      let fin = false, fallos = 0; const listo = () => { if (!fin) { fin = true; ok(); } }, falla = () => { if (++fallos === fuentes.length && !fin) { fin = true; no(new Error("red")); } };
+      let seg = false; const segundo = () => { if (!seg && !fin) { seg = true; cargarScript(fuentes[1], 4000).then(listo, falla); } };
+      cargarScript(fuentes[0], 4000).then(listo, () => { falla(); segundo(); }); /* si el primero falla, el segundo entra de inmediato */
+      setTimeout(segundo, 2000); /* si solo tarda, se prueba el segundo en paralelo */
+    });
+    SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+  } catch (e) { SB = null; }
 }
-async function sbCatalogo() { if (!SB) return null; try { const { data, error } = await SB.from("catalogo").select("data").eq("id", 1).maybeSingle(); S.catErr = error ? error.message || "error" : ""; return data && catValido(data.data) ? data.data : null; } catch (e) { S.catErr = "red"; return null; } }
+async function sbCatalogo() { if (!SB) return null; try { const { data, error } = await conLimite(SB.from("catalogo").select("data").eq("id", 1).maybeSingle(), 5000, { data: null, error: { message: "tiempo" } }); S.catErr = error ? error.message || "error" : ""; return data && catValido(data.data) ? data.data : null; } catch (e) { S.catErr = "red"; return null; } }
 const sbUsuario = (p, au) => ({ id: p.id, nombre: p.nombre || (au && au.email) || p.correo, correo: p.correo || (au && au.email) || "", rol: rolDe(p.rol), estado: p.estado || "activo", dependencia: p.dependencia || "", area: p.area || "", cargo: p.cargo || "", telefono: p.telefono || "", sb: true, salt: "", hash: "" });
 const esGoogle = (au) => !!au && ((au.app_metadata && ((au.app_metadata.providers || []).includes("google") || au.app_metadata.provider === "google")) || (au.identities || []).some((i) => i.provider === "google"));
 async function sbPerfil(au) {
@@ -4300,7 +4333,7 @@ function vAuthSB() {
 const uniqNombres = (a) => { const v = new Map(); a.forEach((x) => { const n = String(x || "").trim().replace(/\s+/g, " "); if (n && !v.has(norm(n))) v.set(norm(n), n); }); return [...v.values()].sort((p, q) => p.localeCompare(q, "es")); };
 S.deps = [];
 const depsNombres = () => uniqNombres(SB ? S.deps.map((d) => d.nombre) : (cfg().dependencias || []));
-async function cargarDeps() { if (!SB) return; try { const { data, error } = await SB.from("dependencias").select("id,nombre").order("nombre"); if (!error && Array.isArray(data)) S.deps = data; } catch (e) {} }
+async function cargarDeps() { if (!SB) return; try { const { data, error } = await conLimite(SB.from("dependencias").select("id,nombre").order("nombre"), 4000, { error: true }); if (!error && Array.isArray(data)) S.deps = data; } catch (e) {} }
 async function depsRegistrar(nombre) {
   const n = String(nombre || "").trim().replace(/\s+/g, " "); if (n.length < 2) return "";
   const ya = depsNombres().find((x) => norm(x) === norm(n)); if (ya) return ya;
@@ -4369,6 +4402,7 @@ async function boot() {
   const okIDB = await IDB.open();
   S.memoria = !okIDB;
   await sbIniciar();
+  const pDeps = cargarDeps();
   const local = await IDB.get("catalogo"), sols = await IDB.get("solicitudes");
   S.sols = Array.isArray(sols) ? sols : [];
   let pub = null;
@@ -4386,11 +4420,11 @@ async function boot() {
   else if (pub) { S.cat = migrar(pub); S.cat.editado = false; }
   else S.cat = migrar(datosEjemplo());
   if (SB && URL_RECUP) { /* sesión de recuperación: no iniciar sesión, solo pedir la nueva contraseña */ }
-  else if (SB) { try { const { data } = await SB.auth.getSession(); if (data.session) { const u = await sbPerfil(data.session.user); if (u) { S.user = u; aplicarRol(u); } } } catch (e) {} }
+  else if (SB) { try { const { data } = await conLimite(SB.auth.getSession(), 4000, { data: {} }); if (data && data.session) { const u = await sbPerfil(data.session.user); if (u) { S.user = u; aplicarRol(u); } } } catch (e) {} }
   else restaurarSesion();
   S.guest = !S.user;
   if (SB && S.admin && local && local.sinPublicar && catValido(local)) { const nn = S.cat.notificaciones, uu = S.cat.usuarios; S.cat = migrar(local); S.cat.notificaciones = nn; S.cat.usuarios = uu; S.cat.editado = true; catRev++; sbEnCola(); setTimeout(() => toast("Recuperamos cambios que no se habían publicado (categorías y sistemas) y los estamos publicando."), 900); }
-  await cargarDeps();
+  await pDeps;
   if (URL_RECUP) { S.recup = true; S.authView = "nueva"; history.replaceState(null, "", location.pathname + "#/acceso"); }
   else if (URL_ERR) {
     const deGoogle = /access_denied|oauth|provider|identity/i.test(location.hash + location.search);
