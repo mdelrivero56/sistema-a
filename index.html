@@ -1678,7 +1678,7 @@ function abrirSesion(u, recordar) {
   const volver = S.retorno && !/^#\/acceso/.test(S.retorno) ? S.retorno : ""; S.retorno = null;
   S.user = u; aplicarRol(u); S.guest = false; try { sessionStorage.removeItem("catalogo-visitante"); } catch (e) {} guardarSesion(u, recordar); S.authView = "login";
   if (/^#\/acceso/.test(location.hash)) history.replaceState(null, "", volver || "#/");
-  render(true); if (!u.debeCambiar) toast(nNoLeidas() ? `Bienvenido(a), ${u.nombre.split(" ")[0]} · tienes ${nNoLeidas()} ${nNoLeidas() === 1 ? "notificación nueva" : "notificaciones nuevas"}` : `Bienvenido(a), ${u.nombre.split(" ")[0]}`);
+  render(true); if (!u.debeCambiar && !u.completar) toast(nNoLeidas() ? `Bienvenido(a), ${u.nombre.split(" ")[0]} · tienes ${nNoLeidas()} ${nNoLeidas() === 1 ? "notificación nueva" : "notificaciones nuevas"}` : `Bienvenido(a), ${u.nombre.split(" ")[0]}`);
 }
 
 /* ---------- Registro propio y notificaciones (sin códigos ni correos) ---------- */
@@ -2352,7 +2352,7 @@ function centrarPestanas() {
   });
 }
 function render(nav) {
-  const pideAcceso = (hashParts()[0] === "acceso" && !S.user) || (S.user && S.user.debeCambiar) || S.recup;
+  const pideAcceso = (hashParts()[0] === "acceso" && !S.user) || (S.user && S.user.debeCambiar) || (S.user && S.user.completar) || S.recup;
   if (pideAcceso) {
     document.body.classList.add("auth"); cerrarLightbox(); aplicarApariencia();
     view.innerHTML = vAuth(); document.title = cfg().nombre; window.scrollTo(0, 0); pestanear(); return;
@@ -3098,7 +3098,7 @@ function vAdminBase(sub, id) {
   const l = S.cat.sistemas;
   return cab + `<div class="admbar" style="margin-top:0"><span class="muted">${l.length} ${plural(l.length, "sistema", "sistemas")} · ${l.filter((s) => s.publicado).length} publicados</span><a class="btn" href="#/admin/editar/nuevo">${glifo("plus")}Agregar sistema</a></div>
     ${l.length ? `<div class="list-card">${l.map((s, i) => `<div class="arow">${icono(s, "s40")}<div class="t"><b>${esc(s.nombre || "Sin nombre")}</b><small><span class="badge ${s.estado === "Disponible" ? "ok" : s.estado === "Requiere validación" ? "warn" : ""}">${esc(s.estado)}</span>${s.publicado ? '<span class="badge acc">Publicado</span>' : '<span class="badge warn">Oculto</span>'}${s.destacado ? '<span class="badge">Destacado</span>' : ""}${s.ejemplo ? '<span class="badge">Ejemplo</span>' : ""}</small></div>
-      <div class="acts"><a class="btn sm" href="#/admin/editar/${enc(s.id)}">${glifo("edit")}Editar</a><button class="btn sm sec" data-act="ren-sis" data-id="${esc(s.id)}">Renombrar</button><button class="btn sm ghost" data-act="toggle-pub" data-id="${esc(s.id)}">${s.publicado ? "Ocultar" : "Publicar"}</button><a class="iconbtn" href="#/sistema/${enc(s.id)}" aria-label="Ver ${esc(s.nombre)}">${glifo("eye")}</a><button class="iconbtn" data-act="mover" data-id="${esc(s.id)}" data-d="-1" ${i === 0 ? "disabled" : ""} aria-label="Subir">${glifo("up")}</button><button class="iconbtn" data-act="mover" data-id="${esc(s.id)}" data-d="1" ${i === l.length - 1 ? "disabled" : ""} aria-label="Bajar">${glifo("down")}</button><button class="iconbtn" data-act="duplicar" data-id="${esc(s.id)}" aria-label="Duplicar ${esc(s.nombre)}">${glifo("copy")}</button><button class="iconbtn bad" data-act="del-sistema" data-id="${esc(s.id)}" aria-label="Eliminar ${esc(s.nombre)}">${glifo("trash")}</button></div></div>`).join("")}</div>` : vacio("Aún no hay sistemas", "Agrega el primero para que aparezca en el catálogo.", `<a class="btn" href="#/admin/editar/nuevo">${glifo("plus")}Agregar sistema</a>`)}`;
+      <div class="acts"><div class="acts-main"><a class="btn sm" href="#/admin/editar/${enc(s.id)}">${glifo("edit")}Editar</a><button class="btn sm sec" data-act="ren-sis" data-id="${esc(s.id)}">Renombrar</button><button class="btn sm ghost" data-act="toggle-pub" data-id="${esc(s.id)}">${s.publicado ? "Ocultar" : "Publicar"}</button></div><div class="acts-icons"><a class="iconbtn" href="#/sistema/${enc(s.id)}" aria-label="Ver ${esc(s.nombre)}">${glifo("eye")}</a><button class="iconbtn" data-act="mover" data-id="${esc(s.id)}" data-d="-1" ${i === 0 ? "disabled" : ""} aria-label="Subir">${glifo("up")}</button><button class="iconbtn" data-act="mover" data-id="${esc(s.id)}" data-d="1" ${i === l.length - 1 ? "disabled" : ""} aria-label="Bajar">${glifo("down")}</button><button class="iconbtn" data-act="duplicar" data-id="${esc(s.id)}" aria-label="Duplicar ${esc(s.nombre)}">${glifo("copy")}</button><button class="iconbtn bad" data-act="del-sistema" data-id="${esc(s.id)}" aria-label="Eliminar ${esc(s.nombre)}">${glifo("trash")}</button></div></div></div>`).join("")}</div>` : vacio("Aún no hay sistemas", "Agrega el primero para que aparezca en el catálogo.", `<a class="btn" href="#/admin/editar/nuevo">${glifo("plus")}Agregar sistema</a>`)}`;
 }
 
 function vAdminCategorias() {
@@ -3954,6 +3954,7 @@ document.addEventListener("submit", (e) => {
   else if (f.id === "form-reg") { e.preventDefault(); registrarse(); }
   else if (f.id === "form-rec") { e.preventDefault(); solicitarRecuperacion(); }
   else if (f.id === "form-nueva") { e.preventDefault(); sbGuardarNueva(); }
+  else if (f.id === "form-completar") { e.preventDefault(); sbCompletarPerfil(); }
   else if (f.id === "form-aviso") { e.preventDefault(); guardarAviso(f); }
   else if (f.id === "form-usr") { e.preventDefault(); crearUsuarioAdmin(); }
   else if (f.id === "form-pass") { e.preventDefault(); cambiarMiClave(); }
@@ -3998,8 +3999,32 @@ async function sbPerfil(au) {
   }
   if (!p || p.estado !== "activo") { if (esGoogle(au) && !S.googleErr) S.googleErr = p ? "Tu usuario no está activo. Contacta al administrador." : "No se encontró tu perfil. Ejecuta supabase-google.sql en Supabase (SQL Editor)."; await SB.auth.signOut(); return null; }
   const u = sbUsuario(p, au); let lista = [u];
+  /* Google: la primera vez se pide completar el perfil (cargo, dependencia, teléfono) */
+  u.completar = esGoogle(au) && rolDe(p.rol) !== "superadmin" && !(p.dependencia && p.cargo && p.telefono);
   if (rolDe(p.rol) === "superadmin") { const { data } = await SB.from("perfiles").select("*"); if (data) lista = data.map((x) => sbUsuario(x)); }
   S.cat.usuarios = lista; if (rolDe(p.rol) === "superadmin") { await sbNotifs(); if (S.catErr && S.catErr !== "red") setTimeout(() => toast("Los visualizadores no pueden leer el catálogo publicado. Ejecuta supabase-visualizador.sql en Supabase."), 1500); } return lista.find((x) => x.id === u.id) || u;
+}
+/* Primer ingreso con Google: guarda cargo, dependencia y teléfono (usa la función completar_perfil de supabase-completar-perfil.sql) */
+async function sbCompletarPerfil() {
+  authErr("");
+  const d = { nombre: val("a-nombre"), dependencia: val("a-dep"), area: val("a-area"), cargo: val("a-cargo"), telefono: val("a-tel") };
+  const falta = [], mal = (id, m) => falta.push([id, m]);
+  if (d.nombre.length < 3) mal("a-nombre", "Escribe tu nombre completo.");
+  if (d.cargo.length < 2) mal("a-cargo", "Escribe tu cargo.");
+  if (d.dependencia.length < 2) mal($("#a-depsel") && $("#a-dep-wrap").hidden ? "a-depsel" : "a-dep", "Elige o escribe tu dependencia u organización.");
+  if (d.telefono.replace(/\D/g, "").length < 8) mal("a-tel", "Escribe un teléfono de al menos 8 dígitos.");
+  if (!$("#a-acepto").checked) mal("a-acepto", "Acepta el aviso de privacidad para continuar.");
+  if (falta.length) return marcarFaltantes(falta);
+  const btn = $("#a-comp-btn"); if (btn) { btn.disabled = true; btn.textContent = "Guardando…"; }
+  const fin = (m) => { if (btn) { btn.disabled = false; btn.textContent = "Guardar y entrar"; } authErr(m); };
+  if (!SB) return fin("No se pudo conectar con el servicio de acceso. Revisa tu conexión.");
+  let r; try { r = await SB.rpc("completar_perfil", { p_nombre: d.nombre, p_dependencia: d.dependencia, p_area: d.area, p_cargo: d.cargo, p_telefono: d.telefono }); } catch (e) { r = { error: e }; }
+  if (r && r.error) return fin("No se pudo guardar tu perfil. Avisa al administrador: falta ejecutar supabase-completar-perfil.sql en Supabase.");
+  try { await SB.from("notificaciones").insert({ tipo: "registro", titulo: `Se unió ${d.nombre}`, detalle: { userId: S.user.id, nombre: d.nombre, correo: S.user.correo, dependencia: d.dependencia, area: d.area, cargo: d.cargo, telefono: d.telefono } }); } catch (e) {}
+  try { await depsRegistrar(d.dependencia); } catch (e) {}
+  Object.assign(S.user, { nombre: d.nombre, dependencia: d.dependencia, area: d.area, cargo: d.cargo, telefono: d.telefono, completar: false });
+  if (/^#\/acceso/.test(location.hash)) history.replaceState(null, "", "#/");
+  render(true); toast(`Bienvenido(a), ${d.nombre.split(" ")[0]}`);
 }
 /* Login en dos pasos: 1) Google o correo, 2) contraseña (+ olvidé contraseña / crear cuenta) */
 function loginPaso(n) {
@@ -4147,6 +4172,13 @@ function vAuthSB() {
   const vis = `<button class="btn sec big auth-alt" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button>`;
   const gBtn = (t, sep = "o con tu correo") => `<button type="button" class="btn-google" id="a-google-btn" data-act="google-login" data-txt="${esc(t)}"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12 c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24 c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657 C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36 c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571 c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path></svg><span>${esc(t)}</span></button><div class="auth-or" role="separator"><span>${esc(sep)}</span></div>`;
   const marco = (h1, lede, body, tb = "") => `<div class="authwrap"><div class="authcard">${cab}${tb}<h1>${h1}</h1><p class="lede">${lede}</p>${body}</div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
+  if (S.user && S.user.completar) {
+    const u = S.user, nom = u.nombre && u.nombre !== u.correo ? u.nombre : "";
+    return marco("Completa tu perfil", `Entraste con <b>${esc(u.correo)}</b>. Necesitamos unos datos para que tus solicitudes lleguen al área correcta. Solo se piden esta vez.`,
+      `<form id="form-completar" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-nombre", "Nombre completo", { auto: "name", req: 1, extra: `value="${esc(nom)}"` })}${fld("a-cargo", "Cargo", { req: 1 })}${depCampoAuth()}${fld("a-area", "Área o unidad (opcional)")}${fld("a-tel", "Teléfono de contacto", { tipo: "tel", auto: "tel", req: 1 })}
+      <label class="chk"><input type="checkbox" id="a-acepto" aria-required="true"><span>${reqMark.trim()} ${esc(c.privacidad)}${linksLegales()}</span></label>${err}<button class="btn big" type="submit" id="a-comp-btn">Guardar y entrar</button></form>
+      <div class="auth-links"><button type="button" data-act="cerrar-sesion">Cancelar y cerrar sesión</button></div>`);
+  }
   if (S.authView === "super") return marco("Acceso de superadministrador", `Entra con tu correo y contraseña. Si aún no tienes contraseña, usa «Entrar con código por correo» (se envía a <b>${esc(maskCorreo(CORREO_SUPER))}</b>) y luego créala en Mi cuenta → Cambiar contraseña.`,
     `<div class="note info">${glifo("info")}<div>Solo la persona propietaria recibe el código. Las demás personas deben usar la pestaña <b>Usuario</b>.</div></div><form id="form-superpass" novalidate>${fld("a-sup-correo", "Correo del propietario", { tipo: "email", req: 1, auto: "username", ph: "correo autorizado" })}${fld("a-sup-pass", "Contraseña", { pw: 1, req: 1 })}${err}<button class="btn big" type="submit" id="a-supp-btn" style="margin-top:12px">Entrar como superadministrador</button></form>
      <div class="auth-links"><button type="button" data-act="super-enviar" id="a-sup-btn">Entrar con código por correo</button></div>
@@ -5229,6 +5261,23 @@ body.auth .col,body.auth main{background:transparent}
 .authcard .btn.big.auth-visor:not(.sec){background:#F6F9FE!important;border:1.5px solid #DCE6F5!important;color:#004EAA!important;box-shadow:none!important;transform:none}
 .authcard .btn.big.auth-visor:not(.sec):hover{background:#EAF1FB!important;border-color:#C9DAF1!important}
 .authcard .btn.big.auth-visor .g{color:#004EAA}
+/* Buscador de la pestaña Buscar (celular): el anillo de enfoque va en toda la barra, no en un cuadro interior */
+.bigsearch input[type=search],.bigsearch input[type=search]:focus,.bigsearch input[type=search]:focus-visible{outline:none!important;box-shadow:none!important;border:0!important;background:transparent!important;border-radius:0!important}
+.bigsearch{border:1.5px solid transparent;transition:border-color .15s,box-shadow .15s,background .15s}
+.bigsearch:focus-within{background:#fff!important;border-color:var(--azul,#004EAA)!important;box-shadow:0 0 0 3px rgba(0,78,170,.15)!important}
+.bigsearch input[type=search]::-webkit-search-cancel-button{cursor:pointer;margin-left:6px}
+/* Administrador > Sistemas: botones ordenados en dos filas iguales */
+.arow .acts{gap:12px 16px}
+.arow .acts-main,.arow .acts-icons{display:flex;align-items:center;gap:8px}
+@media(max-width:640px){
+  .arow{padding:18px 16px;gap:14px}
+  .arow .acts{display:grid;gap:10px;width:100%}
+  .arow .acts-main{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .arow .acts-main .btn{width:100%;min-height:44px;margin:0;padding:0 8px;justify-content:center;align-items:center;white-space:nowrap;font-size:15px}
+  .arow .acts-icons{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .arow .acts-icons .iconbtn{width:100%;height:44px;margin:0;border-radius:12px;background:var(--bg);border:1px solid var(--sep);display:flex;align-items:center;justify-content:center}
+  .arow .acts-icons .iconbtn[disabled]{opacity:.35}
+}
 .feat-bar .get{white-space:nowrap}
 @media(max-width:560px){.feat-bar .t{display:none!important}.feat-bar .get-wrap{flex:1}.feat-bar .get-wrap .get{width:100%}}
 </style>
