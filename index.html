@@ -1590,7 +1590,7 @@ function navbar({ mid = "", right = "", back = true } = {}) {
   return `<div class="navbar" id="nb">${back ? `<button class="circ" data-act="back" aria-label="Volver">${glifo("back")}</button>` : ""}<div class="mid">${mid}</div>${mid ? "" : '<div class="spacer"></div>'}<div class="right">${right}</div></div>`;
 }
 function cabecera(titulo, sub = "", cuando = "") {
-  return `<header class="pagehead"><div>${cuando ? `<div class="when">${esc(cuando)}</div>` : ""}<h1 class="large-title">${esc(titulo)}</h1>${sub ? `<p class="lede">${esc(sub)}</p>` : ""}</div>${S.admin ? `<a class="avatar on" href="#/admin" aria-label="Administración">${glifo("edit")}</a>` : `<button class="avatar" data-act="mi-cuenta" aria-label="Mi cuenta">${S.user ? esc(iniciales(S.user.nombre)) : glifo("user")}</button>`}</header>`;
+  return `<header class="pagehead"><div>${cuando ? `<div class="when">${esc(cuando)}</div>` : ""}<h1 class="large-title">${esc(titulo)}</h1>${sub ? `<p class="lede">${esc(sub)}</p>` : ""}</div>${S.admin ? `<a class="avatar on" href="#/admin" aria-label="Administración">${glifo("edit")}</a>` : S.user ? `<button class="avatar" data-act="mi-cuenta" aria-label="Mi cuenta">${esc(iniciales(S.user.nombre))}</button>` : ""}</header>`;
 }
 function vacio(titulo, texto, extra = "") { return `<div class="empty">${glifo("search")}<b>${esc(titulo)}</b><p>${esc(texto)}</p>${extra}</div>`; }
 const LOGO_MARCAS = {
@@ -1680,7 +1680,9 @@ function abrirSesion(u, recordar) {
   const volver = S.retorno && !/^#\/acceso/.test(S.retorno) ? S.retorno : ""; S.retorno = null;
   S.user = u; aplicarRol(u); S.guest = false; try { sessionStorage.removeItem("catalogo-visitante"); } catch (e) {} guardarSesion(u, recordar); S.authView = "login";
   if (/^#\/acceso/.test(location.hash)) history.replaceState(null, "", volver || "#/");
-  render(true); if (!u.debeCambiar && !u.completar) toast(nNoLeidas() ? `Bienvenido(a), ${u.nombre.split(" ")[0]} · tienes ${nNoLeidas()} ${nNoLeidas() === 1 ? "notificación nueva" : "notificaciones nuevas"}` : `Bienvenido(a), ${u.nombre.split(" ")[0]}`);
+  const vuelveAForm = !!S.folioPendiente && /^#\/solicitar/.test(volver); S.folioPendiente = false;
+  if (vuelveAForm) { const v0 = F.vals; if (!v0.nombre) v0.nombre = u.nombre || ""; if (!v0.correo) v0.correo = u.correo || ""; if (!v0.dependencia) v0.dependencia = u.dependencia || ""; if (!v0.cargo) v0.cargo = u.cargo || ""; if (!v0.telefono) v0.telefono = u.telefono || ""; }
+  render(true); if (vuelveAForm && !u.debeCambiar && !u.completar) toast("Listo. Presiona «Enviar solicitud» para generar tu folio."); else if (!u.debeCambiar && !u.completar) toast(nNoLeidas() ? `Bienvenido(a), ${u.nombre.split(" ")[0]} · tienes ${nNoLeidas()} ${nNoLeidas() === 1 ? "notificación nueva" : "notificaciones nuevas"}` : `Bienvenido(a), ${u.nombre.split(" ")[0]}`);
 }
 
 /* ---------- Registro propio y notificaciones (sin códigos ni correos) ---------- */
@@ -2089,7 +2091,7 @@ function vAuth() {
   const err = `<div class="err" id="a-err" role="alert"></div>`;
   const visitante = `<button class="btn sec big auth-alt" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button>`;
   const ayudaRoles = `<details class="auth-alt"><summary class="muted" style="cursor:pointer;font-size:14px">¿Qué tipo de acceso necesito?</summary><ul class="rolhelp">
-    <li><b>Visualizador:</b> solo consulta el catálogo, sin cuenta. No puede solicitar.</li><li><b>Usuario:</b> te registras tú mismo con tus datos y puedes consultar y solicitar sistemas.</li>
+    <li><b>Visualizador:</b> consulta el catálogo sin cuenta. Solo al enviar una solicitud (para generar su folio) se le pide iniciar sesión.</li><li><b>Usuario:</b> te registras tú mismo con tus datos y puedes consultar y solicitar sistemas.</li>
     <li><b>Colaborador:</b> ayuda a manejar el catálogo (sistemas y categorías). Lo autoriza el administrador.</li>
     <li><b>Superadministrador:</b> control total. Se entra desde la pestaña «Superadministrador» con un código que llega al correo del propietario.</li></ul></details>`;
   let t, sub, body;
@@ -2376,7 +2378,7 @@ function render(nav) {
       case "uso": html = vLista("uso", b); break;
       case "sistema": html = vFicha(b); break;
       case "buscar": html = vBuscar(); break;
-      case "solicitar": if (S.super) { history.replaceState(null, "", "#/solicitudes"); html = vBandeja(); } else html = S.user ? vSolicitar(b) : vAccesoParaSolicitar(b); break;
+      case "solicitar": if (S.super) { history.replaceState(null, "", "#/solicitudes"); html = vBandeja(); } else html = vSolicitar(b); break;
       case "gracias": html = vGracias(b); break;
       case "solicitudes": html = S.super ? vBandeja() : vSolicitudes(); break;
       case "avisos": html = vAvisos(); break;
@@ -2420,13 +2422,13 @@ function renderChrome(a) {
     ${cats.map((k) => `<a class="cat" href="#/categoria/${enc(k.id)}" ${catActiva === k.id ? 'aria-current="page"' : ""}><span class="cdot${catCls(k)}" style="${colorVars(k.color)}">${catInner(k)}</span>${esc(k.nombre)}</a>`).join("")}`;
   $("#sidefoot").innerHTML = `<div class="mode">${S.user ? esc(S.user.nombre) + " · " + ROLES[rolDe(S.user.rol)] : "Visualizador"}</div>`
     + (S.admin ? `<a class="sidenav-a" href="#/admin" ${cur("admin")} style="display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:9px;color:var(--label);font-size:15px;${act === "admin" ? "background:var(--sel);font-weight:600" : ""}"><span style="color:var(--accent);display:flex">${glifo("ajustes")}</span>Administración</a>` : "")
-    + `<button class="sidenav-a" data-act="mi-cuenta" style="display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:9px;color:var(--label-2);font-size:14.5px"><span style="display:flex">${glifo("user")}</span>${S.user ? "Mi cuenta" : "Iniciar sesión"}</button>`;
+    + (S.user ? `<button class="sidenav-a" data-act="mi-cuenta" style="display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:9px;color:var(--label-2);font-size:14.5px"><span style="display:flex">${glifo("user")}</span>Mi cuenta</button>` : "");
   const tabs = [["", "hoy", "Descubrir"], ["sistemas", "capas", "Sistemas"], ["categorias", "grid", "Categorías"], ["solicitudes", "send", "Solicitudes"], ["buscar", "search", "Buscar"]];
   $("#tabbar").innerHTML = `<a class="rail-brand${imgOk(c.logo) ? "" : " lg"}" href="#/" aria-label="Inicio · ${esc(c.nombre)}">${logoInner(c)}</a>`
     + tabs.map(([k, g, t]) => `<a href="#/${k}" ${act === k ? 'aria-current="page"' : ""}>${glifo(g)}<span>${t}</span></a>`).join("")
-    + `<button class="rail-admin ${S.admin ? "on" : ""}" data-act="mi-cuenta" aria-label="Mi cuenta">${glifo("user")}<span>Cuenta</span></button>`;
+    + (S.user ? `<button class="rail-admin ${S.admin ? "on" : ""}" data-act="mi-cuenta" aria-label="Mi cuenta">${glifo("user")}<span>Cuenta</span></button>` : "");
   actualizarCampana();
-  $("#foot").innerHTML = `<span>${esc(c.organizacion)}</span><span>${c.correoDestino ? `Contacto: ${esc(c.correoDestino)}` : "Catálogo de sistemas digitales"}${c.telefono ? ` · ${esc(c.telefono)}` : ""}· <a href="#/contacto">Contacto y directorio</a>${String(c.avisoPrivacidad || "").trim() ? ' · <a href="#/privacidad">Aviso de privacidad</a>' : ""}${String(c.terminos || "").trim() ? ' · <a href="#/terminos">Términos y condiciones</a>' : ""}${S.user ? "" : ` · <a href="#/acceso" style="opacity:.65">Acceso administrador</a>`}</span>`;
+  $("#foot").innerHTML = `<span>${esc(c.organizacion)}</span><span>${c.correoDestino ? `Contacto: ${esc(c.correoDestino)}` : "Catálogo de sistemas digitales"}${c.telefono ? ` · ${esc(c.telefono)}` : ""}· <a href="#/contacto">Contacto y directorio</a>${String(c.avisoPrivacidad || "").trim() ? ' · <a href="#/privacidad">Aviso de privacidad</a>' : ""}${String(c.terminos || "").trim() ? ' · <a href="#/terminos">Términos y condiciones</a>' : ""}</span>`;
 }
 
 /* ---------- Vistas públicas ---------- */
@@ -2892,7 +2894,6 @@ function enfocarError() {
 }
 
 async function enviarSolicitud() {
-  if (!S.user) { go("solicitar"); return; }
   F.errs = validarSolicitud();
   if (Object.keys(F.errs).length) { keep(() => render(false)); enfocarError(); return; }
   if (F.vals.web) { go("solicitudes"); return; }
@@ -3049,17 +3050,16 @@ function vBandeja() {
     ${bulk}
     ${grupos.size ? [...grupos.values()].map((g) => `<section class="ban-dep"><h2>${esc(g.nombre)} <small>${g.items.length} solicitud${g.items.length === 1 ? "" : "es"}</small></h2>${g.items.map(card).join("")}</section>`).join("") : vacio("No hay solicitudes", S.bf === "todas" ? "Cuando una dependencia solicite un sistema aparecerá aquí." : "No hay solicitudes con este estado.")}`;
 }
-function misSols() { return S.user ? S.sols.filter((x) => normCorreo((x.datos || {}).correo || "") === normCorreo(S.user.correo || "")) : []; }
+function misSols() { return S.user ? S.sols.filter((x) => normCorreo((x.datos || {}).correo || "") === normCorreo(S.user.correo || "")) : S.sols.slice(); }
 function vSesionRequerida(titulo, sub, texto) {
   return `${cabecera(titulo, sub)}<div class="sp"></div>
     <div class="card" style="max-width:560px"><p style="margin:0 0 10px">${texto}</p>
     <div class="acciones"><button class="btn" data-act="ir-login">Iniciar sesión</button><button class="btn sec" data-act="ir-registro">Registrarse</button><a class="btn ghost" href="#/sistemas">Seguir explorando</a></div></div>`;
 }
 function vSolicitudes() {
-  if (!S.user) return vSesionRequerida("Mis solicitudes", "Inicia sesión para ver tu historial.", "Tus solicitudes se muestran solo cuando inicias sesión con tu correo, para proteger tu información. Puedes seguir explorando el catálogo sin cuenta.");
   const lista = misSols();
   const est = { enviada: ["ok", "Enviada"], pendiente: ["warn", "Falta enviar el correo"], guardada: ["", "Guardada en este dispositivo"] };
-  return `${cabecera("Mis solicitudes", "Historial de las solicitudes que hiciste con tu cuenta en este dispositivo.")}
+  return `${cabecera("Mis solicitudes", "Historial de las solicitudes que hiciste desde este dispositivo.")}
     <div class="sp"></div>
     ${lista.length ? lista.map((sol) => { const [cl, tx] = est[sol.estado] || ["", sol.estado]; return `<article class="solcard"><header><div><b style="font-size:17px">${esc(sol.sistemas.map((s) => s.nombre).join(", "))}</b><div class="muted" style="font-size:14px">${esc(sol.datos.dependencia)} · ${esc(fmtFecha(sol.fecha))}</div></div><span class="badge ${cl}">${esc(tx)}</span></header>
       <div class="muted" style="font-size:14px">Folio <span class="folio" style="font-size:13px;padding:2px 8px">${esc(sol.folio)}</span>${sol.listo ? ' <span class="badge ok">Listo para implementar</span>' : ""}</div>${vChecklist(sol)}
