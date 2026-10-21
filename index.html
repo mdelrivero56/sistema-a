@@ -5278,20 +5278,22 @@ button{text-align:center}
 @media(min-width:900px){.gal-prev{left:12px}.gal-next{right:12px}}
 </style>
 <style id="galeria-centrada">
-/* «Vista previa»: capturas centradas, una a la vez, con flechas pequeñas a los lados de la imagen activa */
-.gal-wrap{container-type:inline-size}
-.gal-wrap{--gw:min(430px,78cqw)}
+/* «Vista previa»: capturas centradas, con dos flechas SIEMPRE visibles (izquierda y derecha, centradas en vertical) */
+.gal-wrap{container-type:inline-size;--gw:min(430px,78cqw)}
 .gallery.bleed{margin-inline:0;scroll-padding-inline:0;
   grid-auto-columns:var(--gw);
   padding-inline:calc(50cqw - var(--gw)/2);
   scroll-snap-type:x mandatory}
 .gallery .shot{scroll-snap-align:center;scroll-snap-stop:always}
-.gal-arrow{width:30px;height:30px}
-.gal-arrow .g{width:16px;height:16px}
-.gal-prev,.gal-next{left:auto;right:auto}
-.gal-prev{left:max(4px,calc(50cqw - var(--gw)/2 - 38px))}
-.gal-next{right:max(4px,calc(50cqw - var(--gw)/2 - 38px))}
-@media(min-width:900px){.gal-prev{left:max(4px,calc(50cqw - var(--gw)/2 - 42px))}.gal-next{right:max(4px,calc(50cqw - var(--gw)/2 - 42px))}}
+.gal-wrap .gal-arrow,.gal-wrap .gal-arrow[hidden]{display:inline-flex!important;position:absolute;top:calc(50% - 4px);transform:translateY(-50%);z-index:20;
+  width:34px;height:34px;border-radius:50%;opacity:1;pointer-events:auto;
+  background:#fff;color:#004EAA;border:1.5px solid rgba(0,78,170,.35);
+  box-shadow:0 3px 12px rgba(11,27,58,.4)}
+.gal-wrap .gal-arrow .g{width:18px;height:18px;stroke-width:2.6}
+.gal-wrap .gal-prev{left:8px;right:auto}
+.gal-wrap .gal-next{right:8px;left:auto}
+.gal-wrap .gal-arrow:disabled{opacity:.4;pointer-events:none}
+@media(min-width:900px){.gal-wrap .gal-prev{left:14px}.gal-wrap .gal-next{right:14px}}
 </style>
 <style id="marca-centrada">
 /* Marca centrada en el panel lateral: logo grande arriba, nombre y organización centrados debajo */
