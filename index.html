@@ -2083,7 +2083,7 @@ function vAuth() {
   const fld = (id, label, o = {}) => `<div class="field"><label for="${id}">${label}${o.req ? reqMark : ""}</label>${o.pw
     ? `<div class="pwrow"><input id="${id}" type="password" autocomplete="${o.auto || "current-password"}" ${o.req ? 'aria-required="true"' : ""}><button type="button" class="showpw" data-act="ver-pass" aria-label="Mostrar u ocultar contraseña">Mostrar</button></div>`
     : `<input id="${id}" type="${o.tipo || "text"}" autocomplete="${o.auto || "off"}" placeholder="${esc(o.ph || "")}" value="${esc(o.val || "")}" ${o.extra || ""} ${o.req ? 'aria-required="true"' : ""}>`}${o.hint ? `<span class="muted" style="font-size:12.5px">${o.hint}</span>` : ""}</div>`;
-  const correoF = (label = "Correo electrónico") => fld("a-correo", label, { tipo: "email", req: 1, ph: "nombre@dependencia.gob.mx", auto: "username", extra: 'autocapitalize="none" spellcheck="false"' });
+  const correoF = (label = "Correo electrónico") => fld("a-correo", label, { tipo: "email", req: 1, ph: "tucorreo@ejemplo.com", auto: "username", extra: 'autocapitalize="none" spellcheck="false"' });
   const err = `<div class="err" id="a-err" role="alert"></div>`;
   const visitante = `<button class="btn sec big auth-alt" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button>`;
   const ayudaRoles = `<details class="auth-alt"><summary class="muted" style="cursor:pointer;font-size:14px">¿Qué tipo de acceso necesito?</summary><ul class="rolhelp">
@@ -2100,7 +2100,7 @@ function vAuth() {
     t = hay ? "Acceso de Superadministrador" : "Crea la cuenta de Superadministrador";
     sub = hay ? "Accede a la administración del catálogo. Después de iniciar sesión, podrás personalizar la identidad visual y añadir tu propio logotipo en Configuración > General."
               : "Es el primer acceso. Se enviará un código de autorización al correo del propietario del sistema; sin ese código no se crea la cuenta.";
-    body = `<form id="form-super" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-nombre", "Nombre completo", { auto: "name", req: 1 })}${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "email", ph: "nombre@dependencia.gob.mx" })}${fld("a-pass", "Contraseña", { pw: 1, auto: "new-password", hint: CLAVE_AYUDA, req: 1 })}${fld("a-pass2", "Confirma la contraseña", { pw: 1, auto: "new-password", req: 1 })}
+    body = `<form id="form-super" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-nombre", "Nombre completo", { auto: "name", req: 1 })}${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "email", ph: "tucorreo@ejemplo.com" })}${fld("a-pass", "Contraseña", { pw: 1, auto: "new-password", hint: CLAVE_AYUDA, req: 1 })}${fld("a-pass2", "Confirma la contraseña", { pw: 1, auto: "new-password", req: 1 })}
       <div class="note info">${glifo("info")}<div>El código llegará a <b>${esc(maskCorreo(CORREO_SUPER))}</b>. Pídeselo a la persona propietaria y escríbelo en el siguiente paso.</div></div>
       ${err}<button class="btn big" type="submit" id="a-super-btn">Solicitar código de autorización</button></form>
       <div class="auth-links">${pend ? `<button type="button" data-act="auth-ir" data-v="codigo">Ya tengo un código</button>` : ""}${hay ? `<button type="button" data-act="auth-ir" data-v="login">Ya tengo usuario</button>` : ""}</div>${visitante}`;
@@ -2112,7 +2112,7 @@ function vAuth() {
       <div class="auth-links"><button type="button" data-act="super-reenviar">Reenviar código</button><button type="button" data-act="super-cancelar">Cancelar solicitud</button></div>`;
   } else if (v === "registro") {
     t = "Crea tu cuenta"; sub = "Regístrate con tus datos y entra al instante: no necesitas códigos ni esperar autorización. Después inicias sesión con tu correo y contraseña.";
-    body = `<form id="form-reg" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-nombre", "Nombre completo", { auto: "name", req: 1 })}${fld("a-cargo", "Cargo", { auto: "organization-title", req: 1 })}${depCampoAuth()}${fld("a-area", "Área o unidad (opcional)")}${fld("a-correo", "Correo institucional", { tipo: "email", auto: "email", ph: "nombre@dependencia.gob.mx", extra: 'autocapitalize="none" spellcheck="false"', req: 1 })}${fld("a-tel", "Teléfono de contacto", { tipo: "tel", auto: "tel", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, auto: "new-password", hint: CLAVE_AYUDA, req: 1 })}${fld("a-pass2", "Confirma la contraseña", { pw: 1, auto: "new-password", req: 1 })}
+    body = `<form id="form-reg" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-nombre", "Nombre completo", { auto: "name", req: 1 })}${fld("a-cargo", "Cargo", { auto: "organization-title", req: 1 })}${depCampoAuth()}${fld("a-area", "Área o unidad (opcional)")}${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "email", ph: "tucorreo@ejemplo.com", extra: 'autocapitalize="none" spellcheck="false"', req: 1 })}${fld("a-tel", "Teléfono de contacto", { tipo: "tel", auto: "tel", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, auto: "new-password", hint: CLAVE_AYUDA, req: 1 })}${fld("a-pass2", "Confirma la contraseña", { pw: 1, auto: "new-password", req: 1 })}
       <label class="chk"><input type="checkbox" id="a-acepto" aria-required="true"><span>${reqMark.trim()} ${esc(c.privacidad)}${linksLegales()}</span></label>${err}<button class="btn big" type="submit" id="a-reg-btn">Crear mi cuenta</button></form>
       <div class="auth-links"><button type="button" data-act="auth-ir" data-v="login">Ya tengo cuenta</button></div>${visitante}`;
   } else if (v === "recuperar") {
@@ -2815,7 +2815,7 @@ function vSolicitar(id) {
           ${campo("area", "Área o unidad", { ph: "Opcional" })}
           ${campo("cargo", "Cargo", { ph: "Opcional", ac: "organization-title" })}
           ${campo("nombre", "Nombre completo", { req: true, full: true, ac: "name" })}
-          ${campo("correo", "Correo institucional", { req: true, tipo: "email", ph: "nombre@dependencia.gob.mx", ac: "email" })}
+          ${campo("correo", "Correo institucional", { req: true, tipo: "email", ph: "tucorreo@ejemplo.com", ac: "email" })}
           ${campo("telefono", "Teléfono", { req: true, tipo: "tel", ph: "10 dígitos", ac: "tel" })}
           <div class="field"><label for="f-contactoPref">¿Cómo prefieres que te contactemos? <span class="req" aria-hidden="true">*</span></label><select class="in select" id="f-contactoPref" data-form="contactoPref" style="width:100%">${opts(ocon, v.contactoPref)}</select></div>
           ${campo("horario", "Horario preferido para que te contactemos", { ph: "Ej. lunes a viernes, 10:00 a 14:00" })}
@@ -2847,7 +2847,7 @@ function validarSolicitud() {
   const req = (k, m) => { if (!String(v[k] || "").trim()) e[k] = m; };
   if (!F.sel.length) e.sel = "Elige al menos un sistema.";
   req("dependencia", "Elige o escribe el nombre de tu dependencia."); req("nombre", "Escribe tu nombre completo.");
-  if (!correoOk(v.correo)) e.correo = "Escribe un correo válido, por ejemplo nombre@dependencia.gob.mx.";
+  if (!correoOk(v.correo)) e.correo = "Escribe un correo válido, por ejemplo tucorreo@ejemplo.com.";
   if (String(v.telefono || "").replace(/\D/g, "").length < 8) e.telefono = "Escribe un teléfono de al menos 8 dígitos.";
   req("tipoUso", "Elige el tipo de uso."); if (v.tipoUso === "Otro") req("usoOtro", "Escribe cuál será el uso."); req("mensaje", "Cuéntanos brevemente qué necesitas.");
   if (!v.acepto) e.acepto = "Necesitamos tu aceptación para continuar.";
@@ -3669,7 +3669,6 @@ const ACT = {
     }
     S.authView = destino; render(false); const i = $("input", view); if (i) i.focus();
   },
-  "login-cambiar"() { loginPaso(1); },
   "auth-copiar"() { if (S.authInfo) copiar(`Para: ${S.authInfo.para}\nAsunto: ${S.authInfo.asunto}\n\n${S.authInfo.cuerpo}`, "Mensaje copiado"); },
   "ver-pass"(t) { const i = $("input", t.closest(".pwrow")); if (!i) return; const ver = i.type === "password"; i.type = ver ? "text" : "password"; t.textContent = ver ? "Ocultar" : "Mostrar"; },
   "usr-nuevo"() { abrirCrearUsuario({}); },
@@ -4010,7 +4009,6 @@ function loginPaso(n) {
     const correo = normCorreo(val("a-correo"));
     if (!correoOk(correo)) return marcarFaltantes([["a-correo", "Escribe un correo electrónico válido."]]);
     if (typeof correoPermitido === "function" && !correoPermitido(correo)) return marcarFaltantes([["a-correo", avisoDominio()]]);
-    $("#lg-mail").textContent = correo;
   }
   f.dataset.paso = String(n); p1.hidden = n === 2; p2.hidden = n !== 2;
   const i = $(n === 2 ? "#a-pass" : "#a-correo"); if (i) i.focus();
@@ -4160,30 +4158,30 @@ function vAuthSB() {
     `<form id="form-nueva" novalidate>${fld("a-pass", "Nueva contraseña", { pw: 1, auto: "new-password", hint: CLAVE_AYUDA, req: 1 })}${fld("a-pass2", "Confirma la contraseña", { pw: 1, auto: "new-password", req: 1 })}${err}<button class="btn big" type="submit" id="a-nueva-btn">Guardar contraseña</button></form>
      <div class="auth-links"><button type="button" data-act="recup-cancelar">Cancelar</button></div>`);
   if (S.authView === "recuperar") return marco("Recuperar contraseña", "Escribe el correo con el que te registraste y te enviaremos un enlace para elegir una contraseña nueva.",
-    `<form id="form-rec" novalidate>${fld("a-correo", "Correo registrado", { tipo: "email", auto: "username", ph: "nombre@dependencia.gob.mx", req: 1 })}${err}<button class="btn big" type="submit" id="a-rec-btn">Enviarme el enlace</button></form>
+    `<form id="form-rec" novalidate>${fld("a-correo", "Correo registrado", { tipo: "email", auto: "username", ph: "tucorreo@ejemplo.com", req: 1 })}${err}<button class="btn big" type="submit" id="a-rec-btn">Enviarme el enlace</button></form>
      <div class="auth-links"><button type="button" data-act="auth-ir" data-v="login">Volver a iniciar sesión</button></div>`);
   if (S.authView === "revisa") return marco("Revisa tu correo", `Si <b>${esc(S.authCorreo || "ese correo")}</b> tiene una cuenta, te enviamos un enlace para elegir tu nueva contraseña. Vence en poco tiempo y solo se puede usar una vez.`,
     `<div class="note info">${glifo("info")}<div>Si no llega en un par de minutos, revisa spam. ¿Ya no tienes acceso a ese correo? Pide ayuda al administrador del catálogo.</div></div>
      <div class="auth-links"><button type="button" data-act="auth-ir" data-v="recuperar">Pedir otro enlace</button><button type="button" data-act="auth-ir" data-v="login">Volver a iniciar sesión</button></div>`);
   if (S.authView === "colab") return marco("Acceso de colaborador", "Entra con tu correo y contraseña. Tu cuenta debe tener el tipo de acceso Colaborador o Superadministrador.",
-    `<form id="form-login" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "username", ph: "nombre@dependencia.gob.mx", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, req: 1 })}${err}<button class="btn big" type="submit">Entrar como colaborador</button></form>
+    `<form id="form-login" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "username", ph: "tucorreo@ejemplo.com", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, req: 1 })}${err}<button class="btn big" type="submit">Entrar como colaborador</button></form>
      <div class="auth-links"><button type="button" data-act="auth-ir" data-v="recuperar">¿Olvidaste tu contraseña?</button></div>${vis}`, authTabs("colab"));
   if (reg) return `<div class="authwrap"><div class="authcard wide">${cab}<h1>Crea tu cuenta</h1><p class="lede">Regístrate con Google o con tus datos y entra al instante.${DOMINIO_PERMITIDO ? ` Solo se aceptan correos que terminen en <b>${esc(DOMINIO_PERMITIDO)}</b>.` : ""}</p>
     ${gBtn("Registrarse con Google", "o con tus datos")}
     <form id="form-reg" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>
       <fieldset class="fgrp"><legend>Tus datos</legend><div class="fgrid">${fld("a-nombre", "Nombre completo", { auto: "name", req: 1 })}${fld("a-cargo", "Cargo", { req: 1 })}</div></fieldset>
       <fieldset class="fgrp"><legend>Tu dependencia</legend><div class="fgrid">${depCampoAuth()}${fld("a-area", "Área o unidad (opcional)")}</div></fieldset>
-      <fieldset class="fgrp"><legend>Contacto y acceso</legend><div class="fgrid">${fld("a-correo", "Correo institucional", { tipo: "email", auto: "email", ph: "nombre@dependencia.gob.mx", req: 1 })}${fld("a-tel", "Teléfono de contacto", { tipo: "tel", auto: "tel", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, auto: "new-password", hint: CLAVE_AYUDA, req: 1 })}${fld("a-pass2", "Confirma la contraseña", { pw: 1, auto: "new-password", req: 1 })}</div></fieldset>
+      <fieldset class="fgrp"><legend>Contacto y acceso</legend><div class="fgrid">${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "email", ph: "tucorreo@ejemplo.com", req: 1 })}${fld("a-tel", "Teléfono de contacto", { tipo: "tel", auto: "tel", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, auto: "new-password", hint: CLAVE_AYUDA, req: 1 })}${fld("a-pass2", "Confirma la contraseña", { pw: 1, auto: "new-password", req: 1 })}</div></fieldset>
       <label class="chk"><input type="checkbox" id="a-acepto" aria-required="true"><span>${reqMark.trim()} ${esc(c.privacidad)}${linksLegales()}</span></label>${err}<button class="btn big" type="submit" id="a-reg-btn">Crear mi cuenta</button></form>
     <p class="auth-switch">¿Ya tienes cuenta? <button type="button" class="linkbtn" data-act="auth-ir" data-v="login">Inicia sesión</button></p>
     <div class="auth-divider" role="separator"></div><button class="btn ghost big auth-alt auth-visor" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button></div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
   const visor = `<div class="auth-divider" role="separator"></div><button class="btn ghost big auth-alt auth-visor" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button><p class="auth-note">Como visualizador puedes ver todo el catálogo. Para solicitar un sistema necesitas iniciar sesión.</p>`;
-  return `<div class="authwrap"><div class="authcard">${cab}${authTabs("usuario")}<h1>Iniciar sesión</h1><p class="lede">Entra con tu cuenta de Google o con tu correo institucional.${DOMINIO_PERMITIDO ? ` Solo se aceptan correos que terminen en <b>${esc(DOMINIO_PERMITIDO)}</b>.` : ""}</p>
+  return `<div class="authwrap"><div class="authcard">${cab}${authTabs("usuario")}<h1>Iniciar sesión</h1><p class="lede">Entra con tu cuenta de Google o con tu correo electrónico.${DOMINIO_PERMITIDO ? ` Solo se aceptan correos que terminen en <b>${esc(DOMINIO_PERMITIDO)}</b>.` : ""}</p>
   ${gBtn("Continuar con Google")}
   <form id="form-login" novalidate data-paso="1">
-    <div class="lg-paso" id="lg-p1">${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "username", ph: "nombre@dependencia.gob.mx", req: 1, extra: 'autocapitalize="none" spellcheck="false"' })}<button class="btn big" type="submit" id="lg-next">Continuar</button></div>
+    ${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "username", ph: "tucorreo@ejemplo.com", req: 1, extra: 'autocapitalize="none" spellcheck="false"' })}
+    <div class="lg-paso" id="lg-p1"><button class="btn big" type="submit" id="lg-next">Continuar</button></div>
     <div class="lg-paso" id="lg-p2" hidden>
-      <div class="lg-who"><span id="lg-mail"></span><button type="button" class="linkbtn" data-act="login-cambiar">Cambiar</button></div>
       ${fld("a-pass", "Contraseña", { pw: 1, req: 1 })}<div class="pw-help"><button type="button" class="linkbtn" data-act="auth-ir" data-v="recuperar">¿Olvidaste tu contraseña?</button></div>
       <button class="btn big" type="submit">Iniciar sesión</button>
       <div class="auth-links" id="a-owner" style="display:none"><button type="button" data-act="super-enviar">Entrar con código por correo</button></div>
@@ -5222,8 +5220,6 @@ button{text-align:center}
 .authcard form{gap:18px}
 .authcard form#form-login{gap:14px}
 .lg-paso{display:grid;gap:14px}.lg-paso[hidden]{display:none!important}
-.lg-who{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border:1.5px solid #DCE6F5;border-radius:12px;background:#F6F9FE;font-size:15px;color:#14233F}
-.lg-who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .authcard .lg-paso .auth-switch{margin:4px 0 0}
 @media(max-width:560px){.authcard .fgrp .fgrid{grid-template-columns:1fr}.authcard{padding:26px 18px 22px!important}}
 </style>
@@ -5233,6 +5229,8 @@ body.auth .col,body.auth main{background:transparent}
 .authcard .btn.big.auth-visor:not(.sec){background:#F6F9FE!important;border:1.5px solid #DCE6F5!important;color:#004EAA!important;box-shadow:none!important;transform:none}
 .authcard .btn.big.auth-visor:not(.sec):hover{background:#EAF1FB!important;border-color:#C9DAF1!important}
 .authcard .btn.big.auth-visor .g{color:#004EAA}
+.feat-bar .get{white-space:nowrap}
+@media(max-width:560px){.feat-bar .t{display:none!important}.feat-bar .get-wrap{flex:1}.feat-bar .get-wrap .get{width:100%}}
 </style>
 </body>
 </html>
