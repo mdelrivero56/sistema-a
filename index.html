@@ -899,10 +899,14 @@ const norm = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-
 const plural = (n, a, b) => (n === 1 ? a : b);
 
 const COLORES = {
-  azul: ["#3B82D6", "#004EAA"], celeste: ["#8CBBEA", "#2F7BD0"], indigo: ["#8B93F0", "#3F46B8"], morado: ["#B392DD", "#9568C6"],
-  rosa: ["#F28DB7", "#C2417A"], rojo: ["#F38C80", "#C8372D"], naranja: ["#F7AA62", "#D9650B"], amarillo: ["#F8D26A", "#D49A0A"],
-  verde: ["#72C791", "#2E8B57"], turquesa: ["#5ACBC6", "#12807F"], grafito: ["#8A9AB3", "#3A4C66"]
+  azul: ["#3B82D6", "#004EAA"], celeste: ["#7FB0EC", "#2F7BD0"], marino: ["#2F6FC4", "#003F8A"],
+  lila: ["#B392DD", "#9568C6"], orquidea: ["#CDB5EA", "#A47BD0"], violeta: ["#A47BD0", "#6D45A3"]
 };
+/* Solo se ofrecen tonos de la paleta (azul #004EAA y lila #9568C6). Los nombres antiguos se convierten a su tono equivalente. */
+const COLORES_UI = ["azul", "celeste", "marino", "lila", "orquidea", "violeta"];
+const COLOR_LEGACY = { indigo: "marino", morado: "lila", rosa: "orquidea", rojo: "violeta", naranja: "celeste", amarillo: "orquidea", verde: "azul", turquesa: "celeste", grafito: "marino" };
+for (const [o, n] of Object.entries(COLOR_LEGACY)) COLORES[o] = COLORES[n];
+const colorUI = (c) => (COLORES_UI.includes(c) ? c : (COLOR_LEGACY[c] || "azul"));
 /* Colores antiguos: siguen funcionando pero se muestran con la paleta oficial (azul / lila). */
 const GLIFOS = ["votacion", "calendario", "documento", "candado", "ayuda", "caja", "usuarios", "identidad", "capas", "app", "chart", "mensaje", "mapa", "nube", "tablet", "qr", "correo", "reloj", "estrella", "ajustes", "escudo", "libro", "rayo", "globo", "casa", "carpeta", "pin", "telefono", "camara", "megafono", "balanza", "maletin", "bombilla", "corazon", "tarjeta", "graduacion", "trofeo", "bandera", "herramienta", "basedatos", "codigo", "impresora", "wifi", "microfono", "pastel", "hoja", "salud"];
 const ESTADOS = ["Disponible", "Requiere validación", "Próximamente", "En mantenimiento"];
@@ -1248,9 +1252,10 @@ function migrar(c) {
   out.usuarios = Array.isArray(c.usuarios) ? c.usuarios.filter((u) => u && (u.correo || u.rfc) && u.hash).map((u) => Object.assign({}, u, { rol: rolDe(u.rol) })) : [];
   out.avisos = Array.isArray(c.avisos) ? c.avisos.filter((a) => a && a.id).slice(0, 300) : [];
   out.notificaciones = Array.isArray(c.notificaciones) ? c.notificaciones.filter((n) => n && n.id).slice(0, 200) : [];
-  out.categorias = Array.isArray(c.categorias)
-    ? [...base.categorias.filter((bc) => !c.categorias.some((cc) => cc && cc.id === bc.id)), ...c.categorias]
-    : base.categorias;
+  /* Categorías eliminadas: no se vuelven a agregar las de base (antes reaparecían en cada carga). */
+  out.categoriasEliminadas = Array.isArray(c.categoriasEliminadas) ? c.categoriasEliminadas.filter((x) => typeof x === "string") : [];
+  out.categorias = (Array.isArray(c.categorias) ? c.categorias.filter((cc) => cc && cc.id) : base.categorias)
+    .filter((cc) => !out.categoriasEliminadas.includes(cc.id));
   out.sistemas = (Array.isArray(c.sistemas) ? c.sistemas : []).map((s) => {
     const b = sistemaBase({});
     const r = Object.assign(b, s, { id: s.id || uid("sis") });
@@ -2426,7 +2431,31 @@ function storeHero(feats) {
   const [a, b, c] = feats;
   return `<div class="store-hero ${b ? "" : "solo"}">${main(a)}${b ? `<div class="hero-side">${tile(b)}${c ? tile(c) : todos}</div>` : ""}</div>`;
 }
+function destCar(feats) {
+  const n = feats.length, multi = n > 1;
+  return `<section class="sec fc" aria-roledescription="carrusel" aria-label="Sistemas destacados">
+    <div class="fc-head"><h2 class="fc-t">Sistemas destacados</h2></div>
+    <div class="fc-wrap">${multi ? `<button type="button" class="fc-arrow fc-prev" data-act="fc-prev" aria-label="Sistema anterior" disabled>${glifo("back")}</button>` : ""}<div class="hscroll feat-row" tabindex="0" aria-label="Lista de sistemas destacados">${feats.map(feat).join("")}</div>${multi ? `<button type="button" class="fc-arrow fc-next" data-act="fc-next" aria-label="Sistema siguiente">${glifo("chev")}</button>` : ""}</div>
+    ${multi ? `<div class="fc-dots" role="group" aria-label="Elegir sistema destacado">${feats.map((s, i) => `<button type="button" class="fc-dot" data-act="fc-go" data-i="${i}" aria-label="Ver ${esc(s.nombre)}"></button>`).join("")}</div>` : ""}
+  </section>`;
+}
+const fcPaso = (r) => { const a = r.children[0], b = r.children[1]; return a && b ? b.offsetLeft - a.offsetLeft : r.clientWidth; };
+function iniciarDestacados() {
+  const w = $(".fc"); if (!w) return;
+  const r = $(".feat-row", w), cnt = $(".fc-count", w), p = $(".fc-prev", w), n = $(".fc-next", w), dots = $$(".fc-dot", w), total = r.children.length;
+  const act = () => {
+    const max = r.scrollWidth - r.clientWidth, st = fcPaso(r) || 1;
+    let i = Math.round(r.scrollLeft / st); if (r.scrollLeft >= max - 2) i = total - 1; i = Math.max(0, Math.min(total - 1, i));
+    if (cnt) cnt.textContent = `${i + 1} / ${total}`;
+    if (p) p.disabled = r.scrollLeft <= 2; if (n) n.disabled = r.scrollLeft >= max - 2;
+    dots.forEach((d, k) => { if (k === i) d.setAttribute("aria-current", "true"); else d.removeAttribute("aria-current"); });
+  };
+  r.addEventListener("scroll", act, { passive: true });
+  if ("ResizeObserver" in window) new ResizeObserver(act).observe(r);
+  act();
+}
 function iniciarCarrusel() {
+  iniciarDestacados();
   $$(".cv-wrap").forEach((w) => {
     const g = $(".cv-grid, .chips", w), p = $(".cv-prev", w), n = $(".cv-next", w);
     const act = () => { p.hidden = g.scrollLeft <= 2; n.hidden = g.scrollLeft >= g.scrollWidth - g.clientWidth - 2; };
@@ -2448,8 +2477,8 @@ function vHome() {
   if (!lista.length) {
     return cabecera("Descubrir", "", cuando) + vacio("Aún no hay sistemas publicados", S.admin ? "Agrega el primer sistema para que aparezca aquí." : "Vuelve pronto: estamos preparando el catálogo.", S.admin ? `<a class="btn" href="#/admin/editar/nuevo">${glifo("plus")}Agregar sistema</a>` : "");
   }
-  const dest = lista.filter((s) => s.destacado), feats = (dest.length ? dest : lista).slice(0, 5);
-  const enHero = new Set(feats.slice(0, 3).map((s) => s.id));
+  const dest = lista.filter((s) => s.destacado), feats = (dest.length ? dest : lista).slice(0, 8);
+  const enHero = new Set(feats.map((s) => s.id));
   const ver = lista.filter((s) => !enHero.has(s.id)).sort((a, b) => (b.destacado ? 1 : 0) - (a.destacado ? 1 : 0)).slice(0, 8);
   const top = [...lista].sort((a, b) => b.dependencias.length - a.dependencias.length).slice(0, 6);
   const nuevos = [...lista].sort((a, b) => (b.actualizado || "").localeCompare(a.actualizado || "")).slice(0, 6);
@@ -2459,7 +2488,7 @@ function vHome() {
   return `${cabecera("Descubrir", "", cuando)}
     ${bannerAviso()}
     ${cats.length ? `<div class="cv-wrap ch-wrap"><button type="button" class="cv-arrow cv-prev" data-act="cv-prev" aria-label="Anterior" hidden>${glifo("back")}</button><div class="chips bleed" role="list" aria-label="Categorías">${cats.map((k) => `<a role="listitem" class="chip" href="#/categoria/${enc(k.id)}" style="${colorVars(k.color)}"><span class="cdot${catCls(k)}">${catInner(k)}</span>${esc(k.nombre)}</a>`).join("")}</div><button type="button" class="cv-arrow cv-next" data-act="cv-next" aria-label="Siguiente" hidden>${glifo("chev")}</button></div>` : ""}
-    ${storeHero(feats)}
+    ${destCar(feats)}
     ${ver.length ? `<section class="sec sec-ver"><h2 class="sec-h"><a href="#/sistemas">También te podría interesar ${glifo("chev")}</a></h2><div class="cv-wrap"><button type="button" class="cv-arrow cv-prev" data-act="cv-prev" aria-label="Anterior" hidden>${glifo("back")}</button><div class="cv-grid">${ver.map(cardVer).join("")}</div><button type="button" class="cv-arrow cv-next" data-act="cv-next" aria-label="Siguiente" hidden>${glifo("chev")}</button></div></section>` : ""}
     <div class="duo ${lista.length > 3 ? "" : "solo"}"><section class="sec"><h2 class="sec-h"><a href="#/sistemas">Los más utilizados ${glifo("chev")}</a></h2><div class="rows paged">${top.map((s) => fila(s)).join("")}</div></section>
     ${lista.length > 3 ? `<section class="sec"><h2 class="sec-h"><a href="#/sistemas">Nuevos y actualizados ${glifo("chev")}</a></h2><div class="rows paged">${nuevos.map((s) => fila(s, `Versión ${s.version} · ${hace(s.actualizado)}`)).join("")}</div></section>` : ""}</div>
@@ -3075,7 +3104,7 @@ function vAdminCategorias() {
         <div class="field"><label for="cn-${id}">Nombre de la categoría</label><input id="cn-${id}" type="text" value="${esc(k.nombre)}" data-catf="nombre" data-id="${id}" autocomplete="off"></div></div>
       <div class="cat-opts">
         <div class="field"><label for="cg-${id}">Ícono</label><select class="select" id="cg-${id}" data-catf="glifo" data-id="${id}">${opt(GLIFOS, k.glifo, cap)}</select></div>
-        <div class="field"><label for="cc-${id}">Color</label><select class="select" id="cc-${id}" data-catf="color" data-id="${id}">${opt(Object.keys(COLORES), k.color, cap)}</select></div>
+        <div class="field"><label for="cc-${id}">Color</label><select class="select" id="cc-${id}" data-catf="color" data-id="${id}">${opt(COLORES_UI, colorUI(k.color), cap)}</select></div>
       </div>
       <div class="cat-foot"><span class="cat-n">${n} sistema${n === 1 ? "" : "s"} en esta categoría</span>
         <button class="btn sm sec" data-act="edit-cat" data-id="${id}">${glifo("edit")}Imagen e ícono</button>
@@ -3112,7 +3141,7 @@ function vAdminConfig(sec) {
         <div class="logo-prev" aria-label="Vista previa del logotipo">${imgOk(c.logo) ? `<span class="ico s96" style="${colorVars("azul")};--s:96px"><img src="${esc(c.logo)}" alt=""></span>` : logoSvg(c)}</div>
         <div>
           <div class="logo-grp"><span class="muted" style="font-size:13px">Símbolo</span><div class="logo-opts" role="group" aria-label="Símbolo">${Object.keys(LOGO_MARCAS).map((k) => `<button type="button" data-act="logo-marca" data-v="${k}" aria-pressed="${!imgOk(c.logo) && (c.logoMarca || "facetas") === k}" aria-label="${LOGO_MARCAS[k].n}" title="${LOGO_MARCAS[k].n}">${logoSvg(Object.assign({}, c, { logoMarca: k }))}</button>`).join("")}</div></div>
-          <div class="logo-grp"><span class="muted" style="font-size:13px">Color</span><div class="swatches" role="group" aria-label="Color del logotipo">${Object.keys(COLORES).map((k) => `<button type="button" data-act="logo-color" data-c="${k}" style="${colorVars(k)}" aria-pressed="${!imgOk(c.logo) && (c.logoColor || "azul") === k}" aria-label="${k}"></button>`).join("")}</div></div>
+          <div class="logo-grp"><span class="muted" style="font-size:13px">Color</span><div class="swatches" role="group" aria-label="Color del logotipo">${COLORES_UI.map((k) => `<button type="button" data-act="logo-color" data-c="${k}" style="${colorVars(k)}" aria-pressed="${!imgOk(c.logo) && colorUI(c.logoColor || "azul") === k}" aria-label="${k}"></button>`).join("")}</div></div>
           <div class="logo-grp"><span class="muted" style="font-size:13px">Forma</span><div class="logo-opts" role="group" aria-label="Forma">${Object.keys(LOGO_FORMAS).map((k) => `<button type="button" class="txt" data-act="logo-forma" data-v="${k}" aria-pressed="${!imgOk(c.logo) && (c.logoForma || "squircle") === k}">${LOGO_FORMAS[k][0]}</button>`).join("")}</div></div>
           <div class="up" style="margin-top:6px"><input type="file" id="up-logo" accept="image/*" data-up="logo"><label class="btn sec sm" for="up-logo">${glifo("upload")}Añadir mi propio logotipo</label>${imgOk(c.logo) ? `<button class="btn ghost sm" data-act="quitar-logo">Volver al diseño</button>` : ""}</div>
           <p class="cfg-note">Elige símbolo, color y forma, o sube tu propia imagen. Presiona «Guardar configuración» para aplicarlo.</p>
@@ -3142,7 +3171,7 @@ function vAdminConfig(sec) {
       ${[["auto", "Automático"], ["claro", "Claro"], ["oscuro", "Oscuro"]].map(([v, l]) => `<button type="button" data-act="cfg-tema" data-v="${v}" aria-pressed="${(c.tema || "auto") === v}">${l}</button>`).join("")}</div>
       <p class="cfg-note">«Automático» sigue el modo del dispositivo.</p></div></section>
     <section class="grp"><h2>Color de acento</h2><p class="hint">Se usa en botones, enlaces y la barra lateral.</p><div class="card">
-      <div class="swatches" role="group" aria-label="Color de acento"><button type="button" data-act="cfg-acento" data-c="" style="${colorVars("azul")}" aria-pressed="${!c.acento}" aria-label="Predeterminado"></button>${Object.keys(COLORES).filter((k) => k !== "azul").map((k) => `<button type="button" data-act="cfg-acento" data-c="${k}" style="${colorVars(k)}" aria-pressed="${c.acento === k}" aria-label="${k}"></button>`).join("")}</div>
+      <div class="swatches" role="group" aria-label="Color de acento"><button type="button" data-act="cfg-acento" data-c="" style="${colorVars("azul")}" aria-pressed="${!c.acento}" aria-label="Predeterminado"></button>${COLORES_UI.filter((k) => k !== "azul").map((k) => `<button type="button" data-act="cfg-acento" data-c="${k}" style="${colorVars(k)}" aria-pressed="${colorUI(c.acento) === k}" aria-label="${k}"></button>`).join("")}</div>
       <p class="cfg-note">La vista se actualiza al elegir; para conservarlo, presiona «Guardar configuración».</p></div></section>` + savebar;
   } else if (sec === "seguridad") {
     panel = `<section class="grp"><h2>Mi cuenta</h2><p class="hint">Sesión iniciada como ${esc(S.user.nombre)} (${esc(S.user.correo)}).</p><div class="card" style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn sec sm" data-act="cambiar-pass">${glifo("candado")}Cambiar mi contraseña</button><button class="btn sec sm" data-act="cerrar-sesion">${glifo("unlock")}Cerrar sesión</button></div></section>
@@ -3203,7 +3232,7 @@ function vEditor(id) {
         <div class="up" style="margin:6px 0 10px">${icono(s, "s96")}
           <div style="display:grid;gap:8px"><div class="up"><input type="file" id="up-icono" accept="image/*" data-up="icono"><label class="btn sec sm" for="up-icono">${glifo("upload")}Subir imagen</label>${imgOk(s.icono.imagen) ? `<button type="button" class="btn ghost sm" data-act="e-quitar-icono">Quitar imagen</button>` : ""}</div><span class="muted" style="font-size:12.5px">O elige un símbolo y un color. Mejor una imagen cuadrada.</span></div></div>
         <div class="glyphs" role="group" aria-label="Símbolo">${GLIFOS.map((g) => `<button type="button" data-act="e-glifo" data-g="${g}" aria-pressed="${s.icono.glifo === g}" aria-label="${g}">${glifo(g)}</button>`).join("")}</div>
-        <div class="swatches" style="margin-top:12px" role="group" aria-label="Color">${Object.keys(COLORES).map((c) => `<button type="button" data-act="e-color" data-c="${c}" style="${colorVars(c)}" aria-pressed="${s.icono.color === c}" aria-label="${c}"></button>`).join("")}</div></div>
+        <div class="swatches" style="margin-top:12px" role="group" aria-label="Color">${COLORES_UI.map((c) => `<button type="button" data-act="e-color" data-c="${c}" style="${colorVars(c)}" aria-pressed="${colorUI(s.icono.color) === c}" aria-label="${c}"></button>`).join("")}</div></div>
       <div class="field full"><span class="lbl">Imagen de portada (opcional)</span><div class="up">${imgOk(s.portada) ? `<img src="${esc(s.portada)}" alt="" style="width:160px;border-radius:12px;aspect-ratio:16/11;object-fit:cover">` : ""}<input type="file" id="up-portada" accept="image/*" data-up="portada"><label class="btn sec sm" for="up-portada">${glifo("upload")}Subir portada</label>${imgOk(s.portada) ? `<button type="button" class="btn ghost sm" data-act="e-quitar-portada">Quitar</button>` : ""}<span class="muted" style="font-size:12.5px">Se usa en la tarjeta grande de la portada.</span></div></div>
     </div>`)}
   ${grp("Clasificación y estado", "", `<div class="fields">
@@ -3489,7 +3518,7 @@ function guardarRenombrar() {
   guardarCatalogo(); cerrarModal(); toast("Nombre actualizado"); render(false);
 }
 function catSwatches() {
-  return Object.keys(COLORES).map((c) => `<button type="button" class="sw2" data-act="ct-pick-c" data-c="${c}" style="${colorVars(c)}" aria-pressed="${S.catDraft.color === c}" aria-label="Color ${c}" title="${c[0].toUpperCase() + c.slice(1)}"></button>`).join("");
+  return COLORES_UI.map((c) => `<button type="button" class="sw2" data-act="ct-pick-c" data-c="${c}" style="${colorVars(c)}" aria-pressed="${colorUI(S.catDraft.color) === c}" aria-label="Color ${c}" title="${c[0].toUpperCase() + c.slice(1)}"></button>`).join("");
 }
 function catIconos() {
   return GLIFOS.map((g) => `<button type="button" class="icb" data-act="ct-pick-g" data-g="${g}" aria-pressed="${S.catDraft.glifo === g}" aria-label="Icono ${g}" title="${g[0].toUpperCase() + g.slice(1)}">${glifo(g)}</button>`).join("");
@@ -3565,6 +3594,9 @@ const ACT = {
   "toggle-desc"(t) { const d = $("#desc"); if (!d) return; d.classList.toggle("open"); t.textContent = d.classList.contains("open") ? "menos" : "más"; },
   lightbox(t) { const s = byId(t.dataset.id); if (!s) return; const items = s.capturas.filter((c) => imgOk(c.src)); abrirLightbox(items, +t.dataset.i); },
   "cv-next"(t) { const g = $(".cv-grid, .chips", t.closest(".cv-wrap")); if (g) g.scrollBy({ left: g.clientWidth + 20, behavior: "smooth" }); },
+  "fc-prev"(t) { const r = $(".feat-row", t.closest(".fc")); if (r) r.scrollBy({ left: -fcPaso(r), behavior: "smooth" }); },
+  "fc-next"(t) { const r = $(".feat-row", t.closest(".fc")); if (r) r.scrollBy({ left: fcPaso(r), behavior: "smooth" }); },
+  "fc-go"(t) { const r = $(".feat-row", t.closest(".fc")); if (r) r.scrollTo({ left: Number(t.dataset.i) * fcPaso(r), behavior: "smooth" }); },
   "cv-prev"(t) { const g = $(".cv-grid, .chips", t.closest(".cv-wrap")); if (g) g.scrollBy({ left: -(g.clientWidth + 20), behavior: "smooth" }); },
   "lb-cerrar": cerrarLightbox,
   "lb-prev"() { if (lb) { lb.i = (lb.i - 1 + lb.items.length) % lb.items.length; pintarLightbox(); } },
@@ -3678,7 +3710,7 @@ const ACT = {
   async "aplicar-textos"() {
     if (!(await confirmar({ titulo: "Actualizar textos de los sistemas", texto: "Se actualizan nombre, frase corta, texto destacado y descripción de los sistemas que coincidan por nombre, y se agregan los que falten. Íconos, enlaces, capturas, manuales y dependencias no se tocan.", si: "Actualizar" }))) return;
     let n1 = 0, n2 = 0;
-    CATEGORIAS_BASE.forEach((k) => { if (!catById(k.id) && TEXTOS_SISTEMAS.some((t) => t.categoria === k.id)) S.cat.categorias.push(clone(k)); });
+    CATEGORIAS_BASE.forEach((k) => { if (!catById(k.id) && !(S.cat.categoriasEliminadas || []).includes(k.id) && TEXTOS_SISTEMAS.some((t) => t.categoria === k.id)) S.cat.categorias.push(clone(k)); });
     TEXTOS_SISTEMAS.forEach((t) => {
       const keys = t.alias.map(norm), s = S.cat.sistemas.find((x) => keys.includes(norm(x.nombre)));
       if (s) { Object.assign(s, { nombre: t.nombre, subtitulo: t.subtitulo, etiqueta: t.etiqueta, descripcion: t.descripcion, ejemplo: false }); if (!s.usos.length) s.usos = t.usos.slice(); if (!s.categorias.length) s.categorias = [t.categoria]; n1++; }
@@ -3694,7 +3726,7 @@ const ACT = {
   async "del-cat"(t) {
     const k = catById(t.dataset.id); if (!k) return;
     if (!(await confirmar({ titulo: `Eliminar «${k.nombre}»`, texto: "Los sistemas de esta categoría no se borran, solo dejan de pertenecer a ella.", si: "Eliminar", peligro: true }))) return;
-    S.cat.categorias = S.cat.categorias.filter((x) => x.id !== k.id); S.cat.sistemas.forEach((s) => (s.categorias = s.categorias.filter((c) => c !== k.id))); guardarCatalogo(); toast("Categoría eliminada"); if (hashParts()[0] === "categoria") go("categorias"); else keep(() => render(false));
+    S.cat.categorias = S.cat.categorias.filter((x) => x.id !== k.id); S.cat.categoriasEliminadas = [...new Set([...(S.cat.categoriasEliminadas || []), k.id])]; S.cat.sistemas.forEach((s) => (s.categorias = s.categorias.filter((c) => c !== k.id))); guardarCatalogo(); toast("Categoría eliminada"); if (hashParts()[0] === "categoria") go("categorias"); else keep(() => render(false));
   },
   async "guardar-cfg"() {
     const c = S.cfgDraft; if (!c) return;
@@ -4905,5 +4937,202 @@ button{text-align:center}
 @media(max-width:900px){.adm-flota{top:58px;padding:8px 10px!important}}
 @media(max-width:560px){.adm-flota{gap:8px}.adm-flota .btn{padding:8px 12px}}
 </style>
+<style id="paleta-v5">
+/* =====================================================================
+   PALETA V5 · azul #004EAA + lila #9568C6
+   (1) Viñetas pequeñas y centradas con la primera línea del texto
+   (2) Botones ordenados y centrados
+   (3) Administración › Categorías con cuadros en la paleta
+   ===================================================================== */
+
+/* ---- (1) Viñetas ---- */
+.prose ul{gap:7px;margin:8px 0 12px}
+.prose li{position:relative;padding-left:20px;line-height:1.55}
+.prose li::before{content:"";position:absolute;left:3px;top:calc(.775em - 3px);width:6px;height:6px;border-radius:50%;
+  background:linear-gradient(145deg,#3B82D6,#004EAA);box-shadow:0 0 0 2.5px rgba(0,78,170,.12);font-size:inherit;line-height:1}
+.prose li:nth-child(even)::before{background:linear-gradient(145deg,#B392DD,#9568C6);box-shadow:0 0 0 2.5px rgba(149,104,198,.16)}
+.rolhelp li{position:relative;padding-left:18px}
+.rolhelp li::before{content:"";position:absolute;left:2px;top:calc(.7em - 3px);width:6px;height:6px;border-radius:50%;background:#004EAA}
+.prose .rc li::before{background:currentColor;box-shadow:none}
+
+/* ---- (2) Botones ---- */
+.btn,.btn2,.get,.auth-alt,.btn-google{display:inline-flex;align-items:center;justify-content:center;gap:8px;text-align:center;line-height:1.2;white-space:nowrap}
+.btn .g,.get .g{flex:none;margin:0;position:static!important;transform:none!important}
+.admbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 14px;
+  background:linear-gradient(120deg,#EAF1FB,#F3EEFA)!important;border:1px solid var(--azul-borde,#C9DAF1)!important;color:var(--label)!important;border-radius:16px}
+.admbar>.muted,.admbar>span{flex:1 1 240px;min-width:0;white-space:normal}
+.admbar>.btn,.admbar>a.btn{flex:0 0 auto}
+@media(max-width:560px){.admbar>.btn,.admbar>a.btn{flex:1 1 100%}}
+.cat-tools,.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.cat-tools .btn{flex:1 1 180px}
+.savebar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 14px}
+.savebar>.btn{flex:0 0 auto}
+@media(max-width:560px){.savebar>.btn{flex:1 1 100%}}
+.chk-item{align-items:center}
+.chk-item .btn{flex:none;margin-left:auto}
+
+/* ---- (3) Administración › Categorías ---- */
+.cat-list{grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:14px}
+.cat-card{position:relative;overflow:hidden;background:#fff!important;border:1px solid var(--azul-borde,#C9DAF1)!important;border-radius:18px;
+  padding:16px 16px 14px;box-shadow:0 2px 10px rgba(20,35,63,.06)}
+.cat-card::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,#004EAA,#3B82D6)}
+.cat-card:nth-child(even){border-color:var(--lila-borde,#DCCDF0)!important;background:linear-gradient(180deg,#FBF9FE,#fff 45%)!important}
+.cat-card:nth-child(even)::before{background:linear-gradient(90deg,#9568C6,#B392DD)}
+.cat-card:nth-child(odd){background:linear-gradient(180deg,#F6F9FE,#fff 45%)!important}
+.cat-card .ico{box-shadow:0 2px 8px rgba(0,78,170,.22)!important}
+.cat-card:nth-child(even) .ico{box-shadow:0 2px 8px rgba(149,104,198,.28)!important}
+.cat-card .select,.cat-card input[type=text]{border:1px solid var(--azul-borde,#C9DAF1);border-radius:10px;background:#fff}
+.cat-card .select:focus,.cat-card input[type=text]:focus{border-color:#004EAA;box-shadow:0 0 0 3px rgba(0,78,170,.15);outline:0}
+.cat-card:nth-child(even) .select,.cat-card:nth-child(even) input[type=text]{border-color:var(--lila-borde,#DCCDF0)}
+.cat-card:nth-child(even) .select:focus,.cat-card:nth-child(even) input[type=text]:focus{border-color:#9568C6;box-shadow:0 0 0 3px rgba(149,104,198,.2)}
+.cat-foot{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch;border-top:1px solid var(--sep);padding-top:12px}
+.cat-foot .cat-n{grid-column:1/-1;font-size:13px;opacity:1;color:var(--label-2);display:flex;align-items:center;gap:8px}
+.cat-foot .cat-n::before{content:"";width:8px;height:8px;border-radius:50%;background:#004EAA;flex:none}
+.cat-card:nth-child(even) .cat-foot .cat-n::before{background:#9568C6}
+.cat-foot .btn{width:100%;min-height:42px;margin:0;padding:8px 10px;font-size:14.5px;border-radius:12px}
+.cat-foot .btn.sec{background:#fff!important;color:#004EAA!important;border:1.5px solid #C9DAF1!important}
+.cat-card:nth-child(even) .cat-foot .btn.sec{color:#6D45A3!important;border-color:#DCCDF0!important}
+.cat-foot .btn.ghost,.cat-del{background:#fff!important;color:#B3261E!important;border:1.5px solid #F0D4D2!important}
+.cat-foot .btn.ghost:hover,.cat-del:hover{background:#FDF3F2!important}
+.cat-foot .btn .g{width:17px;height:17px}
+.sw2,.swatches button{border-radius:50%}
+.sw2[aria-pressed="true"]{box-shadow:0 0 0 3px #004EAA}
+.icb[aria-pressed="true"]{border-color:#004EAA;background:#EAF1FB;color:#004EAA}
+.cat-card .ico.s40{border-radius:30%}
+</style>
+<style id="panel-flotante">
+/* =====================================================================
+   PANEL IZQUIERDO FLOTANTE · cristal claro, sombras en capas, iconos nítidos
+   (solo escritorio; en celular se mantiene la barra inferior)
+   ===================================================================== */
+@media(min-width:901px){
+  .app{grid-template-columns:278px minmax(0,1fr)!important;
+    background:linear-gradient(90deg,#EEF3FB 0,#F4F2FB 278px,#FFFFFF 278px)!important}
+  .sidebar{
+    position:sticky!important;top:14px;height:calc(100vh - 28px)!important;margin:14px 0 14px 14px;
+    padding:18px 14px 14px!important;gap:14px!important;
+    border:1px solid rgba(255,255,255,.95)!important;border-radius:26px!important;
+    background:
+      radial-gradient(140% 90px at 50% 0,rgba(149,104,198,.14),transparent 70%),
+      radial-gradient(120% 90px at 0 0,rgba(0,78,170,.10),transparent 70%),
+      rgba(255,255,255,.92)!important;
+    -webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px);
+    box-shadow:
+      0 0 0 1px rgba(0,78,170,.07),
+      0 1px 2px rgba(20,35,63,.06),
+      0 10px 24px -6px rgba(0,60,140,.16),
+      0 32px 64px -20px rgba(20,35,63,.28),
+      inset 0 1px 0 rgba(255,255,255,.9)!important;
+    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;
+    transform:translateZ(0);scrollbar-width:thin;scrollbar-color:rgba(0,78,170,.25) transparent}
+  .sidebar::-webkit-scrollbar{width:8px}
+  .sidebar::-webkit-scrollbar-thumb{background:rgba(0,78,170,.22);border-radius:8px;border:2px solid transparent;background-clip:padding-box}
+  .sidebar::-webkit-scrollbar-track{background:transparent}
+
+  /* Marca */
+  .sidebar .brand{padding:6px 8px!important;border-radius:16px}
+  .sidebar .brand .ico{--s:42px;box-shadow:0 6px 16px -4px rgba(0,78,170,.45),inset 0 0 0 1px rgba(255,255,255,.25)!important}
+  .sidebar .brand b{font-size:15.5px;font-weight:700;letter-spacing:-.02em}
+
+  /* Buscador */
+  .sidebar .searchbox{background:#F3F6FB!important;border:1px solid #E1E9F5;border-radius:14px;padding:0 12px;
+    box-shadow:inset 0 1px 2px rgba(20,35,63,.06)}
+  .sidebar .searchbox:focus-within{background:#fff!important;border-color:#004EAA!important;box-shadow:0 0 0 4px rgba(0,78,170,.14)!important}
+
+  /* Navegación */
+  .sidebar .sidenav{gap:3px}
+  .sidebar .sidenav h6{margin:16px 12px 6px!important;font-size:11px;font-weight:700;letter-spacing:.09em;color:#7A5BB0!important}
+  .sidebar .sidenav a,.sidebar .sidenav button,.sidebar .sidenav-a{
+    position:relative;border-radius:13px!important;padding:9px 12px!important;font-weight:550;
+    transition:background .18s,transform .18s,box-shadow .18s,color .18s}
+  .sidebar .sidenav a:hover,.sidebar .sidenav button:hover,.sidebar .sidenav-a:hover{
+    background:linear-gradient(90deg,#F1F6FD,#F7F3FC)!important;transform:translateX(2px)}
+  .sidebar .sidenav a[aria-current="page"],.sidebar .sidenav a.active{
+    background:linear-gradient(100deg,#E4EDFB 0%,#F0E9FA 100%)!important;color:#004EAA!important;font-weight:700;
+    box-shadow:inset 0 0 0 1px rgba(0,78,170,.14),0 6px 14px -8px rgba(0,78,170,.45)}
+  .sidebar .sidenav a[aria-current="page"]::before{left:-10px!important;width:4px;top:24%;bottom:24%;border-radius:0 6px 6px 0;
+    background:linear-gradient(#004EAA,#9568C6)!important;box-shadow:0 0 10px rgba(0,78,170,.45)}
+  .sidebar .sidenav a[aria-current="page"] .g{color:#004EAA!important;stroke:#004EAA!important}
+
+  /* Iconos nítidos */
+  .sidebar .g{shape-rendering:geometricPrecision;stroke-width:1.9}
+  .sidebar .sidenav a.cat .cdot,.sidebar .sidenav .cdot{width:30px!important;height:30px!important;border-radius:10px!important;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),inset 0 -6px 10px -6px rgba(0,0,0,.18),0 4px 10px -3px rgba(0,50,130,.45)!important}
+  .sidebar .sidenav a.cat .cdot .g{width:18px!important;height:18px!important;stroke-width:2!important}
+  .sidebar .sidenav a.cat .cdot.has-img{box-shadow:0 0 0 1px #E1E9F5,0 4px 10px -4px rgba(20,35,63,.3)!important}
+
+  /* Pie del panel */
+  .sidebar .side-foot{border-top:0!important;padding-top:12px;position:relative}
+  .sidebar .side-foot::before{content:"";position:absolute;left:8px;right:8px;top:0;height:1px;
+    background:linear-gradient(90deg,transparent,#CBD6E6 20%,#DCCDF0 80%,transparent)}
+}
+</style>
+<style id="destacados-iguales">
+/* Sistemas destacados: todas las tarjetas con exactamente el mismo ancho y alto */
+.feat-row{grid-auto-columns:min(88%,460px)!important;grid-auto-rows:480px!important;align-items:stretch!important}
+.feat{width:100%;height:480px!important;min-height:480px!important;max-height:480px!important;box-sizing:border-box}
+.feat-card{height:100%!important;min-height:0!important;max-height:100%!important}
+.feat-txt{max-height:100%;overflow:hidden}
+.feat-txt strong{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.feat-txt .sub{-webkit-line-clamp:3!important}
+@media(min-width:900px){.feat-row{grid-auto-columns:460px!important}.feat-card{min-height:0!important}}
+@media(max-width:560px){.feat-row{grid-auto-rows:460px!important}.feat{height:460px!important;min-height:460px!important;max-height:460px!important}.feat-txt strong{font-size:27px!important}}
+</style>
+<style id="destacados-v6">
+/* ===== Sistemas destacados: todos iguales, a color completo (azul / lila) con carrusel ===== */
+.fc{margin-top:8px}
+.fc-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 10px}
+.fc-t{font-size:22px;font-weight:700;letter-spacing:-.02em;margin:0;color:var(--label)}
+.fc-ctl{display:flex;align-items:center;gap:8px}
+.fc-count{font-size:13.5px;font-weight:700;color:#004EAA;background:#EAF1FB;border-radius:999px;padding:5px 11px;font-variant-numeric:tabular-nums}
+.fc-arrow{width:40px;height:40px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:none;
+  background:#fff;color:#004EAA;border:1.5px solid #C9DAF1;box-shadow:0 4px 12px -4px rgba(0,78,170,.3);transition:background .15s,transform .15s,opacity .15s}
+.fc-arrow .g{width:22px;height:22px;stroke-width:2.2}
+.fc-arrow:hover:not(:disabled){background:#004EAA;color:#fff;border-color:#004EAA}
+.fc-arrow:active:not(:disabled){transform:scale(.94)}
+.fc-arrow:disabled{opacity:.35;box-shadow:none;cursor:default}
+.fc-dots{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:2px}
+.fc-dot{width:9px;height:9px;border-radius:999px;background:#CBD6E6;padding:0;transition:width .25s,background .25s}
+.fc-dot[aria-current="true"]{width:28px;background:linear-gradient(90deg,#004EAA,#9568C6)}
+.fc .feat-row{scroll-padding-left:0;padding-bottom:14px;scroll-snap-type:x mandatory}
+.fc .feat-row:focus-visible{outline-offset:4px;border-radius:20px}
+
+/* Tarjeta destacada: degradado de pastel a color pleno, texto blanco y barra inferior oscura */
+.feat,.feat:nth-child(even){
+  --tinta:color-mix(in srgb,var(--c2) 55%,#fff);
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--c1) 14%,#fff) 0%,
+    color-mix(in srgb,var(--c1) 40%,#fff) 26%,
+    color-mix(in srgb,var(--c1) 55%,var(--c2)) 56%,
+    color-mix(in srgb,var(--c2) 90%,#0b1b3a) 100%)!important;
+  border:0!important;border-radius:34px!important;
+  box-shadow:0 22px 44px -22px color-mix(in srgb,var(--c2) 75%,#000),0 2px 6px rgba(20,35,63,.12)!important}
+.feat-glyph{color:color-mix(in srgb,var(--c2) 60%,#fff)!important;opacity:.6!important}
+.feat-art::before{background:radial-gradient(circle at 20% 22%,rgba(255,255,255,.75),transparent 55%)!important}
+.feat-txt .eyebrow,.feat:nth-child(even) .feat-txt .eyebrow{color:rgba(255,255,255,.9)!important;text-shadow:0 1px 2px rgba(0,0,0,.18)}
+.feat-txt strong{color:#fff!important;text-shadow:0 2px 8px rgba(0,0,0,.2)}
+.feat-txt .sub{color:rgba(255,255,255,.95)!important}
+.feat-bar,.feat:nth-child(even) .feat-bar{background:color-mix(in srgb,var(--c2) 58%,#0b1b3a)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border-top:0!important;color:#fff!important}
+.feat-bar b{color:#fff!important}
+.feat .feat-bar .get,.feat .feat-bar .get.glass,.feat:nth-child(even) .feat-bar .get{background:rgba(255,255,255,.24)!important;color:#fff!important;border:1px solid rgba(255,255,255,.28)!important;backdrop-filter:none!important}
+.feat .feat-bar .get:hover{background:rgba(255,255,255,.36)!important}
+@media(max-width:900px){.fc-arrow{width:38px;height:38px}}
+</style>
+<style id="flechas-v7">
+/* Flechas pequeñas, a los lados y al centro de la tarjeta */
+.fc-wrap{position:relative}
+.fc-wrap .fc-arrow{position:absolute;top:calc(50% - 7px);transform:translateY(-50%);z-index:6;
+  width:32px;height:32px;border-radius:50%;padding:0;
+  background:#fff;color:#004EAA;border:1.5px solid rgba(0,78,170,.28);
+  box-shadow:0 3px 10px rgba(11,27,58,.35),0 0 0 3px rgba(255,255,255,.28)}
+.fc-wrap .fc-prev{left:10px}.fc-wrap .fc-next{right:10px}
+.fc-wrap .fc-arrow .g{width:18px;height:18px;stroke-width:2.6}
+.fc-wrap .fc-arrow:hover:not(:disabled){background:#004EAA;color:#fff;border-color:#fff}
+.fc-wrap .fc-arrow:active:not(:disabled){transform:translateY(-50%) scale(.92)}
+.fc-wrap .fc-arrow:disabled{opacity:0;pointer-events:none}
+@media(min-width:900px){.fc-wrap .fc-prev{left:12px}.fc-wrap .fc-next{right:12px}}
+@media(max-width:900px){.fc-wrap .fc-arrow{width:32px;height:32px}.fc-wrap .fc-prev{left:8px}.fc-wrap .fc-next{right:8px}}
+</style>
+<style id="sin-contador">.fc-count,.fc-ctl{display:none!important}</style>
 </body>
 </html>
