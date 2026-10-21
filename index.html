@@ -3662,6 +3662,7 @@ const ACT = {
     }
     S.authView = destino; render(false); const i = $("input", view); if (i) i.focus();
   },
+  "login-cambiar"() { loginPaso(1); },
   "auth-copiar"() { if (S.authInfo) copiar(`Para: ${S.authInfo.para}\nAsunto: ${S.authInfo.asunto}\n\n${S.authInfo.cuerpo}`, "Mensaje copiado"); },
   "ver-pass"(t) { const i = $("input", t.closest(".pwrow")); if (!i) return; const ver = i.type === "password"; i.type = ver ? "text" : "password"; t.textContent = ver ? "Ocultar" : "Mostrar"; },
   "usr-nuevo"() { abrirCrearUsuario({}); },
@@ -3933,7 +3934,7 @@ document.addEventListener("change", (e) => {
 document.addEventListener("submit", (e) => {
   const f = e.target;
   if (f.id === "form-sol") { e.preventDefault(); enviarSolicitud(); }
-  else if (f.id === "form-login") { e.preventDefault(); iniciarSesion(); }
+  else if (f.id === "form-login") { e.preventDefault(); if (f.dataset.paso === "1") loginPaso(2); else iniciarSesion(); }
   else if (f.id === "form-super") { e.preventDefault(); solicitarSuper(); }
   else if (f.id === "form-depadd") { e.preventDefault(); ACT["dep-add"](); }
   else if (f.id === "form-depren") { e.preventDefault(); guardarRenDep(); }
@@ -3993,6 +3994,19 @@ async function sbPerfil(au) {
   const u = sbUsuario(p, au); let lista = [u];
   if (rolDe(p.rol) === "superadmin") { const { data } = await SB.from("perfiles").select("*"); if (data) lista = data.map((x) => sbUsuario(x)); }
   S.cat.usuarios = lista; if (rolDe(p.rol) === "superadmin") { await sbNotifs(); if (S.catErr && S.catErr !== "red") setTimeout(() => toast("Los visualizadores no pueden leer el catálogo publicado. Ejecuta supabase-visualizador.sql en Supabase."), 1500); } return lista.find((x) => x.id === u.id) || u;
+}
+/* Login en dos pasos: 1) Google o correo, 2) contraseña (+ olvidé contraseña / crear cuenta) */
+function loginPaso(n) {
+  const f = $("#form-login"), p1 = $("#lg-p1"), p2 = $("#lg-p2"); if (!f || !p1 || !p2) return;
+  authErr("");
+  if (n === 2) {
+    const correo = normCorreo(val("a-correo"));
+    if (!correoOk(correo)) return marcarFaltantes([["a-correo", "Escribe un correo electrónico válido."]]);
+    if (typeof correoPermitido === "function" && !correoPermitido(correo)) return marcarFaltantes([["a-correo", avisoDominio()]]);
+    $("#lg-mail").textContent = correo;
+  }
+  f.dataset.paso = String(n); p1.hidden = n === 2; p2.hidden = n !== 2;
+  const i = $(n === 2 ? "#a-pass" : "#a-correo"); if (i) i.focus();
 }
 async function sbLogin() {
   const correo = normCorreo(val("a-correo")), pass = $("#a-pass").value; authErr("");
@@ -4115,7 +4129,7 @@ function vAuthSB() {
   const fld = (id, label, o = {}) => `<div class="field"><label for="${id}">${label}${o.req ? reqMark : ""}</label>${o.pw ? `<div class="pwrow"><input id="${id}" type="password" autocomplete="${o.auto || "current-password"}" ${o.req ? 'aria-required="true"' : ""}><button type="button" class="showpw" data-act="ver-pass" aria-label="Mostrar u ocultar contraseña">Mostrar</button></div>` : `<input id="${id}" type="${o.tipo || "text"}" autocomplete="${o.auto || "off"}" placeholder="${esc(o.ph || "")}" ${o.extra || ""} ${o.req ? 'aria-required="true"' : ""}>`}${o.hint ? `<span class="muted" style="font-size:12.5px">${o.hint}</span>` : ""}</div>`;
   const cab = `<div class="auth-brand"><span class="auth-logo${imgOk(c.logo) ? "" : " lg"}">${logo}</span><div><b>${esc(c.nombre)}</b><small>${esc(c.organizacion)}</small></div></div>`;
   const vis = `<button class="btn sec big auth-alt" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button>`;
-  const gBtn = (t) => `<button type="button" class="btn-google" id="a-google-btn" data-act="google-login" data-txt="${esc(t)}"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12 c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24 c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657 C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36 c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571 c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path></svg><span>${esc(t)}</span></button><div class="auth-or" role="separator"><span>o</span></div>`;
+  const gBtn = (t, sep = "o con tu correo") => `<button type="button" class="btn-google" id="a-google-btn" data-act="google-login" data-txt="${esc(t)}"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12 c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24 c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657 C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36 c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571 c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path></svg><span>${esc(t)}</span></button><div class="auth-or" role="separator"><span>${esc(sep)}</span></div>`;
   const marco = (h1, lede, body, tb = "") => `<div class="authwrap"><div class="authcard">${cab}${tb}<h1>${h1}</h1><p class="lede">${lede}</p>${body}</div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
   if (S.authView === "super") return marco("Acceso de superadministrador", `Entra con tu correo y contraseña. Si aún no tienes contraseña, usa «Entrar con código por correo» (se envía a <b>${esc(maskCorreo(CORREO_SUPER))}</b>) y luego créala en Mi cuenta → Cambiar contraseña.`,
     `<div class="note info">${glifo("info")}<div>Solo la persona propietaria recibe el código. Las demás personas deben usar la pestaña <b>Usuario</b>.</div></div><form id="form-superpass" novalidate>${fld("a-sup-correo", "Correo del propietario", { tipo: "email", req: 1, auto: "username", ph: "correo autorizado" })}${fld("a-sup-pass", "Contraseña", { pw: 1, req: 1 })}${err}<button class="btn big" type="submit" id="a-supp-btn" style="margin-top:12px">Entrar como superadministrador</button></form>
@@ -4136,17 +4150,28 @@ function vAuthSB() {
   if (S.authView === "colab") return marco("Acceso de colaborador", "Entra con tu correo y contraseña. Tu cuenta debe tener el tipo de acceso Colaborador o Superadministrador.",
     `<form id="form-login" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "username", ph: "nombre@dependencia.gob.mx", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, req: 1 })}${err}<button class="btn big" type="submit">Entrar como colaborador</button></form>
      <div class="auth-links"><button type="button" data-act="auth-ir" data-v="recuperar">¿Olvidaste tu contraseña?</button></div>${vis}`, authTabs("colab"));
-  if (reg) return `<div class="authwrap"><div class="authcard">${cab}<h1>Crea tu cuenta</h1><p class="lede">Regístrate con tu cuenta de Google o con tus datos y entra al instante.</p>
-    ${gBtn("Registrarse con Google")}
-    <form id="form-reg" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-nombre", "Nombre completo", { auto: "name", req: 1 })}${fld("a-cargo", "Cargo", { req: 1 })}${depCampoAuth()}${fld("a-area", "Área o unidad (opcional)")}${fld("a-correo", "Correo institucional", { tipo: "email", auto: "email", ph: "nombre@dependencia.gob.mx", req: 1 })}${fld("a-tel", "Teléfono de contacto", { tipo: "tel", auto: "tel", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, auto: "new-password", hint: CLAVE_AYUDA, req: 1 })}${fld("a-pass2", "Confirma la contraseña", { pw: 1, auto: "new-password", req: 1 })}
-    <label class="chk"><input type="checkbox" id="a-acepto" aria-required="true"><span>${reqMark.trim()} ${esc(c.privacidad)}${linksLegales()}</span></label>${err}<button class="btn big" type="submit" id="a-reg-btn">Crear mi cuenta</button></form>
-    <div class="auth-links"><button type="button" data-act="auth-ir" data-v="login">Ya tengo cuenta</button></div>${vis}</div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
-  return `<div class="authwrap"><div class="authcard">${cab}${authTabs("usuario")}<h1>Iniciar sesión</h1><p class="lede">Entra con tu cuenta de Google o con tu correo y contraseña, o explora el catálogo como visualizador. ¿Aún no tienes cuenta? Usa «Registrarse».${DOMINIO_PERMITIDO ? ` Solo se aceptan correos institucionales que terminen en <b>${esc(DOMINIO_PERMITIDO)}</b>.` : ""}</p>
-  ${gBtn("Iniciar sesión con Google")}
-  <form id="form-login" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "username", ph: "nombre@dependencia.gob.mx", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, req: 1 })}${err}<button class="btn big" type="submit">Iniciar sesión</button></form>
-  <div class="auth-links"><button type="button" data-act="auth-ir" data-v="recuperar">¿Olvidaste tu contraseña?</button></div>
-  <div class="auth-links" id="a-owner" style="display:none"><button type="button" data-act="super-enviar">Entrar con código por correo</button></div>
-  <button class="btn sec big auth-alt" type="button" data-act="auth-ir" data-v="registro">${glifo("user")}Registrarse</button>${vis}</div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
+  if (reg) return `<div class="authwrap"><div class="authcard wide">${cab}<h1>Crea tu cuenta</h1><p class="lede">Regístrate con Google o con tus datos y entra al instante.${DOMINIO_PERMITIDO ? ` Solo se aceptan correos que terminen en <b>${esc(DOMINIO_PERMITIDO)}</b>.` : ""}</p>
+    ${gBtn("Registrarse con Google", "o con tus datos")}
+    <form id="form-reg" novalidate><p class="auth-req"><b>*</b> Campo obligatorio</p>
+      <fieldset class="fgrp"><legend>Tus datos</legend><div class="fgrid">${fld("a-nombre", "Nombre completo", { auto: "name", req: 1 })}${fld("a-cargo", "Cargo", { req: 1 })}</div></fieldset>
+      <fieldset class="fgrp"><legend>Tu dependencia</legend><div class="fgrid">${depCampoAuth()}${fld("a-area", "Área o unidad (opcional)")}</div></fieldset>
+      <fieldset class="fgrp"><legend>Contacto y acceso</legend><div class="fgrid">${fld("a-correo", "Correo institucional", { tipo: "email", auto: "email", ph: "nombre@dependencia.gob.mx", req: 1 })}${fld("a-tel", "Teléfono de contacto", { tipo: "tel", auto: "tel", req: 1 })}${fld("a-pass", "Contraseña", { pw: 1, auto: "new-password", hint: CLAVE_AYUDA, req: 1 })}${fld("a-pass2", "Confirma la contraseña", { pw: 1, auto: "new-password", req: 1 })}</div></fieldset>
+      <label class="chk"><input type="checkbox" id="a-acepto" aria-required="true"><span>${reqMark.trim()} ${esc(c.privacidad)}${linksLegales()}</span></label>${err}<button class="btn big" type="submit" id="a-reg-btn">Crear mi cuenta</button></form>
+    <p class="auth-switch">¿Ya tienes cuenta? <button type="button" class="linkbtn" data-act="auth-ir" data-v="login">Inicia sesión</button></p>
+    <div class="auth-divider" role="separator"></div><button class="btn ghost big auth-alt auth-visor" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button></div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
+  const visor = `<div class="auth-divider" role="separator"></div><button class="btn ghost big auth-alt auth-visor" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button><p class="auth-note">Como visualizador puedes ver todo el catálogo. Para solicitar un sistema necesitas iniciar sesión.</p>`;
+  return `<div class="authwrap"><div class="authcard">${cab}${authTabs("usuario")}<h1>Iniciar sesión</h1><p class="lede">Entra con tu cuenta de Google o con tu correo institucional.${DOMINIO_PERMITIDO ? ` Solo se aceptan correos que terminen en <b>${esc(DOMINIO_PERMITIDO)}</b>.` : ""}</p>
+  ${gBtn("Continuar con Google")}
+  <form id="form-login" novalidate data-paso="1">
+    <div class="lg-paso" id="lg-p1">${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "username", ph: "nombre@dependencia.gob.mx", req: 1, extra: 'autocapitalize="none" spellcheck="false"' })}<button class="btn big" type="submit" id="lg-next">Continuar</button></div>
+    <div class="lg-paso" id="lg-p2" hidden>
+      <div class="lg-who"><span id="lg-mail"></span><button type="button" class="linkbtn" data-act="login-cambiar">Cambiar</button></div>
+      ${fld("a-pass", "Contraseña", { pw: 1, req: 1 })}<div class="pw-help"><button type="button" class="linkbtn" data-act="auth-ir" data-v="recuperar">¿Olvidaste tu contraseña?</button></div>
+      <button class="btn big" type="submit">Iniciar sesión</button>
+      <div class="auth-links" id="a-owner" style="display:none"><button type="button" data-act="super-enviar">Entrar con código por correo</button></div>
+      <p class="auth-switch">¿No tienes cuenta? <button type="button" class="linkbtn" data-act="auth-ir" data-v="registro">Crear cuenta</button></p>
+    </div>${err}</form>
+  ${visor}</div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
 }
 
 
@@ -5134,5 +5159,62 @@ button{text-align:center}
 @media(max-width:900px){.fc-wrap .fc-arrow{width:32px;height:32px}.fc-wrap .fc-prev{left:8px}.fc-wrap .fc-next{right:8px}}
 </style>
 <style id="sin-contador">.fc-count,.fc-ctl{display:none!important}</style>
+<style id="fondo-uniforme">
+/* Fondo continuo detrás del panel flotante: sin franja ni corte en seco */
+@media(min-width:901px){
+  html,body{background:#F5F8FD!important}
+  .app{background:linear-gradient(180deg,#F5F8FD 0%,#F6F5FC 100%) fixed!important}
+  .col,main{background:transparent}
+}
+</style>
+<style id="acceso-v8">
+/* ===== Pantalla de acceso: paleta azul #004EAA + lila #9568C6, jerarquía clara ===== */
+.authwrap{background:radial-gradient(820px 460px at 8% -4%,rgba(0,78,170,.10),transparent 62%),radial-gradient(760px 440px at 100% 104%,rgba(149,104,198,.14),transparent 62%),#F5F8FD!important}
+.authcard{background:#fff!important;border:1px solid #E3E9F3!important;border-radius:26px!important;box-shadow:0 1px 2px rgba(20,35,63,.05),0 24px 60px -24px rgba(0,50,120,.28)!important;padding:30px 28px 26px!important;width:min(440px,100%)}
+.authcard.wide{width:min(640px,100%)}
+.authcard::before{height:5px!important;background:linear-gradient(90deg,#004EAA,#9568C6)!important}
+.authcard h1{color:#14233F!important}
+.authcard .lede{color:#55657F!important;margin-bottom:18px!important}
+.auth-tabs{background:#EEF3FB!important;border:1px solid #DCE6F5!important}
+.auth-tabs button[aria-selected="true"]{color:#004EAA!important;box-shadow:0 3px 10px rgba(0,78,170,.14),inset 0 0 0 1px #C9DAF1!important}
+.auth-tabs button:hover:not([aria-selected="true"]){background:#E3ECF8;color:#003F8A}
+.authcard .field input,.authcard .field select{border:1px solid #D5DFEE!important;background:#fff!important}
+.authcard .field input:focus,.authcard .field select:focus{border-color:#004EAA!important;box-shadow:0 0 0 4px rgba(0,78,170,.14)!important}
+.authcard .btn.big:not(.sec):not(.ghost){background:linear-gradient(135deg,#004EAA,#1A66C4)!important;box-shadow:0 8px 18px -6px rgba(0,78,170,.5)!important;color:#fff!important}
+.authcard .btn.big:not(.sec):not(.ghost):hover{background:linear-gradient(135deg,#003F8A,#0F58B3)!important}
+.authcard button:focus-visible,.authcard a:focus-visible{outline:3px solid rgba(0,78,170,.4)!important}
+.btn-google{border-color:#D5DFEE!important;color:#14233F!important}
+.btn-google:hover{background:#F6F9FE!important;border-color:#B7C9E6!important}
+.btn-google:focus-visible{outline:3px solid rgba(0,78,170,.35)!important}
+.auth-or{color:#7A8AA3!important;font-size:13px;margin:18px 0 16px!important}
+.auth-or::before,.auth-or::after{background:#E3E9F3!important}
+/* Olvidé contraseña, cambio de vista y visualizador */
+.linkbtn{display:inline;min-height:0!important;padding:2px 3px!important;color:#004EAA!important;font-weight:650;font-size:inherit;text-decoration:underline;text-underline-offset:3px;border-radius:6px;background:none!important;border:0!important;box-shadow:none!important}
+.linkbtn:hover{color:#003F8A!important;text-decoration-thickness:2px}
+.authcard form .pw-help{display:flex;justify-content:flex-end;margin:-8px 0 0;font-size:14px;text-align:right}
+.authcard .auth-switch{text-align:center;margin:18px 0 0;color:#55657F;font-size:15px}
+.authcard .auth-divider{height:1px;margin:20px 0 16px;background:linear-gradient(90deg,transparent,#DCE6F5 15%,#E6DCF3 85%,transparent)}
+.authcard .auth-visor{margin-top:0!important;background:#F6F9FE!important;border:1.5px solid #DCE6F5!important;color:#004EAA!important;box-shadow:none!important;font-weight:650}
+.authcard .auth-visor:hover{background:#EAF1FB!important;border-color:#C9DAF1!important}
+.authcard .auth-note{text-align:center;font-size:13px;line-height:1.45;color:#7A8AA3;margin:10px 4px 0}
+/* Registro: grupos y dos columnas */
+.authcard .fgrp{border:0;margin:0;padding:0;min-width:0;display:grid;gap:10px}
+.authcard .fgrp legend{padding:0;margin:0 0 2px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7A5BB0;float:left;width:100%}
+.authcard .fgrp .fgrid{clear:both;display:grid;grid-template-columns:1fr 1fr;gap:14px 14px}
+.authcard form{gap:18px}
+.authcard form#form-login{gap:14px}
+.lg-paso{display:grid;gap:14px}.lg-paso[hidden]{display:none!important}
+.lg-who{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border:1.5px solid #DCE6F5;border-radius:12px;background:#F6F9FE;font-size:15px;color:#14233F}
+.lg-who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.authcard .lg-paso .auth-switch{margin:4px 0 0}
+@media(max-width:560px){.authcard .fgrp .fgrid{grid-template-columns:1fr}.authcard{padding:26px 18px 22px!important}}
+</style>
+<style id="acceso-v8b">
+body.auth .app{grid-template-columns:minmax(0,1fr)!important;background:transparent!important}
+body.auth .col,body.auth main{background:transparent}
+.authcard .btn.big.auth-visor:not(.sec){background:#F6F9FE!important;border:1.5px solid #DCE6F5!important;color:#004EAA!important;box-shadow:none!important;transform:none}
+.authcard .btn.big.auth-visor:not(.sec):hover{background:#EAF1FB!important;border-color:#C9DAF1!important}
+.authcard .btn.big.auth-visor .g{color:#004EAA}
+</style>
 </body>
 </html>
