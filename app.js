@@ -746,7 +746,7 @@ function btnGet(s, cls = "", sinNota = false) {
 }
 function fila(s, sub) {
   const aviso = !s.publicado ? `<span class="tag">No publicado</span>` : "";
-  return `<div class="row"><a class="row-main" href="#/sistema/${enc(s.id)}">${icono(s, "s64")}<span class="row-t"><b>${esc(s.nombre)}</b><small>${aviso}${tipoTag(s)}${esc(sub ?? s.subtitulo)}</small></span></a>${btnGet(s)}</div>`;
+  return `<div class="row"><a class="row-main" href="#/sistema/${enc(s.id)}">${icono(s, "s64")}<span class="row-t"><b>${esc(s.nombre)}</b><small class="row-meta">${aviso}${tipoTag(s)}<span class="row-sub">${esc(sub ?? s.subtitulo)}</span></small></span></a>${btnGet(s)}</div>`;
 }
 function feat(s) {
   const cap = s.capturas[0];
@@ -873,17 +873,58 @@ function notificar(tipo, titulo, detalle) {
   S.cat.notificaciones = S.cat.notificaciones.slice(0, 200);
 }
 const nNoLeidas = () => (S.super && Array.isArray(S.cat.notificaciones) ? S.cat.notificaciones.filter((n) => !n.leida).length : 0);
+/* Las solicitudes nuevas se muestran como notificaciones leyendo la tabla «solicitudes» (ids «sol-…»); lo leído/oculto se recuerda en este dispositivo. */
+const SOL_LEIDAS = "cat-sol-leidas", SOL_OCULTAS = "cat-sol-ocultas", esNotifSol = (id) => String(id).startsWith("sol-");
+const lsSet = (k) => { try { return new Set(JSON.parse(localStorage.getItem(k) || "[]")); } catch (e) { return new Set(); } };
+const lsGuardar = (k, set) => { try { localStorage.setItem(k, JSON.stringify([...set].slice(-500))); } catch (e) {} };
 async function sbNotifs() {
   if (!SB) return;
+  let reales = null, sols = [];
   try {
     const { data, error } = await SB.from("notificaciones").select("*").order("creado", { ascending: false }).limit(200);
-    if (!error && data) S.cat.notificaciones = data.map((x) => ({ id: x.id, tipo: x.tipo, titulo: x.titulo, detalle: x.detalle || {}, fecha: x.creado, leida: !!x.leida }));
+    if (!error && data) reales = data.map((x) => ({ id: x.id, tipo: x.tipo, titulo: x.titulo, detalle: x.detalle || {}, fecha: x.creado, leida: !!x.leida }));
   } catch (e) { /* sin avisos */ }
+  try {
+    const { data, error } = await SB.from("solicitudes").select("id,folio,creado,datos,sistemas").order("creado", { ascending: false }).limit(60);
+    if (!error && data) {
+      const ocultas = lsSet(SOL_OCULTAS), leidas = lsSet(SOL_LEIDAS), limite = Date.now() - 3 * 864e5;
+      sols = data.filter((x) => !ocultas.has("sol-" + x.id)).map((x) => {
+        const d = x.datos || {}, nom = (x.sistemas || []).map((y) => y.nombre).join(", ");
+        return { id: "sol-" + x.id, tipo: "solicitud", titulo: `${d.nombre || "Alguien"} solicitó ${nom}`, fecha: x.creado,
+          leida: leidas.has("sol-" + x.id) || new Date(x.creado).getTime() < limite,
+          detalle: { folio: x.folio, nombre: d.nombre, correo: d.correo, telefono: d.telefono, dependencia: d.dependencia, area: d.area, cargo: d.cargo, sistemas: nom } };
+      });
+    }
+  } catch (e) { /* sin solicitudes */ }
+  const base = reales || (S.cat.notificaciones || []).filter((n) => !esNotifSol(n.id));
+  S.cat.notificaciones = base.concat(sols).sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 200);
+}
+/* Vigilancia: revisa cada 15 s (y al instante si Supabase Realtime está activo) y avisa cuando llega una solicitud nueva */
+let vigilaTimer = null, vigilaCanal = null;
+async function vigilarNotifs() {
+  if (!S.super || !SB) { if (vigilaTimer) { clearInterval(vigilaTimer); vigilaTimer = null; } return; }
+  if (document.hidden) return;
+  const antes = new Set((S.cat.notificaciones || []).map((n) => n.id));
+  await sbNotifs();
+  const nuevas = (S.cat.notificaciones || []).filter((n) => !antes.has(n.id) && !n.leida);
+  refrescarCampana();
+  if (nuevas.length) {
+    toast(nuevas.length === 1 ? `Nueva solicitud: ${nuevas[0].titulo}` : `${nuevas.length} notificaciones nuevas`);
+    if (/^#\/admin\/notificaciones/.test(location.hash)) keep(() => render(false));
+  }
+}
+function iniciarVigilancia() {
+  if (!SB || vigilaTimer) return;
+  vigilaTimer = setInterval(vigilarNotifs, 15000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) vigilarNotifs(); });
+  try { vigilaCanal = SB.channel("solicitudes-nuevas").on("postgres_changes", { event: "INSERT", schema: "public", table: "solicitudes" }, () => vigilarNotifs()).subscribe(); } catch (e) { /* queda la revisión cada 15 s */ }
 }
 async function borrarNotifs(ids) {
   if (!ids.length) return;
-  if (SB) {
-    let r; try { r = await SB.from("notificaciones").delete().in("id", ids).select("id"); } catch (e) { r = { error: e }; }
+  const idsSol = ids.filter(esNotifSol); if (idsSol.length) { const o = lsSet(SOL_OCULTAS); idsSol.forEach((x) => o.add(x)); lsGuardar(SOL_OCULTAS, o); }
+  const idsReales = ids.filter((x) => !esNotifSol(x));
+  if (SB && idsReales.length) {
+    let r; try { r = await SB.from("notificaciones").delete().in("id", idsReales).select("id"); } catch (e) { r = { error: e }; }
     if (!r || r.error || !r.data || !r.data.length) return toast("No se pudo eliminar: falta el permiso en Supabase. Ejecuta supabase-notificaciones-borrar.sql.");
   }
   const s = new Set(ids); S.cat.notificaciones = (S.cat.notificaciones || []).filter((n) => !s.has(n.id));
@@ -894,7 +935,9 @@ async function borrarNotifs(ids) {
 async function marcarNotifs(id) {
   const l = (S.cat.notificaciones || []).filter((n) => (id ? n.id === id : !n.leida));
   l.forEach((n) => (n.leida = true));
-  if (SB && l.length) { try { await SB.from("notificaciones").update({ leida: true }).in("id", l.map((n) => n.id)); } catch (e) {} } else guardarCatalogo();
+  const lSol = l.filter((n) => esNotifSol(n.id)), lReal = l.filter((n) => !esNotifSol(n.id));
+  if (lSol.length) { const o = lsSet(SOL_LEIDAS); lSol.forEach((n) => o.add(n.id)); lsGuardar(SOL_LEIDAS, o); }
+  if (SB && lReal.length) { try { await SB.from("notificaciones").update({ leida: true }).in("id", lReal.map((n) => n.id)); } catch (e) {} } else if (!SB) guardarCatalogo();
 }
 async function registrarse() {
   authErr("");
@@ -1014,7 +1057,7 @@ function abrirNotif() {
   let p = $("#notifpop");
   if (!p) { p = document.createElement("div"); p.id = "notifpop"; p.setAttribute("role", "dialog"); p.setAttribute("aria-label", "Notificaciones"); p.tabIndex = -1; document.body.appendChild(p); }
   if (S.nOpen) return cerrarNotif();
-  if (S.super && SB) sbNotifs().then(() => { refrescarCampana(); if (S.nOpen) pintarNotif(); });   // trae solicitudes nuevas
+  if (S.super && SB) vigilarNotifs();   // trae solicitudes nuevas
   S.nOpen = true; if (S.super && !S.nTab) S.nTab = nAvisosNo() || !nNoLeidas() ? "avisos" : "accesos";
   p.innerHTML = htmlNotif(); p.hidden = false; requestAnimationFrame(() => p.classList.add("on")); document.querySelectorAll('[data-act="notif-abrir"]').forEach((b) => b.setAttribute("aria-expanded", "true")); p.focus({ preventScroll: true });
 }
@@ -2076,8 +2119,7 @@ async function enviarSolicitud() {
     const nombres = sol.sistemas.map((x) => x.nombre).join(", "), dd = sol.datos;
     const det = { folio: sol.folio, nombre: dd.nombre, correo: dd.correo, telefono: dd.telefono, dependencia: dd.dependencia, area: dd.area, cargo: dd.cargo, sistemas: nombres };
     const tit = `${dd.nombre} solicitó ${nombres}`;
-    if (SB) { try { await SB.from("notificaciones").insert({ tipo: "solicitud", titulo: tit, detalle: det }); } catch (err) { /* la solicitud ya quedó guardada */ } }
-    else { notificar("solicitud", tit, det); guardarCatalogo(); }
+    if (!SB) { notificar("solicitud", tit, det); guardarCatalogo(); }   // con Supabase, el superadministrador las lee directo de la tabla de solicitudes
   }
   S.sols.unshift(sol); await guardarSolicitudes();
   F.ini = null; F.sel = []; F.errs = {}; F.enviando = false; F.vals.mensaje = ""; F.vals.acepto = false;
@@ -3172,7 +3214,7 @@ async function sbPerfil(au) {
   /* Google: la primera vez se pide completar el perfil (cargo, dependencia, teléfono) */
   u.completar = esGoogle(au) && rolDe(p.rol) !== "superadmin" && !(p.dependencia && p.cargo && p.telefono);
   if (rolDe(p.rol) === "superadmin") { const { data } = await SB.from("perfiles").select("*"); if (data) lista = data.map((x) => sbUsuario(x)); }
-  S.cat.usuarios = lista; if (rolDe(p.rol) === "superadmin") { await sbNotifs(); if (S.catErr && S.catErr !== "red") setTimeout(() => toast("Los visualizadores no pueden leer el catálogo publicado. Ejecuta supabase-visualizador.sql en Supabase."), 1500); } return lista.find((x) => x.id === u.id) || u;
+  S.cat.usuarios = lista; if (rolDe(p.rol) === "superadmin") { await sbNotifs(); iniciarVigilancia(); if (S.catErr && S.catErr !== "red") setTimeout(() => toast("Los visualizadores no pueden leer el catálogo publicado. Ejecuta supabase-visualizador.sql en Supabase."), 1500); } return lista.find((x) => x.id === u.id) || u;
 }
 /* Entrar con código por correo (sirve también para cuentas creadas con Google que no tienen contraseña) */
 async function sbCodigoEnviar() {
