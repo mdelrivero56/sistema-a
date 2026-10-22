@@ -873,7 +873,7 @@ function notificar(tipo, titulo, detalle) {
   S.cat.notificaciones = S.cat.notificaciones.slice(0, 200);
 }
 const nNoLeidas = () => (S.super && Array.isArray(S.cat.notificaciones) ? S.cat.notificaciones.filter((n) => !n.leida).length : 0);
-const NOTIF_VER = "2026-10-22.4";   // sube este número en cada entrega: la pantalla «Revisar notificaciones» lo muestra para confirmar que se cargó el archivo nuevo
+const NOTIF_VER = "2026-10-22.5";   // sube este número en cada entrega: la pantalla «Revisar notificaciones» lo muestra para confirmar que se cargó el archivo nuevo
 /* Las solicitudes nuevas se muestran como notificaciones leyendo la tabla «solicitudes» (ids «sol-…»); lo leído/oculto se recuerda en este dispositivo. */
 const SOL_LEIDAS = "cat-sol-leidas", SOL_OCULTAS = "cat-sol-ocultas", esNotifSol = (id) => String(id).startsWith("sol-");
 const lsSet = (k) => { try { return new Set(JSON.parse(localStorage.getItem(k) || "[]")); } catch (e) { return new Set(); } };
@@ -2852,8 +2852,11 @@ const ACT = {
     if (SB && sol.estado === "enviada") {
       let r; try { r = await SB.rpc("cancelar_solicitud", { p_folio: sol.folio }); } catch (e) { r = { error: e }; }
       const res = r && !r.error ? r.data : null;
+      if (r && r.error) console.error("cancelar_solicitud:", r.error);
       if (res === "no_cancelable") return toast("Esta solicitud ya está en atención y no se puede cancelar desde aquí. Contacta al administrador.");
-      if (res !== "ok" && res !== "ya_cancelada") return toast("No se pudo cancelar en este momento. Inténtalo de nuevo o avisa al administrador.");
+      if (res === "no_encontrada") return toast("No se encontró esta solicitud ligada a tu cuenta (el correo de la solicitud debe ser el mismo con el que iniciaste sesión). Avisa al administrador.");
+      if (res === "sin_sesion") return toast("Inicia sesión para cancelar tu solicitud.");
+      if (res !== "ok" && res !== "ya_cancelada") return toast("No se pudo cancelar. Detalle: " + String((r && r.error && (r.error.message || r.error.code)) || res || "sin respuesta").slice(0, 160));
     }
     sol.cancelada = true; sol.canceladaFecha = hoyISO(); sol.estadoBan = "cancelada";
     if (!SB) { notificar("solicitud", `${sol.datos.nombre} canceló su solicitud de ${sol.sistemas.map((x) => x.nombre).join(", ")}`, { folio: sol.folio, nombre: sol.datos.nombre, correo: sol.datos.correo, telefono: sol.datos.telefono, dependencia: sol.datos.dependencia, area: sol.datos.area, cargo: sol.datos.cargo, sistemas: sol.sistemas.map((x) => x.nombre).join(", "), cancelada: true }); guardarCatalogo(); }
@@ -3055,7 +3058,7 @@ const ACT = {
         else add(true, "Lectura de solicitudes", `${r.count ?? (r.data || []).length} en total${r.data && r.data[0] ? `. La más reciente: ${esc(r.data[0].folio)} (${esc(fmtFecha(String(r.data[0].creado).slice(0, 10)))})` : ". Todavía no hay ninguna: si alguien ya solicitó un sistema, la solicitud no llegó al servidor."}`);
       } catch (e) { add(false, "Lectura de solicitudes", esc(String(e.message || e))); }
       try { const r = await SB.from("solicitudes").select("notif_leida,notif_oculta").limit(1); add(!r.error, "Estado compartido entre dispositivos", r.error ? "Falta ejecutar supabase-notificaciones.sql en Supabase. Mientras tanto, lo leído se recuerda solo en este dispositivo." : ""); } catch (e) { add(false, "Estado compartido entre dispositivos", "Falta ejecutar supabase-notificaciones.sql."); }
-      try { const r = await SB.rpc("cancelar_solicitud", { p_folio: "DIAGNOSTICO" }); add(!r.error, "Cancelar solicitud", r.error ? "Falta ejecutar supabase-cancelar-solicitud.sql en Supabase." : ""); } catch (e) { add(false, "Cancelar solicitud", "Falta ejecutar supabase-cancelar-solicitud.sql."); }
+      try { const r = await SB.rpc("cancelar_solicitud", { p_folio: "DIAGNOSTICO" }); add(!r.error, "Cancelar solicitud", r.error ? `Error: ${esc(String(r.error.message || r.error.code || "desconocido"))}. Ejecuta supabase-cancelar-solicitud.sql en Supabase.` : ""); } catch (e) { add(false, "Cancelar solicitud", "Falta ejecutar supabase-cancelar-solicitud.sql."); }
       add(S.rtEstado === "SUBSCRIBED", "Tiempo real", S.rtEstado === "SUBSCRIBED" ? "Activo: los avisos llegan al instante." : `No está activo (${esc(String(S.rtEstado || "sin conexión"))}). Los avisos llegan con la revisión cada 15 segundos. Para activarlo, ejecuta supabase-notificaciones.sql.`);
     }
     const nn = S.cat.notificaciones || [];
