@@ -17,7 +17,7 @@ const CONFIG_BASE = {
   telefono: "",
   privacidad: "Usaremos tus datos únicamente para atender esta solicitud y ponernos en contacto contigo.",
   pinHash: "",
-  correoAdmin: "delrivero25@gmail.com",   // recibe solicitudes de usuario y de recuperación de contraseña
+  correoAdmin: "delrivero@gmail.com",   // recibe solicitudes de usuario y de recuperación de contraseña
   logo: "",                   // imagen subida (opcional); si está vacío se usa el diseño de abajo
   logoMarca: "nodos",         // facetas | mosaico | capas | orbita | cubo | onda | inicial
   logoColor: "azul",          // color de la paleta
@@ -40,5 +40,6 @@ const SUPABASE_URL = "https://owdeglulxmamvbpbqiog.supabase.co";
 const SUPABASE_KEY = "sb_publishable_33l2WIbJHQ96J7McaPbgXQ_XH3tKmAL";
 const ARCHIVO_PUBLICADO = "catalogo.json";   // catálogo compartido con todos los visitantes
 const LIMITE_ARCHIVO = 10 * 1024 * 1024;      // 10 MB por adjunto
-const CORREO_SUPER = "delrivero25@gmail.com";  // único correo autorizado para Superadministrador
+const CORREO_SUPER = "delrivero@gmail.com";  // único correo autorizado para Superadministrador
 const DOMINIO_PERMITIDO = "";  // ← por ahora vacío = se acepta cualquier correo. Cuando quieras limitar el acceso, escribe "gob.mx" (el propietario siempre puede entrar)
+const DOMINIO_SOLICITUD = "gob.mx";  // las solicitudes de sistemas solo aceptan correos de gobierno (ej. nombre@gob.mx o nombre@chihuahua.gob.mx). Déjalo vacío ("") para aceptar cualquiera

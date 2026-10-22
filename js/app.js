@@ -50,6 +50,7 @@ const SB_ON = !!(SUPABASE_URL && SUPABASE_KEY);
 const URL_RECUP = SB_ON && /[#&?]type=recovery/.test(location.hash + location.search);
 const URL_ERR = SB_ON && /[#&?](error_code|error_description)=/.test(location.hash + location.search);
 const correoPermitido = (c) => { const x = String(c || "").trim().toLowerCase(); return !DOMINIO_PERMITIDO || x === String(CORREO_SUPER).toLowerCase() || x.endsWith("@" + DOMINIO_PERMITIDO) || x.endsWith("." + DOMINIO_PERMITIDO); };
+const correoGobierno = (c) => { const x = String(c || "").trim().toLowerCase(); return !DOMINIO_SOLICITUD || x.endsWith("@" + DOMINIO_SOLICITUD) || x.endsWith("." + DOMINIO_SOLICITUD); };
 const avisoDominio = () => `Solo se aceptan correos institucionales que terminen en ${DOMINIO_PERMITIDO}.`;
 const ROLES = { visitante: "Usuario", gestor: "Colaborador", superadmin: "Superadministrador" };
 const rolDe = (r) => (r === "admin" ? "superadmin" : r === "usuario" ? "visitante" : ROLES[r] ? r : "visitante");
@@ -1166,7 +1167,7 @@ function authTabs(a) {
   if (false) return `<div class="auth-tabs three" role="tablist" aria-label="Tipo de acceso"><button type="button" role="tab" aria-selected="${a === "usuario"}" data-act="auth-ir" data-v="login">Usuario</button><button id="tab-colaborador" type="button" role="tab" aria-selected="${a === "colab"}" data-act="auth-ir" data-v="colab">Colaborador</button><button id="tab-superadmin" type="button" role="tab" aria-selected="${a === "super"}" data-act="auth-ir" data-v="super">Superadministrador</button></div>`;
   const correoActual = normCorreo(document.getElementById("a-correo")?.value || "");
   const flujoSuper = ["super", "codigo", "supercod"].includes(S.authView);
-  const mostrarSuper = correoActual === "delrivero25@gmail.com" || flujoSuper;
+  const mostrarSuper = correoActual === normCorreo(CORREO_SUPER) || flujoSuper;
   return `<div class="auth-tabs" role="tablist" aria-label="Tipo de acceso"><button type="button" role="tab" aria-selected="${a === "usuario"}" data-act="auth-ir" data-v="login">Usuario</button><button id="tab-superadmin" type="button" role="tab" aria-selected="${a === "super"}" data-act="auth-ir" data-v="super" ${mostrarSuper ? "" : "hidden"}>Superadministrador</button></div>`;
 }
 function marcarFaltantes(lista) {
@@ -1184,7 +1185,7 @@ document.addEventListener("input", (e) => {
   const ow = document.getElementById("a-owner");
   if (ow) ow.style.display = normCorreo(e.target.value) === normCorreo(CORREO_SUPER) ? "" : "none";
   const tab = document.getElementById("tab-superadmin");
-  if (tab && !SB_ON) tab.hidden = normCorreo(e.target.value) !== "delrivero25@gmail.com";
+  if (tab && !SB_ON) tab.hidden = normCorreo(e.target.value) !== normCorreo(CORREO_SUPER);
 });
 function depCampoAuth() {
   const L = depsNombres(), hay = L.length > 0;
@@ -1236,7 +1237,7 @@ async function solicitarSuper() {
   authErr("");
   if (nombre.length < 3) return authErr("Escribe tu nombre completo.");
   if (!correoOk(correo)) return authErr("Escribe un correo válido.");
-  if (correo !== "delrivero25@gmail.com") return authErr("El acceso de Superadministrador está reservado al correo autorizado.");
+  if (correo !== normCorreo(CORREO_SUPER)) return authErr("El acceso de Superadministrador está reservado al correo autorizado.");
   if (!claveOk(p1)) return authErr(CLAVE_AYUDA);
   if (normCorreo(p1) === correo) return authErr("La contraseña no puede ser tu correo.");
   if (p1 !== p2) return authErr("Las contraseñas no coinciden.");
@@ -1719,6 +1720,76 @@ function iniciarCarrusel() {
     act();
   });
 }
+/* ---------- Panel superior (hero) de Descubrir ---------- */
+const textoPlano = (t) => rBusq(t).replace(/\s+/g, " ").trim();
+const recorta = (t, n) => (t.length > n ? t.slice(0, n).replace(/\s+\S*$/, "") + "…" : t);
+function heroSlide(s, i) {
+  const cap = s.capturas && s.capturas[0], k = catById(s.categorias[0]);
+  const desc = recorta(textoPlano(s.descripcion || s.subtitulo || ""), 190);
+  const pantalla = imgOk(s.portada)
+    ? `<img class="hero-shot" src="${esc(s.portada)}" alt="">`
+    : cap && imgOk(cap.src)
+      ? `<img class="hero-shot" src="${esc(cap.src)}" alt="">`
+      : `<span class="hero-ph-glyph">${glifo(GLIFOS.includes(s.icono.glifo) ? s.icono.glifo : "app")}</span><span class="hero-ph-lines"><i></i><i></i><i></i></span>`;
+  return `<article class="hero-slide${i === 0 ? " on" : ""}" data-i="${i}" style="${colorVars(s.icono.color)}" ${i === 0 ? "" : 'aria-hidden="true"'} aria-roledescription="diapositiva" aria-label="${i + 1} de {N}">
+    <div class="hero-copy">
+      <p class="hero-eyebrow"><span class="t-${tipoDe(s)}">${etqChip(s)}</span>${k ? `<em>${esc(k.nombre)}</em>` : ""}</p>
+      <h1 class="hero-title">${esc(s.nombre)}</h1>
+      ${s.subtitulo ? `<p class="hero-sub">${esc(s.subtitulo)}</p>` : ""}
+      ${desc ? `<p class="hero-desc">${esc(desc)}</p>` : ""}
+      <div class="hero-actions"><a class="hero-cta" href="#/sistema/${enc(s.id)}" ${i === 0 ? "" : 'tabindex="-1"'}>Conocer el sistema <span class="cta-dot">${glifo("chev")}</span></a>${btnGet(s, "hero-get")}</div>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+      <div class="phone"><div class="phone-notch"></div><div class="phone-screen">${pantalla}</div></div>
+      <span class="hero-orb orb-1"></span><span class="hero-orb orb-2"></span>
+      <span class="hero-badge">${icono(s, "s48")}<b>${esc(s.nombre)}</b></span>
+    </div>
+  </article>`;
+}
+function vHero(feats, cats, cuando) {
+  const n = feats.length, multi = n > 1;
+  const cuenta = S.admin ? `<a class="avatar on" href="#/admin" aria-label="Administración">${glifo("edit")}</a>` : S.user ? `<button class="avatar" data-act="mi-cuenta" aria-label="Mi cuenta">${esc(iniciales(S.user.nombre))}</button>` : `<a class="hero-login" href="#/acceso">${glifo("user")}Iniciar sesión</a>`;
+  return `<section class="hero" id="hero" aria-roledescription="carrusel" aria-label="Sistemas destacados">
+    ${cats.length ? `<div class="hero-chips" role="list" aria-label="Categorías">${cats.map((k) => `<a role="listitem" class="hchip" href="#/categoria/${enc(k.id)}" style="${colorVars(k.color)}"><span class="cdot${catCls(k)}">${catInner(k)}</span>${esc(k.nombre)}</a>`).join("")}</div>` : ""}
+    <div class="hero-top"><a class="hero-search" href="#/buscar">${glifo("search")}<span>Buscar sistemas</span></a><span class="hero-date">${esc(cuando)}</span>${cuenta}</div>
+    <div class="hero-stage" aria-live="off">${feats.map((s, i) => heroSlide(s, i).replace("{N}", n)).join("")}</div>
+    ${multi ? `<div class="hero-foot"><div class="hero-progress" role="group" aria-label="Elegir sistema destacado">${feats.map((s, i) => `<button type="button" class="hp${i === 0 ? " on" : ""}" data-act="hero-go" data-i="${i}" aria-label="Ver ${esc(s.nombre)}"><i></i></button>`).join("")}</div><div class="hero-nav"><button type="button" class="btn-round" data-act="hero-prev" aria-label="Anterior">${glifo("back")}</button><button type="button" class="btn-round" data-act="hero-next" aria-label="Siguiente">${glifo("chev")}</button></div></div>` : ""}
+  </section>`;
+}
+let heroTimer = null;
+function iniciarHero() {
+  clearInterval(heroTimer); heroTimer = null;
+  const h = $("#hero"); if (!h) return;
+  const slides = $$(".hero-slide", h), bars = $$(".hp", h); if (slides.length < 2) return;
+  const quieto = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const MS = 7000; h.style.setProperty("--hero-t", MS + "ms");
+  let i = 0;
+  const parar = () => { clearInterval(heroTimer); heroTimer = null; h.classList.add("paused"); };
+  const arrancar = () => {
+    clearInterval(heroTimer); heroTimer = null; h.classList.remove("paused"); if (quieto) return;
+    const b = bars[i]; if (b) { b.classList.remove("run"); void b.offsetWidth; b.classList.add("run"); }
+    heroTimer = setInterval(() => { if (!document.body.contains(h)) { clearInterval(heroTimer); heroTimer = null; return; } if (!document.hidden) ir(i + 1, true); }, MS);
+  };
+  let pausado = false;
+  const ir = (k) => {
+    i = (k + slides.length) % slides.length;
+    slides.forEach((s, j) => { const on = j === i; s.classList.toggle("on", on); if (on) s.removeAttribute("aria-hidden"); else s.setAttribute("aria-hidden", "true"); const a = $(".hero-cta", s); if (a) a.tabIndex = on ? 0 : -1; });
+    bars.forEach((b, j) => { b.classList.toggle("on", j === i); b.classList.remove("run"); });
+    if (pausado) clearInterval(heroTimer); else arrancar();
+  };
+  h._hero = { ir: (d) => ir(i + d), go: (k) => ir(k) };
+  if (!quieto) {
+    const pausa = (v) => { pausado = v; if (v) parar(); else arrancar(); };
+    h.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") pausa(true); });
+    h.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") pausa(false); });
+    h.addEventListener("focusin", () => pausa(true));
+    h.addEventListener("focusout", () => pausa(false));
+    arrancar();
+  }
+  let x0 = null;
+  h.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+  h.addEventListener("touchend", (e) => { if (x0 == null) return; const d = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(d) > 50) ir(i + (d < 0 ? 1 : -1)); }, { passive: true });
+}
 function cardVer(s) {
   const cap = s.capturas && s.capturas[0], k = catById(s.categorias[0]);
   const art = imgOk(s.portada)
@@ -1739,11 +1810,10 @@ function vHome() {
   const nuevos = [...lista].sort((a, b) => (b.actualizado || "").localeCompare(a.actualizado || "")).slice(0, 6);
   const cats = S.cat.categorias.slice();
   const usos = todosUsos().slice(0, 4);
-  post = iniciarCarrusel;
-  return `<div class="dx">${cabecera("Descubrir", "", cuando)}
+  post = () => { iniciarCarrusel(); iniciarHero(); };
+  return `<div class="dx">
     ${bannerAviso()}
-    ${cats.length ? `<div class="cv-wrap ch-wrap"><button type="button" class="cv-arrow cv-prev" data-act="cv-prev" aria-label="Anterior" hidden>${glifo("back")}</button><div class="chips bleed" role="list" aria-label="Categorías">${cats.map((k) => `<a role="listitem" class="chip" href="#/categoria/${enc(k.id)}" style="${colorVars(k.color)}"><span class="cdot${catCls(k)}">${catInner(k)}</span>${esc(k.nombre)}</a>`).join("")}</div><button type="button" class="cv-arrow cv-next" data-act="cv-next" aria-label="Siguiente" hidden>${glifo("chev")}</button></div>` : ""}
-    ${destCar(feats)}
+    ${vHero(feats, cats, cuando)}
     ${ver.length ? `<section class="sec sec-ver"><h2 class="sec-h"><a href="#/sistemas">También te podría interesar ${glifo("chev")}</a></h2><div class="cv-wrap"><button type="button" class="cv-arrow cv-prev" data-act="cv-prev" aria-label="Anterior" hidden>${glifo("back")}</button><div class="cv-grid">${ver.map(cardVer).join("")}</div><button type="button" class="cv-arrow cv-next" data-act="cv-next" aria-label="Siguiente" hidden>${glifo("chev")}</button></div></section>` : ""}
     <div class="duo ${lista.length > 3 ? "" : "solo"}"><section class="sec"><h2 class="sec-h"><a href="#/sistemas">Los más utilizados ${glifo("chev")}</a></h2><div class="rows paged">${top.map((s) => fila(s)).join("")}</div></section>
     ${lista.length > 3 ? `<section class="sec"><h2 class="sec-h"><a href="#/sistemas">Nuevos y actualizados ${glifo("chev")}</a></h2><div class="rows paged">${nuevos.map((s) => fila(s, `Versión ${s.version} · ${hace(s.actualizado)}`)).join("")}</div></section>` : ""}</div>
@@ -1932,6 +2002,7 @@ function vFicha(id) {
     iniciarGaleria();
   };
   const right = (S.admin ? `<a class="btn sm sec" href="#/admin/editar/${enc(s.id)}">${glifo("edit")}Editar</a>` : "") + `<button class="circ" data-act="compartir" data-id="${esc(s.id)}" aria-label="Copiar enlace del sistema">${glifo("share")}</button>` + btnGet(s, "sm", true);
+  const editarFicha = S.admin ? `<a class="btn ghost sm" style="margin-left:auto" href="#/admin/editar/${enc(s.id)}">${glifo("edit")}Editar contenido</a>` : "";
 
   const tipoHtml = `<span class="tipo-tag t-${tipoDe(s)} big">${glifo(TIPO_ICO[tipoDe(s)])}${esc(tipoNom(s))}</span><small class="vsub">${esc(TIPOS_DESC[tipoDe(s)])}</small>`;
   const sinDato = "No especificado";
@@ -1962,23 +2033,23 @@ function vFicha(id) {
   <div class="fx-body"><div class="fx-main">
   ${nov ? `<section class="sec"><h2 class="sec-h"><button data-act="historial" data-id="${esc(s.id)}">Novedades ${glifo("chev")}</button></h2><div class="nov"><span>Versión ${esc(nov.version)}</span><span>${esc(hace(nov.fecha))}</span></div><div class="prose">${rich(nov.notas)}</div></section>` : ""}
   ${videoInfo(s.videoDestacado) ? `<section class="sec vsec"><h2 class="sec-h">Video de muestra<span class="sec-sub">Conoce el sistema en acción</span></h2><div class="vplayer">${videoHtml(videoInfo(s.videoDestacado), s.nombre)}</div></section>` : ""}
-  ${s.capturas.length || (s.videos || []).some((v) => videoInfo(v)) ? `<section class="sec fx-prev"><h2 class="sec-h">Vista previa<span class="sec-sub" id="gal-count" hidden></span></h2><div class="gal-wrap"><button type="button" class="gal-arrow gal-prev" data-act="gal-prev" aria-label="Captura anterior" hidden>${glifo("back")}</button><div class="gallery bleed" tabindex="0" aria-label="Capturas y videos del sistema">${s.capturas.filter((c) => imgOk(c.src)).map((c, i) => `<button class="shot" data-act="lightbox" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ampliar captura ${i + 1}${c.pie ? ": " + esc(c.pie) : ""}"><img src="${esc(c.src)}" alt="${esc(c.pie || "Captura de " + s.nombre)}" loading="lazy"></button>`).join("")}${(s.videos || []).map((v, i) => videoInfo(v) ? `<button class="shot vshot" data-act="ver-video" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ver video${v.pie ? ": " + esc(v.pie) : ""}">${glifo("play")}<small>${esc(v.pie || "Video de muestra")}</small></button>` : "").join("")}</div><button type="button" class="gal-arrow gal-next" data-act="gal-next" aria-label="Captura siguiente" hidden>${glifo("chev")}</button></div></section>` : ""}
+  ${s.capturas.length || (s.videos || []).some((v) => videoInfo(v)) ? `<section class="sec fx-prev"><h2 class="sec-h">Vista previa ${editarFicha}<span class="sec-sub" id="gal-count" hidden></span></h2><div class="gal-wrap"><button type="button" class="gal-arrow gal-prev" data-act="gal-prev" aria-label="Captura anterior" hidden>${glifo("back")}</button><div class="gallery bleed" tabindex="0" aria-label="Capturas y videos del sistema">${s.capturas.filter((c) => imgOk(c.src)).map((c, i) => `<button class="shot" data-act="lightbox" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ampliar captura ${i + 1}${c.pie ? ": " + esc(c.pie) : ""}"><img src="${esc(c.src)}" alt="${esc(c.pie || "Captura de " + s.nombre)}" loading="lazy"></button>`).join("")}${(s.videos || []).map((v, i) => videoInfo(v) ? `<button class="shot vshot" data-act="ver-video" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ver video${v.pie ? ": " + esc(v.pie) : ""}">${glifo("play")}<small>${esc(v.pie || "Video de muestra")}</small></button>` : "").join("")}</div><button type="button" class="gal-arrow gal-next" data-act="gal-next" aria-label="Captura siguiente" hidden>${glifo("chev")}</button></div></section>` : ""}
   ${s.plataforma ? `<div class="platrow">${glifo("tablet")}<span>${esc(s.plataforma)}</span>${tipoTag(s)}</div>` : ""}
-  ${s.descripcion ? `<section class="sec fx-about"><h2 class="sec-h"><span class="ab-ico">${glifo("info")}</span>Acerca del sistema</h2><div class="prose clamp" id="desc" style="${descEstilo(s)}">${rich(s.descripcion)}</div><button class="more" id="mas" data-act="toggle-desc">más</button><div style="clear:both"></div></section>` : ""}
-  ${s.pasos.length || manualArch || manualLink ? `<section class="sec"><h2 class="sec-h">Manual de uso</h2>${s.pasos.length ? `<ol class="steps">${s.pasos.map((p) => `<li><span>${esc(p)}</span></li>`).join("")}</ol>` : ""}${manualArch ? `<div style="margin-top:14px"><button class="btn sec" data-act="ver-archivo" data-id="${esc(s.id)}" data-fid="${esc(manualArch.id)}">${glifo("libro")}Abrir manual completo</button></div>` : manualLink ? `<div style="margin-top:14px"><a class="btn sec" href="${esc(urlOk(manualLink.url))}" target="_blank" rel="noopener noreferrer">${glifo("libro")}Abrir manual completo</a></div>` : ""}</section>` : ""}
+  ${s.descripcion ? `<section class="sec fx-about"><h2 class="sec-h"><span class="ab-ico">${glifo("info")}</span>Acerca del sistema ${editarFicha}</h2><div class="prose clamp" id="desc" style="${descEstilo(s)}">${rich(s.descripcion)}</div><button class="more" id="mas" data-act="toggle-desc">más</button><div style="clear:both"></div></section>` : ""}
+  ${s.pasos.length || manualArch || manualLink ? `<section class="sec"><h2 class="sec-h">Manual de uso ${editarFicha}</h2>${s.pasos.length ? `<ol class="steps">${s.pasos.map((p) => `<li><span>${esc(p)}</span></li>`).join("")}</ol>` : ""}${manualArch ? `<div style="margin-top:14px"><button class="btn sec" data-act="ver-archivo" data-id="${esc(s.id)}" data-fid="${esc(manualArch.id)}">${glifo("libro")}Abrir manual completo</button></div>` : manualLink ? `<div style="margin-top:14px"><a class="btn sec" href="${esc(urlOk(manualLink.url))}" target="_blank" rel="noopener noreferrer">${glifo("libro")}Abrir manual completo</a></div>` : ""}</section>` : ""}
   <section class="sec fx-how"><h2 class="sec-h">Cómo solicitarlo</h2><ol class="fx-steps">
     <li><span class="n">1</span><b>Envía tu solicitud</b><small>Llenas el formulario y recibes tu folio.</small></li>
     <li><span class="n">2</span><b>Elabora tu oficio</b><small>Cita tu folio y envíalo al correo indicado.</small></li>
     <li><span class="n">3</span><b>Coordinamos una reunión</b><small>Definimos accesos y fechas de uso contigo.</small></li></ol></section>
-  <section class="sec"><h2 class="sec-h">Dependencias que lo usan</h2>
+  <section class="sec"><h2 class="sec-h">Dependencias que lo usan ${editarFicha}</h2>
     ${n ? `<div class="usedby"><div class="big"><b>${n}</b><span>${plural(n, "dependencia", "dependencias")}</span></div><div class="revs">${s.dependencias.map((d) => `<article class="rev"><h3>${esc(d.nombre)}</h3><div class="meta">${d.desde ? "Desde " + esc(d.desde) : "Usuaria del sistema"}</div>${d.nota ? `<p>${esc(d.nota)}</p>` : ""}</article>`).join("")}</div></div>`
       : `<div class="empty-card"><p>Todavía ninguna dependencia lo tiene registrado. Puedes ser de las primeras en usarlo.</p>${btnGet(s, "big", true)}</div>`}
   </section>
-  ${adj || encl ? `<section class="sec"><h2 class="sec-h">Documentos y enlaces</h2><ul class="docs">${adj}${encl}</ul></section>` : ""}
-  ${s.requisitos.length ? `<section class="sec"><h2 class="sec-h">Requisitos</h2><ul class="checks">${s.requisitos.map((r) => `<li>${glifo("ok")}<span>${esc(r)}</span></li>`).join("")}</ul></section>` : ""}
+  ${adj || encl ? `<section class="sec"><h2 class="sec-h">Documentos y enlaces ${editarFicha}</h2><ul class="docs">${adj}${encl}</ul></section>` : ""}
+  ${s.requisitos.length ? `<section class="sec"><h2 class="sec-h">Requisitos ${editarFicha}</h2><ul class="checks">${s.requisitos.map((r) => `<li>${glifo("ok")}<span>${esc(r)}</span></li>`).join("")}</ul></section>` : ""}
   </div><aside class="fx-side">
   <section class="fx-cta"><h2>Solicita este sistema para tu dependencia</h2><p>Recibirás un folio para elaborar tu oficio y coordinaremos una reunión contigo.</p>${btnGet(s, "big", true)}</section>
-  <section class="sec"><h2 class="sec-h">Ficha técnica</h2>
+  <section class="sec"><h2 class="sec-h">Ficha técnica ${editarFicha}</h2>
     <div class="kv">${filasTec.map(([k, v, h]) => `<div><span class="k">${esc(k)}</span><span class="v">${h || esc(v)}</span></div>`).join("")}
       ${prim ? `<div><a class="lr" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">Ir a${tipoDe(s) === "sistema" ? "l sistema" : tipoDe(s) === "portal" ? "l portal" : tipoDe(s) === "web" ? "l sitio web" : "l enlace"} ${glifo("out")}</a></div>` : ""}
       <div><button class="lr" data-act="contacto" data-id="${esc(s.id)}">Contactar al área responsable ${glifo("correo")}</button></div>
@@ -2070,7 +2141,7 @@ function vSolicitar(id) {
           ${campo("area", "Área o unidad", { ph: "Opcional" })}
           ${campo("cargo", "Cargo", { ph: "Opcional", ac: "organization-title" })}
           ${campo("nombre", "Nombre completo", { req: true, full: true, ac: "name" })}
-          ${campo("correo", "Correo institucional", { req: true, tipo: "email", ph: "tucorreo@ejemplo.com", ac: "email" })}
+          ${campo("correo", "Correo institucional", { req: true, tipo: "email", ph: DOMINIO_SOLICITUD ? "dominio@" + DOMINIO_SOLICITUD : "tucorreo@ejemplo.com", ac: "email" })}
           ${campo("telefono", "Teléfono", { req: true, tipo: "tel", ph: "10 dígitos", ac: "tel" })}
           <div class="field"><label for="f-contactoPref">¿Cómo prefieres que te contactemos? <span class="req" aria-hidden="true">*</span></label><select class="in select" id="f-contactoPref" data-form="contactoPref" style="width:100%">${opts(ocon, v.contactoPref)}</select></div>
           ${campo("horario", "Horario preferido para que te contactemos", { ph: "Ej. lunes a viernes, 10:00 a 14:00" })}
@@ -2101,7 +2172,8 @@ function validarSolicitud() {
   const req = (k, m) => { if (!String(v[k] || "").trim()) e[k] = m; };
   if (!F.sel.length) e.sel = "Elige al menos un sistema.";
   req("dependencia", "Elige o escribe el nombre de tu dependencia."); req("nombre", "Escribe tu nombre completo.");
-  if (!correoOk(v.correo)) e.correo = "Escribe un correo válido, por ejemplo tucorreo@ejemplo.com.";
+  if (!correoOk(v.correo)) e.correo = "Escribe un correo válido, por ejemplo dominio@gob.mx.";
+  else if (!correoGobierno(v.correo)) e.correo = `Solo se aceptan correos de gobierno que terminen en @${DOMINIO_SOLICITUD}, por ejemplo dominio@${DOMINIO_SOLICITUD}.`;
   if (String(v.telefono || "").replace(/\D/g, "").length < 8) e.telefono = "Escribe un teléfono de al menos 8 dígitos.";
   req("tipoUso", "Elige el tipo de uso."); if (v.tipoUso === "Otro") req("usoOtro", "Escribe cuál será el uso."); req("mensaje", "Cuéntanos brevemente qué necesitas.");
   return e;
@@ -3023,6 +3095,9 @@ const ACT = {
   "toggle-desc"(t) { const d = $("#desc"); if (!d) return; d.classList.toggle("open"); t.textContent = d.classList.contains("open") ? "menos" : "más"; },
   lightbox(t) { const s = byId(t.dataset.id); if (!s) return; const items = s.capturas.filter((c) => imgOk(c.src)); abrirLightbox(items, +t.dataset.i); },
   "cv-next"(t) { const g = $(".cv-grid, .chips", t.closest(".cv-wrap")); if (g) g.scrollBy({ left: g.clientWidth + 20, behavior: "smooth" }); },
+  "hero-prev"(t) { const h = t.closest("#hero"); if (h && h._hero) h._hero.ir(-1); },
+  "hero-next"(t) { const h = t.closest("#hero"); if (h && h._hero) h._hero.ir(1); },
+  "hero-go"(t) { const h = t.closest("#hero"); if (h && h._hero) h._hero.go(Number(t.dataset.i)); },
   "fc-prev"(t) { const r = $(".feat-row", t.closest(".fc")); if (r) r.scrollBy({ left: -fcPaso(r), behavior: "smooth" }); },
   "fc-next"(t) { const r = $(".feat-row", t.closest(".fc")); if (r) r.scrollBy({ left: fcPaso(r), behavior: "smooth" }); },
   "fc-go"(t) { const r = $(".feat-row", t.closest(".fc")); if (r) r.scrollTo({ left: Number(t.dataset.i) * fcPaso(r), behavior: "smooth" }); },
@@ -3106,7 +3181,7 @@ const ACT = {
   async "dep-import"() { for (const d of depsResumen().sin) await depsRegistrar(d.nombre); toast("Dependencias registradas"); keep(() => render(false)); },
   "auth-ir"(t) {
     const destino = t.dataset.v;
-    if (!SB_ON && destino === "super" && normCorreo($("#a-correo")?.value || "") !== "delrivero25@gmail.com" && !["super", "codigo", "supercod"].includes(S.authView)) {
+    if (!SB_ON && destino === "super" && normCorreo($("#a-correo")?.value || "") !== normCorreo(CORREO_SUPER) && !["super", "codigo", "supercod"].includes(S.authView)) {
       toast("El acceso de Superadministrador está reservado al correo autorizado."); return;
     }
     S.authView = destino; render(false); const i = $("input", view); if (i) i.focus();
