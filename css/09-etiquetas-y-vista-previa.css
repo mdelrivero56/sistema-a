@@ -67,3 +67,20 @@
 .apv em.w{background:var(--wtag-bg);color:var(--wtag)}
 .apv-get{background:var(--bg);color:var(--ac);border-radius:9px;padding:5px 14px;font-weight:700}
 @media(max-width:640px){.apv{grid-template-columns:1fr}.apv-side{flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--ln)}.apv-brand{margin:0 8px 0 0}}
+
+/* ===== Filas de sistemas: etiqueta de tipo y descripción en líneas separadas (evita que se empalmen en el celular) ===== */
+.row-t small.row-meta{display:flex;flex-direction:column;align-items:flex-start;gap:4px;overflow:visible;-webkit-line-clamp:unset;margin-top:5px}
+.row-t small.row-meta .tipo-tag,.row-t small.row-meta .tag{margin:0;flex:none;max-width:100%;width:max-content}
+.row-t small.row-meta .row-sub{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;min-width:0;max-width:100%}
+.row-t small.row-meta .row-sub:empty{display:none}
+@media (max-width:900px){
+  .rows.paged .row-t small.row-meta{-webkit-line-clamp:unset}
+  .rows.paged .row-t small.row-meta .row-sub{-webkit-line-clamp:1}
+}
+
+/* ===== Solicitud abierta desde una notificación: se resalta un momento ===== */
+.ban-card{scroll-margin-top:96px}
+.ban-card.ban-resalta{box-shadow:0 0 0 3px var(--accent);transition:box-shadow .3s}
+
+/* ===== Solicitud cancelada en «Mis solicitudes» ===== */
+.solcard.cancelada{opacity:.78}
