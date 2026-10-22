@@ -1,0 +1,67 @@
+/* ==========================================================================
+   Modo oscuro
+   (Las hojas se cargan en orden numérico: las últimas tienen prioridad.)
+   ========================================================================== */
+
+/* ---- Modo oscuro: la misma paleta (azul #004EAA y lila #9568C6) en tonos claros sobre azul marino. Lo activa «Apariencia». ---- */
+:root[data-modo="oscuro"]{
+  color-scheme:dark!important;
+  --btn-ink:#0B1730;
+  --bg:#0E1626!important; --bg-soft:#141F33!important; --bg-card:#172339!important; --bg-input:#101A2C!important;
+  --label:#EAF0FA!important; --label-2:#A9B6CC!important; --label-3:#8191AA!important;
+  --sep:#26344D!important; --sep-strong:#364862!important;
+  --lila:#B392DD; --lila-texto:#CDB5EA; --lila-suave:rgba(179,146,221,.14); --lila-borde:rgba(179,146,221,.34);
+  --glass:rgba(14,22,38,.94)!important; --sidebar:#0E1626!important;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35)!important;
+  --ok:#5BD08F!important; --warn:#E6B450!important; --bad:#FF8A80!important;
+  --pal-profundo:#EAF0FA!important; --pal-texto:#EAF0FA!important; --pal-borde:#26344D!important;
+}
+:root[data-modo="oscuro"] .admbar{background:color-mix(in srgb,var(--azul) 12%,var(--bg))!important;border-color:var(--sep)!important;color:var(--label)!important}
+:root[data-modo="oscuro"] .pagehead::after{background:radial-gradient(circle,rgba(179,146,221,.22),transparent 65%)!important}
+:root[data-modo="oscuro"] .feat-art::before,:root[data-modo="oscuro"] .coll::before{background:radial-gradient(circle,rgba(255,255,255,.10),transparent 68%)!important}
+:root[data-modo="oscuro"] .ico::after{background:linear-gradient(rgba(255,255,255,.14),transparent 55%)!important}
+:root[data-modo="oscuro"] .card,:root[data-modo="oscuro"] .system-card,:root[data-modo="oscuro"] .panel{box-shadow:0 2px 10px rgba(0,0,0,.35)!important}
+:root[data-modo="oscuro"] #acc-btn{border-color:var(--bg)!important}
+
+/* ---- Modo oscuro: superficies de las capas anteriores (fondos claros fijos → paleta oscura) ---- */
+html[data-modo="oscuro"],html[data-modo="oscuro"] body{background:#0E1626!important}
+html[data-modo="oscuro"] .app{background:#0E1626!important}
+html[data-modo="oscuro"] .sidebar{background:var(--bg)!important}
+html[data-modo="oscuro"] .sec,html[data-modo="oscuro"] .cv-card,html[data-modo="oscuro"] .cv-shot{background:var(--bg-card)}
+html[data-modo="oscuro"] .how li{background:var(--bg-soft)}
+html[data-modo="oscuro"] .ch-wrap .cv-arrow{background:linear-gradient(90deg,var(--bg) 70%,transparent)}
+html[data-modo="oscuro"] .ch-wrap .cv-next{background:linear-gradient(270deg,var(--bg) 70%,transparent)}
+html[data-modo="oscuro"] .ch-wrap .cv-arrow,html[data-modo="oscuro"] .fc-arrow,html[data-modo="oscuro"] .fc-wrap .fc-arrow,html[data-modo="oscuro"] .gal-arrow,html[data-modo="oscuro"] .gal-wrap .gal2-arrow{background:var(--bg-card)!important;color:var(--azul)}
+html[data-modo="oscuro"] .searchbox,html[data-modo="oscuro"] .bigsearch,html[data-modo="oscuro"] .sidebar .searchbox{background:var(--bg-soft)!important}
+html[data-modo="oscuro"] .searchbox:focus-within,html[data-modo="oscuro"] .bigsearch:focus-within,html[data-modo="oscuro"] .sidebar .searchbox:focus-within{background:var(--bg-input)!important}
+html[data-modo="oscuro"] .icb[aria-pressed="true"],html[data-modo="oscuro"] .fc-count{background:var(--azul-suave)}
+html[data-modo="oscuro"] .cdot.has-img,html[data-modo="oscuro"] .sidebar .sidenav a.cat .cdot.has-img{background:var(--bg-card)!important}
+html[data-modo="oscuro"] .sidebar .sidenav a:hover,html[data-modo="oscuro"] .sidebar .sidenav button:hover,html[data-modo="oscuro"] .sidebar .sidenav-a:hover,
+html[data-modo="oscuro"] .sidebar .sidenav a[aria-current="page"],html[data-modo="oscuro"] .sidebar .sidenav a.active{background:var(--azul-suave)!important}
+html[data-modo="oscuro"] .sidebar .side-foot::before{background:linear-gradient(90deg,transparent,var(--sep-strong) 20%,var(--lila-borde) 80%,transparent)}
+html[data-modo="oscuro"] .htile{background:linear-gradient(150deg,color-mix(in srgb,var(--azul) 10%,var(--bg)),color-mix(in srgb,var(--azul) 24%,var(--bg)))}
+html[data-modo="oscuro"] .hero-side .htile:nth-child(2),html[data-modo="oscuro"] .colls .coll:nth-child(3n){background:linear-gradient(150deg,color-mix(in srgb,#F2A04A 12%,var(--bg)),color-mix(in srgb,#F2A04A 26%,var(--bg)))!important}
+html[data-modo="oscuro"] .feat,html[data-modo="oscuro"] .feat:nth-child(even),html[data-modo="oscuro"] .feat:nth-child(3n){
+  --tinta:color-mix(in srgb,var(--c2) 55%,#fff);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--c1) 24%,var(--bg)) 0%,color-mix(in srgb,var(--c1) 42%,var(--bg)) 26%,color-mix(in srgb,var(--c1) 55%,var(--c2)) 56%,color-mix(in srgb,var(--c2) 90%,#0b1b3a) 100%)!important}
+html[data-modo="oscuro"] .adm-flota{background:color-mix(in srgb,var(--bg) 92%,transparent)!important}
+html[data-modo="oscuro"] .adm-flota .seg{background:var(--bg-soft)}
+html[data-modo="oscuro"] .cat-card,html[data-modo="oscuro"] .cat-card:nth-child(even),html[data-modo="oscuro"] .cat-card:nth-child(odd){background:var(--bg-card)!important}
+html[data-modo="oscuro"] .cat-card .select,html[data-modo="oscuro"] .cat-card input[type=text]{background:var(--bg-input)}
+html[data-modo="oscuro"] .cat-foot .btn.sec,html[data-modo="oscuro"] .cat-foot .btn.ghost,html[data-modo="oscuro"] .cat-del,html[data-modo="oscuro"] .acciones .btn.sec{background:var(--bg-card)!important}
+html[data-modo="oscuro"] .authcard{background:var(--bg-card)!important}
+html[data-modo="oscuro"] .authcard h1{color:var(--label)!important}
+html[data-modo="oscuro"] .auth-tabs{background:var(--bg-soft)!important}
+html[data-modo="oscuro"] .auth-tabs button:hover:not([aria-selected="true"]){background:var(--sep)}
+html[data-modo="oscuro"] .authcard .field input,html[data-modo="oscuro"] .authcard .field select{background:var(--bg-input)!important}
+html[data-modo="oscuro"] .btn-google{background:var(--bg-card)!important;color:var(--label)!important;border-color:var(--sep)!important}
+html[data-modo="oscuro"] .auth-or::before,html[data-modo="oscuro"] .auth-or::after{background:var(--sep)!important}
+html[data-modo="oscuro"] .authcard .auth-visor,html[data-modo="oscuro"] .authcard .btn.big.auth-visor:not(.sec){background:var(--bg-soft)!important}
+
+/* ---- Chips activos y elementos que quedaban claros en modo oscuro ---- */
+.chip[aria-pressed="true"],.chip.on{background:var(--azul-suave)!important;color:var(--azul)!important;border-color:var(--azul)!important;font-weight:700}
+html[data-modo="oscuro"] .selchip{background:var(--bg-soft)!important;color:var(--label)!important;border-color:var(--sep)!important}
+html[data-modo="oscuro"] .selchip *{color:var(--label)}
+html[data-modo="oscuro"] .fhead-actions .get.big{background:var(--azul)!important;color:var(--btn-ink)!important}
+html[data-modo="oscuro"] .sidebar{border:1px solid var(--sep)!important}
+html[data-modo="oscuro"] .sec{border-color:var(--sep)!important}

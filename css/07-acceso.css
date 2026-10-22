@@ -1,0 +1,91 @@
+/* ==========================================================================
+   Pantalla de acceso y flechas de la galería
+   (Las hojas se cargan en orden numérico: las últimas tienen prioridad.)
+   ========================================================================== */
+
+/* ===== Pantalla de acceso: paleta azul #004EAA + lila #9568C6, jerarquía clara ===== */
+.authwrap{background:radial-gradient(820px 460px at 8% -4%,rgba(0,78,170,.10),transparent 62%),radial-gradient(760px 440px at 100% 104%,rgba(149,104,198,.14),transparent 62%),#F5F8FD!important}
+.authcard{background:#fff!important;border:1px solid #E3E9F3!important;border-radius:26px!important;box-shadow:0 1px 2px rgba(20,35,63,.05),0 24px 60px -24px rgba(0,50,120,.28)!important;padding:30px 28px 26px!important;width:min(440px,100%)}
+.authcard.wide{width:min(640px,100%)}
+.authcard::before{height:5px!important;background:linear-gradient(90deg,#004EAA,#9568C6)!important}
+.authcard h1{color:#14233F!important}
+.authcard .lede{color:#55657F!important;margin-bottom:18px!important}
+.auth-tabs{background:#EEF3FB!important;border:1px solid #DCE6F5!important}
+.auth-tabs button[aria-selected="true"]{color:#004EAA!important;box-shadow:0 3px 10px rgba(0,78,170,.14),inset 0 0 0 1px #C9DAF1!important}
+.auth-tabs button:hover:not([aria-selected="true"]){background:#E3ECF8;color:#003F8A}
+.authcard .field input,.authcard .field select{border:1px solid #D5DFEE!important;background:#fff!important}
+.authcard .field input:focus,.authcard .field select:focus{border-color:#004EAA!important;box-shadow:0 0 0 4px rgba(0,78,170,.14)!important}
+.authcard .btn.big:not(.sec):not(.ghost){background:linear-gradient(135deg,#004EAA,#1A66C4)!important;box-shadow:0 8px 18px -6px rgba(0,78,170,.5)!important;color:#fff!important}
+.authcard .btn.big:not(.sec):not(.ghost):hover{background:linear-gradient(135deg,#003F8A,#0F58B3)!important}
+.authcard button:focus-visible,.authcard a:focus-visible{outline:3px solid rgba(0,78,170,.4)!important}
+.btn-google{border-color:#D5DFEE!important;color:#14233F!important}
+.btn-google:hover{background:#F6F9FE!important;border-color:#B7C9E6!important}
+.btn-google:focus-visible{outline:3px solid rgba(0,78,170,.35)!important}
+.auth-or{color:#7A8AA3!important;font-size:13px;margin:18px 0 16px!important}
+.auth-or::before,.auth-or::after{background:#E3E9F3!important}
+/* Olvidé contraseña, cambio de vista y visualizador */
+.linkbtn{display:inline;min-height:0!important;padding:2px 3px!important;color:#004EAA!important;font-weight:650;font-size:inherit;text-decoration:underline;text-underline-offset:3px;border-radius:6px;background:none!important;border:0!important;box-shadow:none!important}
+.linkbtn:hover{color:#003F8A!important;text-decoration-thickness:2px}
+.authcard form .pw-help{display:flex;justify-content:flex-end;margin:-8px 0 0;font-size:14px;text-align:right}
+.authcard .auth-switch{text-align:center;margin:18px 0 0;color:#55657F;font-size:15px}
+.authcard .auth-divider{height:1px;margin:20px 0 16px;background:linear-gradient(90deg,transparent,#DCE6F5 15%,#E6DCF3 85%,transparent)}
+.authcard .auth-visor{margin-top:0!important;background:#F6F9FE!important;border:1.5px solid #DCE6F5!important;color:#004EAA!important;box-shadow:none!important;font-weight:650}
+.authcard .auth-visor:hover{background:#EAF1FB!important;border-color:#C9DAF1!important}
+.authcard .auth-note{text-align:center;font-size:13px;line-height:1.45;color:#7A8AA3;margin:10px 4px 0}
+/* Registro: grupos y dos columnas */
+.authcard .fgrp{border:0;margin:0;padding:0;min-width:0;display:grid;gap:10px}
+.authcard .fgrp legend{padding:0;margin:0 0 2px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7A5BB0;float:left;width:100%}
+.authcard .fgrp .fgrid{clear:both;display:grid;grid-template-columns:1fr 1fr;gap:14px 14px}
+.authcard form{gap:18px}
+.authcard form#form-login{gap:14px}
+.lg-paso{display:grid;gap:14px}.lg-paso[hidden]{display:none!important}
+.authcard .lg-paso .auth-switch{margin:4px 0 0}
+@media(max-width:560px){.authcard .fgrp .fgrid{grid-template-columns:1fr}.authcard{padding:26px 18px 22px!important}}
+
+body.auth .app{grid-template-columns:minmax(0,1fr)!important;background:transparent!important}
+body.auth .col,body.auth main{background:transparent}
+.authcard .btn.big.auth-visor:not(.sec){background:#F6F9FE!important;border:1.5px solid #DCE6F5!important;color:#004EAA!important;box-shadow:none!important;transform:none}
+.authcard .btn.big.auth-visor:not(.sec):hover{background:#EAF1FB!important;border-color:#C9DAF1!important}
+.authcard .btn.big.auth-visor .g{color:#004EAA}
+/* Buscador de la pestaña Buscar (celular): el anillo de enfoque va en toda la barra, no en un cuadro interior */
+.bigsearch input[type=search],.bigsearch input[type=search]:focus,.bigsearch input[type=search]:focus-visible{outline:none!important;box-shadow:none!important;border:0!important;background:transparent!important;border-radius:0!important}
+.bigsearch{border:1.5px solid transparent;transition:border-color .15s,box-shadow .15s,background .15s}
+.bigsearch:focus-within{background:#fff!important;border-color:var(--azul,#004EAA)!important;box-shadow:0 0 0 3px rgba(0,78,170,.15)!important}
+.bigsearch input[type=search]::-webkit-search-cancel-button{cursor:pointer;margin-left:6px}
+/* Administrador > Sistemas: botones ordenados en dos filas iguales */
+.arow .acts{gap:12px 16px}
+.arow .acts-main,.arow .acts-icons{display:flex;align-items:center;gap:8px}
+@media(max-width:640px){
+  .arow{padding:18px 16px;gap:14px}
+  .arow .acts{display:grid;gap:10px;width:100%}
+  .arow .acts-main{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .arow .acts-main .btn{width:100%;min-height:44px;margin:0;padding:0 8px;justify-content:center;align-items:center;white-space:nowrap;font-size:15px}
+  .arow .acts-icons{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .arow .acts-icons .iconbtn{width:100%;height:44px;margin:0;border-radius:12px;background:var(--bg);border:1px solid var(--sep);display:flex;align-items:center;justify-content:center}
+  .arow .acts-icons .iconbtn[disabled]{opacity:.35}
+}
+.feat-bar .get{white-space:nowrap}
+@media(max-width:560px){.feat-bar .t{display:none!important}.feat-bar .get-wrap{flex:1}.feat-bar .get-wrap .get{width:100%}}
+
+.gal-wrap{position:relative}
+.gal-wrap .gal-arrow{display:none!important}
+.gal-wrap .gal2-arrow{position:absolute;top:calc(50% - 4px);transform:translateY(-50%);z-index:30;width:36px;height:36px;border-radius:50%;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+  background:#fff;color:#004EAA;border:1.5px solid rgba(0,78,170,.4);box-shadow:0 3px 12px rgba(11,27,58,.4);transition:transform .15s,opacity .15s,background .15s,color .15s}
+.gal-wrap .gal2-arrow svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round}
+.gal-wrap .gal2-prev{left:10px}
+.gal-wrap .gal2-next{right:10px}
+.gal-wrap .gal2-arrow:hover{background:#004EAA;color:#fff}
+.gal-wrap .gal2-arrow:active{transform:translateY(-50%) scale(.92)}
+.gal-wrap .gal2-arrow[disabled]{opacity:.35;pointer-events:none}
+
+/* Flechas en carriles laterales, fuera de las imágenes y centradas en vertical */
+.gal-wrap{padding-inline:56px;--gw:min(430px,78cqw)}
+.gal-wrap .gallery.bleed{margin-inline:0!important;padding-inline:calc(50cqw - var(--gw)/2)!important;scroll-padding-inline:0!important;border-radius:20px}
+.gal-wrap .gal2-prev{left:8px;right:auto}
+.gal-wrap .gal2-next{right:8px;left:auto}
+@media(max-width:700px){
+  .gal-wrap{padding-inline:42px;--gw:100cqw}
+  .gal-wrap .gal2-arrow{width:32px;height:32px}
+  .gal-wrap .gal2-prev{left:4px}.gal-wrap .gal2-next{right:4px}
+}
