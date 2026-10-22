@@ -2199,11 +2199,11 @@ function marcarRequisito(t) {
 
 /* ---------- Superadministrador: bandeja de solicitudes recibidas ---------- */
 const ESTADOS_BAN = { nueva: ["warn", "Nueva"], contacto: ["info", "En contacto"], atendida: ["ok", "Atendida"], cancelada: ["bad", "Cancelada"], archivada: ["", "Archivada"] };
-S.bf = "todas";
+S.bf = "todas"; S.bq = ""; S.bo = "recientes"; S.bdep = ""; S.bsis = ""; S.bof = "";
 function exportarBandeja() {
-  const ver = S.bf === "todas" ? filasBandeja() : filasBandeja().filter((r) => r.estado === S.bf);
+  const ver = bandejaVisibles();
   const d = (r) => r.datos || {};
-  const cols = [["Folio", (r) => r.folio], ["Fecha", (r) => String(r.creado).slice(0, 10)], ["Estado", (r) => (ESTADOS_BAN[r.estado] || ["", r.estado])[1]], ["Dependencia", (r) => d(r).dependencia], ["Área o unidad", (r) => d(r).area], ["Nombre", (r) => d(r).nombre], ["Cargo", (r) => d(r).cargo], ["Correo", (r) => d(r).correo], ["Teléfono", (r) => d(r).telefono], ["Contacto preferido", (r) => d(r).contactoPref], ["Horario para contactarlo", (r) => d(r).horario], ["Sistemas", (r) => (r.sistemas || []).map((x) => x.nombre).join("; ")], ["Uso previsto", (r) => d(r).tipoUso], ["Fecha estimada", (r) => d(r).fechaUso], ["Personas", (r) => d(r).participantes], ["Mensaje", (r) => d(r).mensaje], ["Nota interna", (r) => r.nota]];
+  const cols = [["Folio", (r) => r.folio], ["Fecha", (r) => String(r.creado).slice(0, 10)], ["Estado", (r) => (ESTADOS_BAN[r.estado] || ["", r.estado])[1]], ["Dependencia", (r) => d(r).dependencia], ["Área o unidad", (r) => d(r).area], ["Nombre", (r) => d(r).nombre], ["Cargo", (r) => d(r).cargo], ["Correo", (r) => d(r).correo], ["Teléfono", (r) => d(r).telefono], ["Contacto preferido", (r) => d(r).contactoPref], ["Horario para contactarlo", (r) => d(r).horario], ["Sistemas", (r) => (r.sistemas || []).map((x) => x.nombre).join("; ")], ["Uso previsto", (r) => d(r).tipoUso], ["Fecha estimada", (r) => d(r).fechaUso], ["Personas", (r) => d(r).participantes], ["Mensaje", (r) => d(r).mensaje], ["Oficio recibido", (r) => (gestionDe(r).oficio.recibido ? "Sí" : "No")], ["Fecha del oficio", (r) => gestionDe(r).oficio.fecha], ["No. de oficio", (r) => gestionDe(r).oficio.numero], ["Último movimiento", (r) => { const h = gestionDe(r).historial; return h.length ? fmtHora(h[h.length - 1].f) + " · " + (h[h.length - 1].d || "") : ""; }], ["Nota interna", (r) => r.nota]];
   const q = (x) => { let t = String(x == null ? "" : x); if (/^[=+\-@]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; };
   const csv = "\ufeff" + [cols.map((c) => q(c[0])).join(","), ...ver.map((r) => cols.map((c) => q(c[1](r))).join(","))].join("\r\n");
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); a.download = "solicitudes-" + hoyISO() + ".csv"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
@@ -2213,15 +2213,38 @@ async function cargarBandeja() {
   if (!SB || !S.super) { S.inbox = null; return; }
   S.inbox = "cargando";
   const { data, error } = await SB.from("solicitudes").select("*").order("creado", { ascending: false }).limit(500);
-  S.inbox = error ? "error" : data;
+  S.inbox = error ? "error" : (data || []).map((r) => Object.assign(r, { estado: estadoBan(r.estado) }));
+}
+/* ---- Estados, historial y oficio de cada solicitud ---- */
+/* Las solicitudes llegan de la base con estados como «enviada»: aquí se unifican con los de la bandeja (nueva, en contacto, atendida, cancelada, archivada). */
+const ESTADOS_ALIAS = { enviada: "nueva", enviado: "nueva", pendiente: "nueva", guardada: "nueva", recibida: "nueva", registrada: "nueva", nuevo: "nueva", "en contacto": "contacto" };
+const estadoBan = (e) => { const k = String(e == null ? "" : e).trim().toLowerCase(); return ESTADOS_BAN[k] ? k : (ESTADOS_ALIAS[k] || "nueva"); };
+const quienBan = () => { const u = S.user || {}; return String(u.correo || u.nombre || "Administrador"); };
+const evBan = (a, d) => ({ f: new Date().toISOString(), q: quienBan(), a, d });
+const OFICIO_VACIO = { recibido: false, fecha: "", numero: "" };
+/* La gestión (historial y oficio) se guarda dentro de «datos._gestion»: no requiere cambios en la base de datos. */
+function gestionDe(r) { const g = (r && r.datos && r.datos._gestion) || {}; return { historial: Array.isArray(g.historial) ? g.historial : [], oficio: Object.assign({}, OFICIO_VACIO, g.oficio || {}) }; }
+function gestionEdit(r) { r.datos = r.datos || {}; const g = (r.datos._gestion = r.datos._gestion || {}); if (!Array.isArray(g.historial)) g.historial = []; g.oficio = Object.assign({}, OFICIO_VACIO, g.oficio || {}); return g; }
+const histRecortar = (g) => { if (g.historial.length > 80) g.historial.splice(0, g.historial.length - 80); };
+const fmtHora = (iso) => { if (!iso) return ""; if (String(iso).length <= 10) return fmtFecha(String(iso)); const d = new Date(iso); if (isNaN(d)) return ""; return `${fmtFecha(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`)} · ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+async function bandejaPersistir(r, campos) {
+  campos = campos || {};
+  if (SB) {
+    try { const { data, error } = await SB.from("solicitudes").update(Object.assign({ datos: r.datos }, campos)).eq("id", r.id).select("id"); return !error && Array.isArray(data) && data.length > 0; } catch (e) { return false; }
+  }
+  const x = S.sols.find((y) => y.id === r.id); if (!x) return false;
+  x.datos = r.datos; if ("estado" in campos) x.estadoBan = campos.estado; if ("nota" in campos) x.nota = campos.nota;
+  await guardarSolicitudes(); return true;
 }
 async function bandejaEstado(ids, v) {
   if (!S.super || !ids.length) return;
-  if (SB) {
-    const { error } = await SB.from("solicitudes").update({ estado: v }).in("id", ids);
-    if (error) return toast("No se pudo actualizar el estado.");
-    (S.inbox || []).forEach((r) => { if (ids.includes(r.id)) r.estado = v; });
-  } else { S.sols.forEach((x) => { if (ids.includes(x.id)) x.estadoBan = v; }); await guardarSolicitudes(); }
+  let fallos = 0;
+  await Promise.all(filasBandeja().filter((r) => ids.includes(r.id)).map(async (r) => {
+    const antes = r.estado; if (antes === v) return;
+    const g = gestionEdit(r); g.historial.push(evBan("estado", `${(ESTADOS_BAN[antes] || [, antes])[1]} → ${ESTADOS_BAN[v][1]}`)); histRecortar(g);
+    if (await bandejaPersistir(r, { estado: v })) r.estado = v; else { g.historial.pop(); fallos++; }
+  }));
+  if (fallos) toast(fallos === 1 ? "No se pudo actualizar el estado." : `No se pudo actualizar el estado de ${fallos} solicitudes.`);
   keep(() => render(true));
 }
 async function bandejaBorrar(ids, texto) {
@@ -2236,7 +2259,69 @@ async function bandejaBorrar(ids, texto) {
 }
 function filasBandeja() {
   if (SB) return Array.isArray(S.inbox) ? S.inbox : [];
-  return S.sols.map((x) => ({ id: x.id, folio: x.folio, creado: x.fecha, datos: x.datos, sistemas: x.sistemas, estado: x.estadoBan || "nueva", nota: x.nota || "" }));
+  return S.sols.map((x) => ({ id: x.id, folio: x.folio, creado: x.fecha, datos: x.datos, sistemas: x.sistemas, estado: estadoBan(x.estadoBan), nota: x.nota || "" }));
+}
+const BAN_ORDEN = { recientes: "Más recientes primero", antiguas: "Más antiguas primero", dependencia: "Dependencia (A–Z)", estado: "Estado (nuevas primero)" };
+const BAN_EST_ORDEN = ["nueva", "contacto", "atendida", "cancelada", "archivada"];
+const banDepK = (r) => String((r.datos && r.datos.dependencia) || "Sin dependencia").trim().toLowerCase();
+const banFiltrosActivos = () => !!(S.bq || S.bdep || S.bsis || S.bof || (S.bo && S.bo !== "recientes"));
+/* Solicitudes visibles según estado, búsqueda, dependencia, sistema, oficio y orden */
+function bandejaVisibles() {
+  const q = norm(S.bq).split(/\s+/).filter(Boolean), t = (r) => new Date(r.creado).getTime() || 0;
+  const v = filasBandeja().filter((r) => {
+    if (S.bf === "todas") { if (r.estado === "archivada" && !q.length) return false; } else if (r.estado !== S.bf) return false;
+    if (S.bdep && banDepK(r) !== S.bdep) return false;
+    if (S.bsis && !(r.sistemas || []).some((x) => norm(x.nombre) === S.bsis)) return false;
+    const of = gestionDe(r).oficio; if (S.bof === "si" && !of.recibido) return false; if (S.bof === "no" && of.recibido) return false;
+    if (q.length) { const d = r.datos || {}, txt = norm([r.folio, d.dependencia, d.area, d.nombre, d.cargo, d.correo, d.telefono, d.tipoUso, d.mensaje, (r.sistemas || []).map((x) => x.nombre).join(" "), r.nota, of.numero].join(" ")); if (!q.every((w) => txt.includes(w))) return false; }
+    return true;
+  });
+  const cmp = { recientes: (a, b) => t(b) - t(a), antiguas: (a, b) => t(a) - t(b), dependencia: (a, b) => banDepK(a).localeCompare(banDepK(b), "es") || t(b) - t(a), estado: (a, b) => BAN_EST_ORDEN.indexOf(a.estado) - BAN_EST_ORDEN.indexOf(b.estado) || t(b) - t(a) }[S.bo] || ((a, b) => t(b) - t(a));
+  return v.sort(cmp);
+}
+const bandejaCuentaTxt = () => { const n = bandejaVisibles().length; return `Mostrando ${n} ${plural(n, "solicitud", "solicitudes")}${S.bq && S.bf === "todas" ? " (la búsqueda incluye archivadas)" : ""}`; };
+const banDato = (t, x, href) => x ? `<div><small>${t}</small>${href ? `<a href="${esc(href)}">${esc(x)}</a>` : `<span>${esc(x)}</span>`}</div>` : "";
+function bandejaCard(r, foco) {
+  const d = r.datos || {}, [cl, tx] = ESTADOS_BAN[r.estado] || ["", r.estado], tel = String(d.telefono || "").replace(/[^\d+]/g, ""), g = gestionDe(r), of = g.oficio, id = esc(r.id);
+  const abierta = (foco && r.folio === foco) || (S.banAb && S.banAb.has(r.folio));
+  const hist = g.historial.slice().reverse().map((h) => `<li><span class="ban-h-f">${esc(fmtHora(h.f))}</span><b>${esc(h.d || "")}</b><small>${esc(h.q || "")}</small></li>`).join("") + `<li><span class="ban-h-f">${esc(fmtHora(r.creado))}</span><b>Solicitud registrada</b><small>Solicitante</small></li>`;
+  return `<details class="ban-card" id="ban-${esc(r.folio)}"${abierta ? " open" : ""}><summary><span class="ban-sis">${esc((r.sistemas || []).map((x) => x.nombre).join(", "))}</span><span class="badge ${cl}">${tx}</span>${of.recibido ? '<span class="badge ok">Oficio recibido</span>' : ""}<small>${esc(fmtFecha(String(r.creado).slice(0, 10)))} · ${esc(r.folio)}</small></summary>
+      <div class="ban-grid">${banDato("Nombre", d.nombre)}${banDato("Cargo", d.cargo)}${banDato("Correo", d.correo, "mailto:" + d.correo + "?subject=" + encodeURIComponent("Seguimiento de tu solicitud " + r.folio))}${banDato("Teléfono", d.telefono, tel ? "tel:" + tel : "")}${banDato("Prefiere que lo contacten por", d.contactoPref)}${banDato("Horario para contactarlo", d.horario)}${banDato("Área o unidad", d.area)}${banDato("Uso previsto", d.tipoUso)}${banDato("Fecha estimada", d.fechaUso ? fmtFecha(d.fechaUso) : "")}${banDato("Personas que lo usarían", d.participantes)}</div>
+      ${d.mensaje ? `<p class="ban-msg"><small>Lo que necesita</small>${esc(d.mensaje)}</p>` : ""}
+      <fieldset class="ban-oficio"><legend>Oficio de solicitud</legend>
+        <label class="ban-of-chk" for="of-r-${id}"><input type="checkbox" id="of-r-${id}"${of.recibido ? " checked" : ""}> Oficio recibido</label>
+        <div class="ban-of-row"><div class="field"><label for="of-f-${id}">Fecha de recepción</label><input type="date" id="of-f-${id}" value="${esc(of.fecha)}"></div><div class="field"><label for="of-n-${id}">No. de oficio</label><input type="text" id="of-n-${id}" value="${esc(of.numero)}" placeholder="Ej. OF-123/2026" autocomplete="off"></div></div>
+        <button type="button" class="btn sm" data-act="bandeja-oficio" data-id="${id}">Guardar oficio</button>
+      </fieldset>
+      <div class="ban-acts">${Object.entries(ESTADOS_BAN).filter(([k]) => k !== r.estado).map(([k, v]) => `<button class="btn sm sec" data-act="bandeja-estado" data-id="${id}" data-v="${k}">${k === "archivada" ? "Archivar" : k === "cancelada" ? "Cancelar solicitud" : r.estado === "archivada" && k === "nueva" ? "Restaurar" : "Marcar: " + v[1]}</button>`).join("")}<button class="btn sm danger" data-act="bandeja-borrar" data-id="${id}">${glifo("trash")}Eliminar</button></div>
+      <label class="sr" for="nota-${id}">Nota interna</label><textarea id="nota-${id}" class="ban-nota" placeholder="Nota interna (solo la ves tú)">${esc(r.nota || "")}</textarea><button class="btn sm" data-act="bandeja-nota" data-id="${id}">Guardar nota</button>
+      <details class="ban-hist"><summary>Historial de movimientos (${g.historial.length + 1})</summary><ol class="ban-hl">${hist}</ol></details></details>`;
+}
+function bandejaListaHtml(foco) {
+  const grupos = new Map();
+  bandejaVisibles().forEach((r) => { const k = String((r.datos && r.datos.dependencia) || "Sin dependencia").trim(); const g = k.toLowerCase(); if (!grupos.has(g)) grupos.set(g, { nombre: k, items: [] }); grupos.get(g).items.push(r); });
+  if (!grupos.size) return banFiltrosActivos() || S.bf !== "todas" ? vacio("No hay solicitudes con esos filtros", "Prueba con otras palabras o limpia los filtros.", `<button type="button" class="btn sec" data-act="bandeja-limpiar">Limpiar filtros</button>`) : vacio("No hay solicitudes", "Cuando una dependencia solicite un sistema aparecerá aquí.");
+  return [...grupos.values()].map((g) => `<section class="ban-dep"><h2>${esc(g.nombre)} <small>${g.items.length} solicitud${g.items.length === 1 ? "" : "es"}</small></h2>${g.items.map((r) => bandejaCard(r, foco)).join("")}</section>`).join("");
+}
+/* Repinta solo la lista (así la búsqueda no pierde el cursor al escribir) */
+function pintarBandeja() {
+  const l = $("#ban-lista"); if (!l) return;
+  l.innerHTML = bandejaListaHtml(null);
+  const c = $("#ban-cuenta"); if (c) c.textContent = bandejaCuentaTxt();
+  const b = $("#ban-limpiar"); if (b) b.hidden = !banFiltrosActivos();
+}
+function bandejaHerramientas(rows) {
+  const deps = [...new Map(rows.map((r) => [banDepK(r), String((r.datos && r.datos.dependencia) || "Sin dependencia").trim()])).entries()].sort((a, b) => a[1].localeCompare(b[1], "es"));
+  const siss = uniqNombres(rows.flatMap((r) => (r.sistemas || []).map((x) => x.nombre)));
+  const opt = (v, t, cur) => `<option value="${esc(v)}"${cur === v ? " selected" : ""}>${esc(t)}</option>`;
+  return `<div class="ban-tools" role="search">
+    <div class="field ban-q"><label for="ban-q">Buscar</label><input id="ban-q" type="search" value="${esc(S.bq)}" placeholder="Folio, dependencia, nombre, correo o sistema" autocomplete="off"></div>
+    <div class="field"><label for="ban-o">Ordenar por</label><select class="select" id="ban-o" data-ban="bo">${Object.entries(BAN_ORDEN).map(([k, t]) => opt(k, t, S.bo)).join("")}</select></div>
+    <div class="field"><label for="ban-dep">Dependencia</label><select class="select" id="ban-dep" data-ban="bdep">${opt("", "Todas", S.bdep)}${deps.map(([k, n]) => opt(k, n, S.bdep)).join("")}</select></div>
+    <div class="field"><label for="ban-sis">Sistema</label><select class="select" id="ban-sis" data-ban="bsis">${opt("", "Todos", S.bsis)}${siss.map((n) => opt(norm(n), n, S.bsis)).join("")}</select></div>
+    <div class="field"><label for="ban-of">Oficio</label><select class="select" id="ban-of" data-ban="bof">${opt("", "Todos", S.bof)}${opt("si", "Con oficio recibido", S.bof)}${opt("no", "Sin oficio", S.bof)}</select></div>
+  </div>
+  <div class="ban-resumen"><span id="ban-cuenta" aria-live="polite">${bandejaCuentaTxt()}</span><button type="button" class="btn sm ghost" id="ban-limpiar" data-act="bandeja-limpiar"${banFiltrosActivos() ? "" : " hidden"}>Limpiar filtros</button></div>`;
 }
 function vBandeja(foco) {
   if (SB && S.inbox === undefined) { cargarBandeja().then(() => { if (/^#\/solicitudes/.test(location.hash)) render(true); }); }
@@ -2245,29 +2330,21 @@ function vBandeja(foco) {
   if (!foco) S.focoHecho = null;
   const objetivo = foco ? rows.find((r) => r.folio === foco) : null, primera = !!objetivo && S.focoHecho !== foco;
   if (primera) {
-    S.focoHecho = foco; S.bf = objetivo.estado === "archivada" ? "archivada" : "todas";
+    S.focoHecho = foco; S.bf = objetivo.estado === "archivada" ? "archivada" : "todas"; S.bq = ""; S.bdep = ""; S.bsis = ""; S.bof = "";
     post = () => setTimeout(() => { const el = document.getElementById("ban-" + foco); if (!el) return; el.scrollIntoView({ block: "start", behavior: "smooth" }); el.classList.add("ban-resalta"); setTimeout(() => el.classList.remove("ban-resalta"), 2600); }, 120);
   }
   const activas = rows.filter((r) => r.estado !== "archivada");
   const vis = S.bf === "todas" ? activas : rows.filter((r) => r.estado === S.bf);
-  const grupos = new Map();
-  vis.forEach((r) => { const k = String((r.datos && r.datos.dependencia) || "Sin dependencia").trim(); const g = k.toLowerCase(); if (!grupos.has(g)) grupos.set(g, { nombre: k, items: [] }); grupos.get(g).items.push(r); });
   const nDeps = new Set(rows.map((r) => String((r.datos && r.datos.dependencia) || "").trim().toLowerCase())).size;
-  const dato = (t, x, href) => x ? `<div><small>${t}</small>${href ? `<a href="${esc(href)}">${esc(x)}</a>` : `<span>${esc(x)}</span>`}</div>` : "";
-  const card = (r) => { const d = r.datos || {}, [cl, tx] = ESTADOS_BAN[r.estado] || ["", r.estado], tel = String(d.telefono || "").replace(/[^\d+]/g, "");
-    return `<details class="ban-card" id="ban-${esc(r.folio)}"${foco && r.folio === foco ? " open" : ""}><summary><span class="ban-sis">${esc((r.sistemas || []).map((x) => x.nombre).join(", "))}</span><span class="badge ${cl}">${tx}</span><small>${esc(fmtFecha(String(r.creado).slice(0, 10)))} · ${esc(r.folio)}</small></summary>
-      <div class="ban-grid">${dato("Nombre", d.nombre)}${dato("Cargo", d.cargo)}${dato("Correo", d.correo, "mailto:" + d.correo + "?subject=" + encodeURIComponent("Seguimiento de tu solicitud " + r.folio))}${dato("Teléfono", d.telefono, tel ? "tel:" + tel : "")}${dato("Prefiere que lo contacten por", d.contactoPref)}${dato("Horario para contactarlo", d.horario)}${dato("Área o unidad", d.area)}${dato("Uso previsto", d.tipoUso)}${dato("Fecha estimada", d.fechaUso ? fmtFecha(d.fechaUso) : "")}${dato("Personas que lo usarían", d.participantes)}</div>
-      ${d.mensaje ? `<p class="ban-msg"><small>Lo que necesita</small>${esc(d.mensaje)}</p>` : ""}
-      ${`<div class="ban-acts">${Object.entries(ESTADOS_BAN).filter(([k]) => k !== r.estado).map(([k, v]) => `<button class="btn sm sec" data-act="bandeja-estado" data-id="${esc(r.id)}" data-v="${k}">${k === "archivada" ? "Archivar" : k === "cancelada" ? "Cancelar solicitud" : r.estado === "archivada" && k === "nueva" ? "Restaurar" : "Marcar: " + v[1]}</button>`).join("")}<button class="btn sm danger" data-act="bandeja-borrar" data-id="${esc(r.id)}">${glifo("trash")}Eliminar</button></div>
-      <label class="sr" for="nota-${esc(r.id)}">Nota interna</label><textarea id="nota-${esc(r.id)}" class="ban-nota" placeholder="Nota interna (solo la ves tú)">${esc(r.nota || "")}</textarea><button class="btn sm" data-act="bandeja-nota" data-id="${esc(r.id)}">Guardar nota</button>`}</details>`; };
   const estado = SB ? (S.inbox === "cargando" || S.inbox === undefined ? '<div class="note info">' + glifo("info") + "<div>Cargando solicitudes…</div></div>" : S.inbox === "error" ? '<div class="note warn">' + glifo("warn") + "<div>No se pudieron cargar las solicitudes. Revisa tu conexión y que tu cuenta sea superadministrador.</div></div>" : "") : '<div class="note info">' + glifo("info") + "<div>Aún no está conectado Supabase, así que solo ves las solicitudes hechas desde este dispositivo. Al conectarlo recibirás aquí las de todas las dependencias.</div></div>";
   const bulk = S.bf === "cancelada" && vis.length ? `<div class="note warn" style="margin:12px 0">${glifo("warn")}<div><b>${vis.length} ${plural(vis.length, "solicitud cancelada", "solicitudes canceladas")}.</b> Archívalas para conservarlas fuera de la lista, o elimínalas definitivamente.<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm sec" data-act="bandeja-archivar-canceladas">Archivar todas</button><button class="btn sm danger" data-act="bandeja-borrar-canceladas">${glifo("trash")}Eliminar todas</button></div></div></div>` : "";
   return `${cabecera("Solicitudes recibidas", "Qué sistemas pidió cada dependencia y cómo contactarla.")}
     <div class="sp"></div>${estado}
     <div class="ban-kpis"><div><b>${cuenta("nueva")}</b><span>Nuevas</span></div><div><b>${cuenta("contacto")}</b><span>En contacto</span></div><div><b>${cuenta("atendida")}</b><span>Atendidas</span></div><div><b>${nDeps}</b><span>Dependencias</span></div></div>
-    <div class="chips" role="group" aria-label="Filtrar por estado">${[["todas", "Todas (" + activas.length + ")"], ...Object.entries(ESTADOS_BAN).map(([k, v]) => [k, v[1] + " (" + cuenta(k) + ")"])].map(([k, t]) => `<button type="button" data-act="bandeja-filtro" data-v="${k}" ${S.bf === k ? 'aria-current="true" class="on"' : ""}>${t}</button>`).join("")}<button type="button" data-act="bandeja-recargar">${glifo("reloj")}Actualizar</button><button type="button" data-act="bandeja-exportar">Descargar Excel (.csv)</button></div>
+    <div class="chips" role="group" aria-label="Filtrar por estado">${[["todas", "Todas (" + activas.length + ")"], ...Object.entries(ESTADOS_BAN).map(([k, v]) => [k, v[1] + " (" + cuenta(k) + ")"])].map(([k, t]) => `<button type="button" data-act="bandeja-filtro" data-v="${k}" ${S.bf === k ? 'aria-current="true" class="on"' : ""}>${t}</button>`).join("")}<button type="button" data-act="bandeja-recargar">${glifo("reloj")}Actualizar</button><button type="button" data-act="bandeja-exportar">Descargar Excel (.csv)</button><button type="button" data-act="respaldo-completo">Respaldo completo</button></div>
     ${bulk}
-    ${grupos.size ? [...grupos.values()].map((g) => `<section class="ban-dep"><h2>${esc(g.nombre)} <small>${g.items.length} solicitud${g.items.length === 1 ? "" : "es"}</small></h2>${g.items.map(card).join("")}</section>`).join("") : vacio("No hay solicitudes", S.bf === "todas" ? "Cuando una dependencia solicite un sistema aparecerá aquí." : "No hay solicitudes con este estado.")}`;
+    ${bandejaHerramientas(rows)}
+    <div id="ban-lista">${bandejaListaHtml(foco)}</div>`;
 }
 function misSols() { return S.user ? S.sols.filter((x) => normCorreo((x.datos || {}).correo || "") === normCorreo(S.user.correo || "")) : S.sols.slice(); }
 function vSolicitudes() {
@@ -2429,9 +2506,10 @@ function vAdminConfig(sec) {
     <section class="grp"><h2>Usuarios y accesos</h2><p class="hint">Crea cuentas, restablece contraseñas y bloquea accesos.</p><div class="card"><a class="btn sec sm" href="#/admin/usuarios">Administrar usuarios</a>
       <ul style="margin:14px 0 0;padding-left:18px;color:var(--label-2);font-size:14px;display:grid;gap:4px"><li>Se entra con correo y contraseña (mínimo 8 caracteres, con letras y números).</li><li>Tras 5 intentos fallidos, el correo se bloquea 5 minutos en ese dispositivo.</li><li>Las contraseñas temporales se deben cambiar al primer inicio de sesión.</li><li>Las contraseñas se guardan cifradas, nunca en texto claro.</li><li>Tres tipos de acceso: visitante, colaborador y superadministrador. El superadministrador crea y elimina usuarios directamente desde «Usuarios».</li></ul></div></section>`;
   } else {
-    panel = `<section class="grp"><h2>Copia y publicación</h2><p class="hint">Carga una copia, consulta cómo publicar o vuelve a la versión publicada. El archivo del catálogo incluye las cuentas de usuario (con contraseñas cifradas): publícalo solo en un sitio con acceso controlado.</p>
+    panel = `<section class="grp"><h2>Respaldo completo</h2><p class="hint">Un solo archivo con los sistemas, las imágenes y videos cargados, la configuración y todas las solicitudes con su historial y oficios. Úsalo antes de migrar al servidor propio. No incluye contraseñas de cuentas. Guárdalo en un lugar con acceso controlado: contiene datos de contacto de las dependencias. Para restaurarlo usa «Cargar catálogo o respaldo…».</p><div class="card" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn sm" data-act="respaldo-completo">${glifo("download")}Descargar respaldo completo</button></div></section>
+    <section class="grp"><h2>Copia y publicación</h2><p class="hint">Carga una copia, consulta cómo publicar o vuelve a la versión publicada. El archivo del catálogo incluye las cuentas de usuario (con contraseñas cifradas): publícalo solo en un sitio con acceso controlado.</p>
       <div class="card" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <div class="up"><input type="file" id="up-import" accept="application/json,.json" data-up="import"><label class="btn sec sm" for="up-import">${glifo("upload")}Cargar catálogo…</label></div>
+        <div class="up"><input type="file" id="up-import" accept="application/json,.json" data-up="import"><label class="btn sec sm" for="up-import">${glifo("upload")}Cargar catálogo o respaldo…</label></div>
         <button class="btn sec sm" data-act="como-publicar">Cómo publicar</button>
         ${S.pub && S.cat.editado ? `<button class="btn danger sm" data-act="descartar-local">Descartar mis cambios y usar el publicado</button>` : ""}
       </div></section>
@@ -2559,14 +2637,58 @@ async function subirArchivos(kind, files) {
   }
   keep(() => render(false));
 }
+async function leerTodasSolicitudes() {
+  const out = [];
+  for (let i = 0; i < 50000; i += 1000) { const { data, error } = await SB.from("solicitudes").select("*").order("creado", { ascending: false }).range(i, i + 999); if (error) throw error; out.push(...(data || [])); if (!data || data.length < 1000) break; }
+  return out;
+}
+/* Respaldo completo: catálogo (sistemas, imágenes, videos, configuración) + todas las solicitudes con su historial y oficios, en un solo archivo */
+async function respaldoCompleto() {
+  if (!S.super) return toast("Esta acción es solo para el superadministrador.");
+  toast("Preparando el respaldo…");
+  let sols; try { sols = SB ? await leerTodasSolicitudes() : JSON.parse(JSON.stringify(S.sols)); } catch (e) { return toast("No se pudieron leer las solicitudes; el respaldo no se generó."); }
+  const cat = JSON.parse(JSON.stringify(S.cat)); delete cat.usuarios; delete cat.notificaciones; if (cat.config) delete cat.config.pinHash;
+  const o = { tipo: "respaldo-catalogo", version: 1, creado: new Date().toISOString(), por: quienBan(), origen: SB ? "supabase" : "local", catalogo: cat, solicitudes: sols };
+  const u = URL.createObjectURL(new Blob([JSON.stringify(o)], { type: "application/json" })); descargar(u, `respaldo-catalogo-${hoyISO()}.json`); setTimeout(() => URL.revokeObjectURL(u), 5000);
+  toast(`Respaldo descargado: ${cat.sistemas.length} ${plural(cat.sistemas.length, "sistema", "sistemas")} y ${sols.length} ${plural(sols.length, "solicitud", "solicitudes")}`);
+}
+/* Agrega las solicitudes del respaldo que aún no existan (por folio); no modifica ni borra las demás */
+async function restaurarSolicitudes(rows, origen) {
+  rows = (rows || []).filter((r) => r && r.folio); const res = { nuevas: 0, existentes: 0, fallidas: 0 }, loc = origen === "local";
+  if (!rows.length) return res;
+  if (SB) {
+    let ya; try { ya = new Set((await leerTodasSolicitudes()).map((r) => r.folio)); } catch (e) { res.fallidas = rows.length; return res; }
+    const nuevas = rows.filter((r) => !ya.has(r.folio)); res.existentes = rows.length - nuevas.length;
+    const fila = (r) => ({ folio: r.folio, dependencia: (r.datos && r.datos.dependencia) || r.dependencia || "", datos: r.datos || {}, sistemas: (r.sistemas || []).map((x) => ({ id: x.id, nombre: x.nombre, version: x.version || "" })), estado: estadoBan(loc ? r.estadoBan : r.estado), nota: r.nota || "", creado: loc ? (r.fecha ? new Date(r.fecha + "T12:00:00").toISOString() : undefined) : r.creado });
+    for (let i = 0; i < nuevas.length; i += 50) {
+      const lote = nuevas.slice(i, i + 50).map(fila);
+      let { error } = await SB.from("solicitudes").insert(lote);
+      if (error) ({ error } = await SB.from("solicitudes").insert(lote.map((f) => ({ folio: f.folio, dependencia: f.dependencia, datos: f.datos, sistemas: f.sistemas }))));
+      if (error) res.fallidas += lote.length; else res.nuevas += lote.length;
+    }
+    return res;
+  }
+  const ya = new Set(S.sols.map((x) => x.folio));
+  rows.forEach((r) => {
+    if (ya.has(r.folio)) { res.existentes++; return; }
+    S.sols.push(loc ? r : { id: uid("sol"), folio: r.folio, fecha: String(r.creado || hoyISO()).slice(0, 10), hora: "", sistemas: r.sistemas || [], base: [], checks: {}, listo: false, datos: r.datos || {}, estado: "guardada", estadoBan: estadoBan(r.estado), nota: r.nota || "", canal: "respaldo" });
+    res.nuevas++;
+  });
+  await guardarSolicitudes(); return res;
+}
 async function importarCatalogo(file) {
   try {
-    const j = JSON.parse(await file.text());
+    const j0 = JSON.parse(await file.text()), resp = !!j0 && j0.tipo === "respaldo-catalogo", j = resp ? j0.catalogo : j0;
     if (!catValido(j)) throw new Error("formato");
-    const ok = await confirmar({ titulo: "Reemplazar el catálogo", texto: `Se cargarán ${j.sistemas.length} sistemas y reemplazarán a los actuales en este navegador.`, si: "Reemplazar", peligro: true });
+    const nS = resp && Array.isArray(j0.solicitudes) ? j0.solicitudes.length : 0;
+    const ok = await confirmar({ titulo: resp ? "Restaurar respaldo" : "Reemplazar el catálogo", texto: resp ? `Se cargarán ${j.sistemas.length} sistemas con su configuración y se agregarán las solicitudes del respaldo que aún no existan (${nS} en el archivo). Los sistemas actuales serán reemplazados.` : `Se cargarán ${j.sistemas.length} sistemas y reemplazarán a los actuales en este navegador.`, si: resp ? "Restaurar" : "Reemplazar", peligro: true });
     if (!ok) return;
-    S.cat = migrar(j); S.drafts = {}; S.cfgDraft = null; guardarCatalogo(); revalidarSesion(); toast("Catálogo cargado"); render(false);
-  } catch (e) { toast("Ese archivo no parece un catálogo válido."); }
+    const uu = S.cat.usuarios, nn = S.cat.notificaciones, sinUsr = !Array.isArray(j.usuarios);
+    S.cat = migrar(j); if (sinUsr) { S.cat.usuarios = uu; S.cat.notificaciones = nn; }
+    S.drafts = {}; S.cfgDraft = null; guardarCatalogo(); revalidarSesion();
+    let extra = ""; if (nS) { const r = await restaurarSolicitudes(j0.solicitudes, j0.origen); S.inbox = undefined; extra = ` · ${r.nuevas} ${plural(r.nuevas, "solicitud agregada", "solicitudes agregadas")}${r.fallidas ? `, ${r.fallidas} con error` : ""}`; }
+    toast((resp ? "Respaldo restaurado" : "Catálogo cargado") + extra); render(false);
+  } catch (e) { toast("Ese archivo no parece un catálogo ni un respaldo válido."); }
 }
 function descargar(url, nombre) { const a = document.createElement("a"); a.href = url; a.download = nombre; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove(); }
 
@@ -3042,13 +3164,31 @@ const ACT = {
   "bandeja-exportar"() { exportarBandeja(); },
   "bandeja-recargar"() { S.inbox = undefined; render(true); },
   async "bandeja-estado"(t) {
-    if (t.dataset.v === "cancelada" && !(await confirmar({ titulo: "Cancelar solicitud", texto: "La solicitud quedará marcada como cancelada. Podrás cambiar su estado después si fue un error.", si: "Sí, cancelar solicitud", no: "No, mantenerla", peligro: true }))) return;
-    await bandejaEstado([t.dataset.id], t.dataset.v); if (t.dataset.v === "archivada") toast("Solicitud archivada"); else if (t.dataset.v === "cancelada") toast("Marcada como cancelada"); },
+    const r = filasBandeja().find((x) => x.id === t.dataset.id), v = t.dataset.v;
+    if (v === "cancelada" && !(await confirmar({ titulo: "Cancelar solicitud", texto: "La solicitud quedará marcada como cancelada. Podrás cambiar su estado después si fue un error.", si: "Sí, cancelar solicitud", no: "No, mantenerla", peligro: true }))) return;
+    if (v === "atendida" && r && !gestionDe(r).oficio.recibido && !(await confirmar({ titulo: "Sin oficio registrado", texto: "Esta solicitud todavía no tiene el oficio marcado como recibido. ¿La marcas como atendida de todos modos?", si: "Sí, marcar atendida", no: "No, volver" }))) return;
+    await bandejaEstado([t.dataset.id], v); if (v === "archivada") toast("Solicitud archivada"); else if (v === "cancelada") toast("Marcada como cancelada"); },
+  async "bandeja-oficio"(t) {
+    const id = t.dataset.id, r = filasBandeja().find((x) => x.id === id); if (!r) return;
+    const rec = !!($("#of-r-" + id) || {}).checked; let fecha = (($("#of-f-" + id) || {}).value || "").trim(); const num = (($("#of-n-" + id) || {}).value || "").trim();
+    if (rec && !fecha) fecha = hoyISO();
+    const g = gestionEdit(r), ant = Object.assign({}, g.oficio), nuevo = { recibido: rec, fecha: rec ? fecha : "", numero: rec ? num : "" };
+    if (ant.recibido === nuevo.recibido && ant.fecha === nuevo.fecha && ant.numero === nuevo.numero) return toast("El oficio no tiene cambios");
+    g.oficio = nuevo; g.historial.push(evBan("oficio", rec ? `Oficio recibido${num ? " · No. " + num : ""} · ${fmtFecha(fecha)}` : "Se quitó el registro del oficio")); histRecortar(g);
+    if (!(await bandejaPersistir(r, {}))) { g.oficio = ant; g.historial.pop(); return toast("No se pudo guardar el oficio."); }
+    toast(rec ? "Oficio registrado" : "Registro de oficio quitado");
+    if (rec && (r.estado === "nueva" || r.estado === "contacto") && await confirmar({ titulo: "Marcar como atendida", texto: "Ya registraste el oficio de esta solicitud. ¿Quieres marcarla como atendida?", si: "Sí, marcar atendida", no: "Todavía no" })) { await bandejaEstado([id], "atendida"); return; }
+    keep(() => render(true));
+  },
+  "bandeja-limpiar"() { S.bq = ""; S.bo = "recientes"; S.bdep = ""; S.bsis = ""; S.bof = ""; keep(() => render(true)); },
+  async "respaldo-completo"() { await respaldoCompleto(); },
   async "bandeja-nota"(t) {
     const n = $("#nota-" + t.dataset.id); if (!n) return;
-    if (SB) { const r = (S.inbox || []).find((x) => x.id === t.dataset.id); if (!r) return; const { error } = await SB.from("solicitudes").update({ nota: n.value }).eq("id", r.id); if (error) return toast("No se pudo guardar la nota."); r.nota = n.value; }
-    else { const x = S.sols.find((y) => y.id === t.dataset.id); if (!x) return; x.nota = n.value; await guardarSolicitudes(); }
-    toast("Nota guardada");
+    const r = filasBandeja().find((x) => x.id === t.dataset.id); if (!r) return;
+    const cambio = (r.nota || "") !== n.value, g = gestionEdit(r);
+    if (cambio) { g.historial.push(evBan("nota", n.value.trim() ? "Nota interna actualizada" : "Nota interna eliminada")); histRecortar(g); }
+    if (!(await bandejaPersistir(r, { nota: n.value }))) { if (cambio) g.historial.pop(); return toast("No se pudo guardar la nota."); }
+    r.nota = n.value; toast("Nota guardada"); if (cambio) keep(() => render(true));
   },
   async "bandeja-borrar"(t) { const r = filasBandeja().find((x) => x.id === t.dataset.id); if (r) await bandejaBorrar([r.id], `Se eliminará la solicitud ${r.folio} de ${(r.datos || {}).dependencia || "la dependencia"}. No se puede deshacer; si solo quieres sacarla de la lista, usa «Archivar».`); },
   async "bandeja-archivar-canceladas"() { await bandejaEstado(filasBandeja().filter((r) => r.estado === "cancelada").map((r) => r.id), "archivada"); toast("Solicitudes canceladas archivadas"); },
@@ -3143,9 +3283,10 @@ const ACT = {
   "conf-no"() { if (confFin) confFin(false); }
 };
 
-const SOLO_SUPER = new Set(["notif-diag", "notif-ver-sol", "notif-borrar", "notif-borrar-leidas", "notif-borrar-todas", "aviso-borrar-todos", "formato-todos", "aplicar-textos", "bandeja-estado", "bandeja-nota", "bandeja-borrar", "bandeja-archivar-canceladas", "bandeja-borrar-canceladas", "aviso-nuevo", "aviso-editar", "aviso-borrar", "notif-leer", "notif-todas", "notif-reset", "usr-super", "usr-gen", "logo-marca", "logo-color", "logo-forma", "usr-nuevo", "usr-reset", "usr-reset-ok", "usr-toggle", "usr-del", "guardar-cfg", "exportar", "descartar-local", "quitar-ejemplos", "probar-correo", "cfg-tema", "cfg-acento", "quitar-logo", "como-publicar", "qa-activar", "qa-salir", "qa-datos", "qa-reiniciar", "qa-correr", "qa-limpiar-manual", "dep-add", "dep-ren", "dep-del", "dep-reg", "dep-import"]);
-const QA_BLOQ = new Set(["exportar", "como-publicar", "descartar-local", "publicar-ahora"]);
+const SOLO_SUPER = new Set(["notif-diag", "notif-ver-sol", "notif-borrar", "notif-borrar-leidas", "notif-borrar-todas", "aviso-borrar-todos", "formato-todos", "aplicar-textos", "bandeja-estado", "bandeja-nota", "bandeja-oficio", "bandeja-limpiar", "respaldo-completo", "bandeja-borrar", "bandeja-archivar-canceladas", "bandeja-borrar-canceladas", "aviso-nuevo", "aviso-editar", "aviso-borrar", "notif-leer", "notif-todas", "notif-reset", "usr-super", "usr-gen", "logo-marca", "logo-color", "logo-forma", "usr-nuevo", "usr-reset", "usr-reset-ok", "usr-toggle", "usr-del", "guardar-cfg", "exportar", "descartar-local", "quitar-ejemplos", "probar-correo", "cfg-tema", "cfg-acento", "quitar-logo", "como-publicar", "qa-activar", "qa-salir", "qa-datos", "qa-reiniciar", "qa-correr", "qa-limpiar-manual", "dep-add", "dep-ren", "dep-del", "dep-reg", "dep-import"]);
+const QA_BLOQ = new Set(["respaldo-completo", "exportar", "como-publicar", "descartar-local", "publicar-ahora"]);
 const SOLO_GESTION = new Set(["toggle-pub", "mover", "duplicar", "del-sistema", "add-cat", "del-cat", "edit-cat", "ren-sis", "img-quitar", "e-guardar", "e-add", "e-del", "demo-media", "vid-add-url", "fmt", "desc-color-reset", "e-quitar-videodest"]);
+document.addEventListener("toggle", (e) => { const d = e.target; if (!d || !d.classList || !d.classList.contains("ban-card")) return; S.banAb = S.banAb || new Set(); S.banAb[d.open ? "add" : "delete"](String(d.id).replace(/^ban-/, "")); }, true);
 document.addEventListener("click", (e) => {
   const t = e.target.closest("[data-act]");
   if (!t || t.disabled) return;
@@ -3157,6 +3298,7 @@ document.addEventListener("click", (e) => {
 });
 document.addEventListener("input", (e) => {
   const t = e.target;
+  if (t.id === "ban-q") { S.bq = t.value; pintarBandeja(); return; }
   if (t.dataset.path) {
     const dr = draftActual(); if (!dr) return;
     setPath(dr.s, t.dataset.path, t.type === "checkbox" ? t.checked : t.value); dr.dirty = true;
@@ -3185,7 +3327,9 @@ document.addEventListener("input", (e) => {
 });
 document.addEventListener("change", (e) => {
   const t = e.target;
-  if (t.id === "a-depsel") depAuthCambio(t);
+  if (t.dataset.ban) { S[t.dataset.ban] = t.value; pintarBandeja(); }
+  else if (/^of-r-/.test(t.id)) { const f = $("#of-f-" + t.id.slice(5)); if (f && t.checked && !f.value) f.value = hoyISO(); }
+  else if (t.id === "a-depsel") depAuthCambio(t);
   else if (t.dataset.fmtSize !== undefined) { if (t.value) fmtAplicar("tam", t.value); t.value = ""; }
   else if (t.dataset.fmtColor !== undefined) fmtAplicar("color", t.value);
   else if (t.dataset.path === "videoDestacado.url") { const dr = draftActual(); if (dr) { if (t.value.trim()) { dr.s.videoDestacado.data = ""; dr.s.videoDestacado.nombre = ""; } keep(() => render(false)); } }
@@ -3555,7 +3699,12 @@ function vAuthSB() {
     if (m) { try { localStorage.setItem("catalogo-tema", m.dataset.tema); } catch (x) {} aplicarApariencia(); draw(); return; }
     const t = e.target.closest("[data-k]"); if (!t) return; a[t.dataset.k] = !a[t.dataset.k]; try { localStorage.setItem(K, JSON.stringify(a)); } catch (x) {} ap(); draw(); };
   b.onclick = () => { pop.hidden = !pop.hidden; b.setAttribute("aria-expanded", String(!pop.hidden)); };
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !pop.hidden) { pop.hidden = true; b.focus(); } });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !pop.hidden) { pop.hidden = true; b.setAttribute("aria-expanded", "false"); b.focus(); } });
+  /* Se cierra solo al tocar cualquier otra parte de la pantalla (fuera del panel y del botón) o al cambiar de sección. */
+  const cerrar = () => { if (pop.hidden) return; pop.hidden = true; b.setAttribute("aria-expanded", "false"); };
+  document.addEventListener("pointerdown", (e) => { if (pop.hidden) return; if (pop.contains(e.target) || b.contains(e.target)) return; cerrar(); }, true);
+  document.addEventListener("focusin", (e) => { if (pop.hidden) return; if (pop.contains(e.target) || b.contains(e.target)) return; cerrar(); });
+  window.addEventListener("hashchange", cerrar);
   document.body.append(b, pop);
 })();
 

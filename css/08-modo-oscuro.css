@@ -84,3 +84,28 @@ html[data-modo="oscuro"] .sec{border-color:var(--sep)!important}
 :root[data-modo="claro"] #acc-pop button{background:#fff;color:inherit;border-color:var(--pal-borde)}
 :root[data-modo="claro"] #acc-pop .acc-tema-b button{background:transparent;border-color:transparent}
 :root[data-modo="claro"] #acc-pop .acc-tema-b button[aria-pressed="true"]{background:var(--azul,#004EAA);color:#fff;border-color:var(--azul,#004EAA)}
+
+/* ==========================================================================
+   Bandeja «Solicitudes recibidas» y tarjetas sueltas: tono claro y suave.
+   Antes, si el sistema operativo estaba en oscuro, estas tarjetas se pintaban
+   casi negras aunque la apariencia elegida fuera «Claro». Ahora obedecen a
+   la apariencia de la aplicación (data-modo), no a la del dispositivo.
+   ========================================================================== */
+:root[data-modo="claro"] .ban-kpis div{background:linear-gradient(160deg,#fff,#F3F6FD);border:1px solid #DCE5F3;color:#1B2B4B;box-shadow:0 1px 3px rgba(0,78,170,.06)}
+:root[data-modo="claro"] .ban-kpis b{color:var(--azul,#004EAA)}
+:root[data-modo="claro"] .ban-card{background:#fff;border:1px solid #DCE5F3;color:#1B2B4B;box-shadow:0 1px 3px rgba(0,78,170,.06);transition:box-shadow .2s,border-color .2s}
+:root[data-modo="claro"] .ban-card:hover{border-color:#BFD0EA;box-shadow:0 6px 18px -10px rgba(0,78,170,.25)}
+:root[data-modo="claro"] .ban-card>summary:hover{background:#F6F8FD;border-radius:12px}
+:root[data-modo="claro"] .ban-card[open]>summary{background:#F3F6FD;border-bottom-color:#DCE5F3;border-radius:12px 12px 0 0}
+:root[data-modo="claro"] .ban-card summary small{color:#5B6B87;opacity:1}
+:root[data-modo="claro"] .ban-nota{background:#FAFBFE;color:#1B2B4B;border-color:#DCE5F3}
+:root[data-modo="claro"] .ban-dep h2{color:#14223F}
+:root[data-modo="claro"] .ctc,:root[data-modo="claro"] .dir-p,:root[data-modo="claro"] .cat-card{background:#fff;color:#1B2B4B;border-color:#DCE5F3}
+:root[data-modo="claro"] .cat-foot{border-color:#DCE5F3}
+
+:root[data-modo="oscuro"] .ban-kpis div,:root[data-modo="oscuro"] .ban-card{background:var(--bg-card);border-color:var(--sep);color:var(--label)}
+:root[data-modo="oscuro"] .ban-card[open]>summary{background:var(--bg-soft);border-bottom-color:var(--sep)}
+:root[data-modo="oscuro"] .ban-nota{background:var(--bg-input);color:var(--label);border-color:var(--sep)}
+:root[data-modo="oscuro"] .ban-kpis b,:root[data-modo="oscuro"] .ban-grid small,:root[data-modo="oscuro"] .ban-msg small,:root[data-modo="oscuro"] .ban-grid a{color:var(--lila-texto,#CDB5EA)}
+:root[data-modo="oscuro"] .ctc,:root[data-modo="oscuro"] .dir-p,:root[data-modo="oscuro"] .cat-card{background:var(--bg-card);color:var(--label);border-color:var(--sep)}
+:root[data-modo="oscuro"] .cat-foot{border-color:var(--sep)}
