@@ -1,0 +1,116 @@
+/* ==========================================================================
+   Solicitudes recibidas: diseño con tarjetas, recuadros y sombreado
+   ========================================================================== */
+.ban-dep{margin-top:30px}
+.ban-dep h2{position:relative;padding:10px 14px 10px 18px;border-radius:12px;background:linear-gradient(90deg,var(--azul-suave,#EAF1FB),transparent);font-size:18px;letter-spacing:.01em}
+.ban-dep h2::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:4px;border-radius:4px;background:var(--azul,#004EAA)}
+
+.ban-row{margin-top:14px;align-items:flex-start}
+.ban-sel{margin-top:12px;background:var(--bg-card,#fff);border:1px solid var(--azul-borde,#C9DAF1);box-shadow:0 1px 2px rgba(0,40,100,.08)}
+
+/* Tarjeta */
+.ban-card{border-radius:16px!important;overflow:hidden;border:1px solid #D5E0F1!important;box-shadow:0 1px 2px rgba(16,40,90,.06),0 8px 22px -12px rgba(16,40,90,.28)!important}
+.ban-card:hover{box-shadow:0 2px 4px rgba(16,40,90,.08),0 14px 30px -14px rgba(16,40,90,.34)!important}
+.ban-card>summary{padding:16px 18px!important;gap:12px!important;background:linear-gradient(180deg,#F6F9FE,#EEF3FB)!important;border-radius:0!important}
+.ban-card[open]>summary{border-bottom:1px solid #D5E0F1!important}
+.ban-sis{font-size:17px;color:#14233F}
+.ban-card>summary::after{content:"";flex:none;width:9px;height:9px;margin-left:4px;border-right:2px solid #5B6B87;border-bottom:2px solid #5B6B87;transform:rotate(45deg);transition:transform .2s}
+.ban-card[open]>summary::after{transform:rotate(-135deg)}
+
+/* Datos del solicitante en recuadros */
+.ban-grid{gap:10px!important;padding:16px 18px 8px!important}
+.ban-grid>div{padding:10px 12px;background:#fff;border:1px solid #E3E9F3;border-radius:10px;box-shadow:0 1px 2px rgba(16,40,90,.05)}
+.ban-grid small{margin-bottom:2px}
+.ban-grid span,.ban-grid a{font-weight:500;font-size:14.5px}
+
+/* Lo que necesita */
+.ban-msg{margin:8px 18px 4px!important;padding:12px 14px!important;background:#F6F9FE;border:1px solid #D5E0F1;border-left:4px solid var(--azul,#004EAA);border-radius:10px;gap:4px!important}
+.ban-msg span{white-space:pre-wrap;word-break:break-word}
+
+/* Bloques: oficio, estado, nota */
+.ban-oficio{margin:12px 18px!important;padding:14px 16px 16px!important;background:#F6F9FE!important;border:1px solid #D5E0F1!important;border-radius:12px!important;box-shadow:inset 0 1px 2px rgba(16,40,90,.05)}
+.ban-oficio .field input{background:#fff}
+.ban-bloque{margin:12px 18px;padding:14px 16px 16px;background:#fff;border:1px solid #E3E9F3;border-radius:12px;box-shadow:0 1px 2px rgba(16,40,90,.05);display:grid;gap:10px}
+.ban-tit{margin:0;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--azul,#004EAA)}
+.ban-tit label{font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit}
+.ban-bloque .ban-acts{padding:0!important}
+.ban-bloque .ban-nota{width:100%!important;margin:0!important;min-height:84px;background:#FAFBFE;resize:vertical}
+.ban-bloque>.btn{justify-self:start}
+
+/* Historial */
+.ban-hist{margin:12px 18px 18px!important;padding:12px 16px!important;background:#fff;border:1px solid #E3E9F3!important;border-radius:12px}
+
+/* Botones de la tarjeta con relieve suave */
+.ban-card .btn{box-shadow:0 1px 2px rgba(16,40,90,.12);transition:transform .12s,box-shadow .12s,background .15s}
+.ban-card .btn:hover{transform:translateY(-1px);box-shadow:0 4px 10px -4px rgba(16,40,90,.35)}
+.ban-card .btn:active{transform:translateY(0);box-shadow:none}
+.ban-card .btn.danger{border:1px solid rgba(215,0,21,.25)!important;background:var(--bad-soft,rgba(215,0,21,.1))!important;color:var(--bad,#d70015)!important}
+.ban-card .btn.danger:hover{background:rgba(215,0,21,.16)!important}
+
+/* Indicadores y barras */
+.ban-kpis div{box-shadow:0 1px 2px rgba(16,40,90,.06),0 8px 18px -12px rgba(16,40,90,.25)!important;border-radius:14px!important}
+.ban-tools{padding:14px 16px;background:#fff;border:1px solid #E3E9F3;border-radius:14px;box-shadow:0 1px 2px rgba(16,40,90,.05)}
+
+/* Modo oscuro */
+:root[data-modo="oscuro"] .ban-card{border-color:var(--sep)!important;box-shadow:0 8px 22px -12px rgba(0,0,0,.7)!important}
+:root[data-modo="oscuro"] .ban-card>summary{background:var(--bg-soft)!important;border-bottom-color:var(--sep)!important}
+:root[data-modo="oscuro"] .ban-sis{color:var(--label)}
+:root[data-modo="oscuro"] .ban-card>summary::after{border-color:var(--label-2,#9aa7b8)}
+:root[data-modo="oscuro"] .ban-grid>div,:root[data-modo="oscuro"] .ban-bloque,:root[data-modo="oscuro"] .ban-hist,:root[data-modo="oscuro"] .ban-tools{background:var(--bg-input,#2c2c2e);border-color:var(--sep)}
+:root[data-modo="oscuro"] .ban-msg,:root[data-modo="oscuro"] .ban-oficio{background:var(--bg-soft)!important;border-color:var(--sep)!important}
+:root[data-modo="oscuro"] .ban-msg{border-left-color:var(--lila,#B392DD)}
+:root[data-modo="oscuro"] .ban-oficio .field input,:root[data-modo="oscuro"] .ban-bloque .ban-nota{background:var(--bg-input)}
+:root[data-modo="oscuro"] .ban-tit{color:var(--lila-texto,#CDB5EA)}
+:root[data-modo="oscuro"] .ban-dep h2{background:linear-gradient(90deg,rgba(179,146,221,.14),transparent);color:var(--label)}
+:root[data-modo="oscuro"] .ban-dep h2::before{background:var(--lila,#B392DD)}
+:root[data-modo="oscuro"] .ban-sel{background:var(--bg-card);border-color:var(--sep)}
+
+@media (max-width:600px){
+  .ban-card>summary{padding:14px!important}
+  .ban-grid{padding:14px 14px 6px!important}
+  .ban-oficio,.ban-bloque,.ban-hist{margin-left:14px!important;margin-right:14px!important}
+  .ban-msg{margin-left:14px!important;margin-right:14px!important}
+}
+.ban-grid>div{align-content:start}
+
+/* ==========================================================================
+   Modo oscuro: corrige botones/recuadros con fondo blanco y texto claro
+   ========================================================================== */
+/* Filtros y botones de la barra (Todas, Nueva, Actualizar, Descargar…) */
+.chips a,.chips button{box-shadow:0 1px 2px rgba(16,40,90,.08),0 4px 10px -6px rgba(16,40,90,.25);font-weight:600;transition:background .15s,border-color .15s,transform .12s}
+.chips a:hover,.chips button:hover{transform:translateY(-1px)}
+:root[data-modo="oscuro"] .chips a,
+:root[data-modo="oscuro"] .chips button{background:var(--bg-card,#172339)!important;color:var(--label,#EAF0FA)!important;border:1px solid var(--sep-strong,#364862)!important;box-shadow:0 1px 2px rgba(0,0,0,.35)!important;opacity:1!important;text-shadow:none!important;-webkit-font-smoothing:antialiased}
+:root[data-modo="oscuro"] .chips a:hover,
+:root[data-modo="oscuro"] .chips button:hover{background:var(--bg-soft,#141F33)!important;border-color:var(--lila-borde,rgba(179,146,221,.34))!important}
+:root[data-modo="oscuro"] .chips a[aria-current="page"],
+:root[data-modo="oscuro"] .chips .on,
+:root[data-modo="oscuro"] .chips button[aria-current="true"]{background:var(--azul,#004EAA)!important;color:#fff!important;border-color:var(--azul,#004EAA)!important}
+:root[data-modo="oscuro"] .chips .g{color:inherit}
+
+/* Botones y recuadros que quedaban blancos */
+:root[data-modo="oscuro"] .apv-btn{background:var(--bg-card)!important;color:var(--label)!important;border:1px solid var(--sep-strong)}
+:root[data-modo="oscuro"] .ban-card .btn.sec,
+:root[data-modo="oscuro"] .ban-barra .btn.sec,
+:root[data-modo="oscuro"] .ban-resumen .btn.ghost{background:var(--bg-input,#101A2C)!important;color:var(--label,#EAF0FA)!important;border:1px solid var(--sep-strong,#364862)!important}
+:root[data-modo="oscuro"] .ban-card .btn.sec:hover{background:var(--bg-soft)!important}
+:root[data-modo="oscuro"] .ban-resumen .btn.ghost{background:transparent!important;color:var(--lila-texto,#CDB5EA)!important;border-color:transparent!important}
+:root[data-modo="oscuro"] .ban-card .btn.danger{background:rgba(255,138,128,.12)!important;color:var(--bad,#FF8A80)!important;border-color:rgba(255,138,128,.4)!important}
+:root[data-modo="oscuro"] .ban-kpis div{background:var(--bg-card)!important;border-color:var(--sep)!important;color:var(--label)!important}
+:root[data-modo="oscuro"] .ban-kpis b{color:var(--lila-texto,#CDB5EA)!important}
+:root[data-modo="oscuro"] .ban-barra{background:var(--bg-card)!important;border-color:var(--sep-strong)!important;color:var(--label)}
+:root[data-modo="oscuro"] .ban-sel input{accent-color:var(--lila,#B392DD)}
+:root[data-modo="oscuro"] .ban-grid span,:root[data-modo="oscuro"] .ban-msg span{color:var(--label)}
+:root[data-modo="oscuro"] .ban-grid a{color:var(--lila-texto,#CDB5EA)}
+:root[data-modo="oscuro"] .ban-hist{color:var(--label)}
+:root[data-modo="oscuro"] .ban-tools .select,:root[data-modo="oscuro"] .ban-tools input,
+:root[data-modo="oscuro"] .ban-oficio input,:root[data-modo="oscuro"] .ban-nota{background:var(--bg-input,#101A2C)!important;color:var(--label,#EAF0FA)!important;border:1px solid var(--sep-strong,#364862)!important}
+:root[data-modo="oscuro"] .ban-oficio input[type="date"]{color-scheme:dark}
+:root[data-modo="oscuro"] .ban-oficio label,:root[data-modo="oscuro"] .ban-tools label{color:var(--label-2,#A9B6CC)}
+:root[data-modo="oscuro"] .ban-oficio .ban-of-chk{color:var(--label)}
+:root[data-modo="oscuro"] .ban-card summary small{color:var(--label-2,#A9B6CC)!important;opacity:1}
+:root[data-modo="oscuro"] .ban-card .badge{opacity:1}
+:root[data-modo="oscuro"] .sqlbox{background:var(--bg-input);color:var(--label);border-color:var(--sep-strong)}
+:root[data-modo="oscuro"] .ban-hist{border:1px solid var(--sep)!important;background:var(--bg-input,#101A2C)!important}
+:root[data-modo="oscuro"] .ban-hist>summary{color:var(--lila-texto,#CDB5EA)!important}
+:root[data-modo="oscuro"] .sidenav a[aria-current="page"]{color:var(--lila-texto,#CDB5EA)!important}
