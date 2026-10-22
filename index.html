@@ -830,11 +830,8 @@ button.avatar{font:inherit;font-weight:700}
    Catálogo de Sistemas
    --------------------------------------------------------------------------
    CONFIGURACIÓN RÁPIDA (también editable desde Administración → Configuración)
-   - correoDestino: correo que recibirá las solicitudes.
-   - endpoint:      (opcional) URL de un servicio de formularios (Formspree, Google
-                    Apps Script, etc.). Si se define, la solicitud se envía sola.
-   Sin endpoint, la solicitud queda guardada y se abre el correo del solicitante
-   con el mensaje ya redactado, dirigido a correoDestino.
+   - correoOficio: correo al que cada solicitante envía su oficio citando su folio.
+    La solicitud solo genera un folio; ya no se envía ningún correo automático.
    ========================================================================== */
 (function () {
 "use strict";
@@ -844,8 +841,9 @@ const FORMATO_AUTOMATICO = true;   // por el momento: da formato automático a t
 const CONFIG_BASE = {
   nombre: "Catálogo de Sistemas",
   organizacion: "Coordinación de Política Digital",
-  correoDestino: "delrivero25@gmail.com",          // ← correo que recibe las solicitudes
-  endpoint: "",               // ← opcional: URL de Formspree / Apps Script
+  correoDestino: "",          // (ya no se usa: las solicitudes no llegan por correo)
+  correoOficio: "",           // ← correo al que el solicitante envía su oficio con el folio (por definir)
+  endpoint: "",               // (ya no se usa)
   telefono: "",
   privacidad: "Usaremos tus datos únicamente para atender esta solicitud y ponernos en contacto contigo.",
   pinHash: "",
@@ -1261,7 +1259,7 @@ function migrar(c) {
   const base = datosEjemplo();
   const out = { formato: 2, editado: !!c.editado, actualizado: c.actualizado || hoyISO(), config: Object.assign({}, CONFIG_BASE, c.config || {}) };
   delete out.config.whatsapp;
-  if (!String(out.config.correoDestino || "").trim()) out.config.correoDestino = CONFIG_BASE.correoDestino;
+  out.config.correoDestino = ""; out.config.endpoint = ""; out.config.correoOficio = String(out.config.correoOficio || "").trim();
   if (!String(out.config.correoAdmin || "").trim()) out.config.correoAdmin = CONFIG_BASE.correoAdmin;
   out.usuarios = Array.isArray(c.usuarios) ? c.usuarios.filter((u) => u && (u.correo || u.rfc) && u.hash).map((u) => Object.assign({}, u, { rol: rolDe(u.rol) })) : [];
   out.avisos = Array.isArray(c.avisos) ? c.avisos.filter((a) => a && a.id).slice(0, 300) : [];
@@ -1587,7 +1585,7 @@ function feat(s) {
     ? `<img src="${esc(s.portada)}" alt="">`
     : `<span class="feat-glyph">${glifo(GLIFOS.includes(s.icono.glifo) ? s.icono.glifo : "app")}</span>${cap && imgOk(cap.src) ? `<span class="feat-shot"><img src="${esc(cap.src)}" alt=""></span>` : ""}`;
   return `<article class="feat" style="${colorVars(s.icono.color)}">
-    <a class="feat-txt" href="#/sistema/${enc(s.id)}"><span class="eyebrow">${esc(etqCorta(s))}</span><strong>${esc(s.nombre)}</strong><span class="sub">${esc(s.subtitulo)}</span></a>
+    <a class="feat-txt" href="#/sistema/${enc(s.id)}"><span class="eyebrow">${etqChip(s)}</span><strong>${esc(s.nombre)}</strong><span class="sub">${esc(s.subtitulo)}</span></a>
     <div class="feat-card"><a class="feat-art" href="#/sistema/${enc(s.id)}" tabindex="-1" aria-hidden="true">${art}</a>
       <div class="feat-bar">${icono(s, "s48")}<span class="t"><b>${esc(s.nombre)}</b><small>${esc(s.subtitulo)}</small></span>${btnGet(s, "glass")}</div></div></article>`;
 }
@@ -1619,10 +1617,12 @@ function logoSvg(c) {
 const logoInner = (c) => imgOk(c.logo) ? `<img src="${esc(c.logo)}" alt="">` : logoSvg(c);
 const logoHtml = (c) => `<span class="ico s40${imgOk(c.logo) ? "" : " lg"}" style="${colorVars("azul")}">${logoInner(c)}</span>`;
 
-const TIPOS = { sistema: "Sistema", web: "Página web / Portal" };
+const TIPOS = { sistema: "Sistema", web: "Portal / Sitio web" };
+const TIPOS_DESC = { sistema: "Aplicación institucional: requiere solicitar acceso.", web: "Página en internet: se consulta abriendo el enlace." };
+const TIPO_ICO = { sistema: "app", web: "globo" };
 const tipoDe = (s) => (TIPOS[s.tipoSis] ? s.tipoSis : (s.categorias || []).includes("portales") ? "web" : "sistema");
 const tipoNom = (s) => TIPOS[tipoDe(s)];
-const tipoTag = (s) => `<span class="tipo-tag t-${tipoDe(s)}">${esc(tipoNom(s))}</span>`;
+const tipoTag = (s) => `<span class="tipo-tag t-${tipoDe(s)}">${glifo(TIPO_ICO[tipoDe(s)])}${esc(tipoNom(s))}</span>`;
 function ligadosDe(s) {
   const ids = new Set(Array.isArray(s.ligados) ? s.ligados : []);
   vis().forEach((x) => { if (x.id !== s.id && Array.isArray(x.ligados) && x.ligados.includes(s.id)) ids.add(x.id); });
@@ -1967,11 +1967,7 @@ function depAuthCambio(t) {
   if (t.value === "__nuevo") { w.hidden = false; i.value = ""; i.focus(); } else { w.hidden = true; i.value = t.value; }
 }
 const reqMark = ' <span class="req" aria-hidden="true">*</span>';
-const linksLegales = () => {
-  const c = cfg(), p = String(c.avisoPrivacidad || "").trim(), t = String(c.terminos || "").trim();
-  const ap = '<a href="#/privacidad" target="_blank" rel="noopener">Aviso de privacidad</a>', at = '<a href="#/terminos" target="_blank" rel="noopener">Términos y condiciones</a>';
-  return p && t ? ` Consulta el ${ap} y los ${at}.` : p ? ` Consulta el ${ap}.` : t ? ` Consulta los ${at}.` : "";
-};
+const linksLegales = () => "";
 /* ---------- Superadministrador: autorización con código por correo ---------- */
 const CODIGO_VIDA_MIN = 15, CODIGO_MAX_INTENTOS = 5, CODIGO_ESPERA_MS = 60000;
 const maskCorreo = (e) => { const [u, d] = String(e).split("@"); return (u || "").slice(0, 1) + "•••" + (u || "").slice(-2) + "@" + (d || ""); };
@@ -2339,17 +2335,26 @@ async function cambiarRolUsuario(t) {
   if (SB_ON) { const r = await sbPerfilUpd(u.id, { rol: nuevo }); if (!r.ok) { toast(r.msg); return vuelve(); } u.rol = nuevo; toast(`Ahora es ${ROLES[nuevo].toLowerCase()}`); return vuelve(); }
   u.rol = nuevo; guardarCatalogo(); toast(`Ahora es ${ROLES[nuevo].toLowerCase()}`); vuelve();
 }
+const mezclar = (hex, con, p) => { const a = [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)), b = [1, 3, 5].map((k) => parseInt(con.slice(k, k + 2), 16)); return "#" + a.map((v, k) => Math.round(v * (1 - p) + b[k] * p).toString(16).padStart(2, "0")).join(""); };
 function aplicarApariencia(c) {
   c = c || cfg();
   const r = document.documentElement, st = r.style;
   if (c.tema === "claro") r.dataset.theme = "light"; else if (c.tema === "oscuro") r.dataset.theme = "dark"; else delete r.dataset.theme;
-  const oscuro = c.tema === "oscuro" || (c.tema !== "claro" && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+  const delSistema = !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+  const oscuro = c.tema === "oscuro" || (c.tema !== "claro" && delSistema);
+  r.dataset.modo = oscuro ? "oscuro" : "claro";
+  ["--accent", "--accent-soft", "--pill-ink", "--azul", "--azul-hover", "--azul-suave", "--azul-borde"].forEach((k) => st.removeProperty(k));
   const col = COLORES[c.acento];
-  if (col) {
-    const hex = oscuro ? col[0] : col[1], [R, G, B] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-    st.setProperty("--accent", hex); st.setProperty("--accent-soft", `rgba(${R},${G},${B},${oscuro ? .18 : .11})`); st.setProperty("--pill-ink", hex);
-  } else { ["--accent", "--accent-soft", "--pill-ink"].forEach((k) => st.removeProperty(k)); }
+  if (col || oscuro) {
+    /* Siempre dentro de la paleta: azul #004EAA y lila #9568C6 (y sus tonos). En modo oscuro se usa el tono claro de cada color. */
+    const hex = oscuro ? (col || COLORES.azul)[0] : col[1], fondo = "#0E1626";
+    st.setProperty("--azul", hex);
+    st.setProperty("--azul-hover", oscuro ? mezclar(hex, "#ffffff", 0.18) : mezclar(hex, "#000000", 0.2));
+    st.setProperty("--azul-suave", oscuro ? mezclar(hex, fondo, 0.84) : mezclar(hex, "#ffffff", 0.91));
+    st.setProperty("--azul-borde", oscuro ? mezclar(hex, fondo, 0.62) : mezclar(hex, "#ffffff", 0.78));
+  }
 }
+if (window.matchMedia) { try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => aplicarApariencia()); } catch (e) { /* navegador antiguo */ } }
 
 /* ---------- Router ---------- */
 const hashParts = () => location.hash.replace(/^#\/?/, "").split("?")[0].split("/").filter(Boolean).map((d) => { try { return decodeURIComponent(d); } catch (e) { return d; } });
@@ -2398,7 +2403,6 @@ function render(nav) {
       case "avisos": html = vAvisos(); break;
       case "ayuda": html = vAyuda(); break;
       case "contacto": html = vContacto(); break;
-      case "privacidad": case "terminos": html = vLegal(a); break;
       case "admin": html = vAdmin(b, c); break;
       default: html = vNoEncontrado();
     }
@@ -2442,17 +2446,18 @@ function renderChrome(a) {
     + tabs.map(([k, g, t]) => `<a href="#/${k}" ${act === k ? 'aria-current="page"' : ""}>${glifo(g)}<span>${t}</span></a>`).join("")
     + (S.user ? `<button class="rail-admin ${S.admin ? "on" : ""}" data-act="mi-cuenta" aria-label="Mi cuenta">${glifo("user")}<span>Cuenta</span></button>` : "");
   actualizarCampana();
-  $("#foot").innerHTML = `<span>${esc(c.organizacion)}</span><span>${c.correoDestino ? `Contacto: ${esc(c.correoDestino)}` : "Catálogo de sistemas digitales"}${c.telefono ? ` · ${esc(c.telefono)}` : ""}· <a href="#/contacto">Contacto y directorio</a>${String(c.avisoPrivacidad || "").trim() ? ' · <a href="#/privacidad">Aviso de privacidad</a>' : ""}${String(c.terminos || "").trim() ? ' · <a href="#/terminos">Términos y condiciones</a>' : ""}</span>`;
+  $("#foot").innerHTML = `<span>${esc(c.organizacion)}</span><span>Catálogo de sistemas digitales${c.telefono ? ` · ${esc(c.telefono)}` : ""}· <a href="#/contacto">Contacto y directorio</a></span>`;
 }
 
 /* ---------- Vistas públicas ---------- */
-const etqCorta = (s) => (s.etiqueta && s.etiqueta.length <= 24 ? s.etiqueta : s.estado === "Disponible" ? tipoNom(s) : s.estado);
+const etqCorta = (s) => tipoNom(s) + (s.estado && s.estado !== "Disponible" ? " · " + s.estado : "");
 const etqDesc = (s) => (s.etiqueta && s.etiqueta.length > 24 ? s.etiqueta : s.subtitulo);
+const etqChip = (s) => `${glifo(TIPO_ICO[tipoDe(s)])}${esc(etqCorta(s))}`;
 function storeHero(feats) {
   const g = (s) => glifo(GLIFOS.includes(s.icono.glifo) ? s.icono.glifo : "app");
-  const main = (s) => `<article class="hmain" style="${colorVars(s.icono.color)}"><a class="hlink" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}"></a><span class="hshow" aria-hidden="true"><span class="hshow-in">${g(s)}</span></span><div class="htxt"><span class="tag-pill">${esc(etqCorta(s))}</span><h2>${esc(s.nombre)}</h2><p>${esc(etqDesc(s))}</p><div class="hacts">${btnGet(s, "big", true)}<a class="hmore" href="#/sistema/${enc(s.id)}">Ver detalles</a>${vidBtn(s)}</div></div></article>`;
-  const tile = (s) => `<article class="htile" style="${colorVars(s.icono.color)}"><a class="hlink" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}"></a><div class="htile-top">${icono(s, "s64")}<span class="tag-pill">${esc(etqCorta(s))}</span></div><div class="htxt"><h3>${esc(s.nombre)}</h3><p>${esc(etqDesc(s))}</p></div></article>`;
-  const todos = `<article class="htile" style="${colorVars("azul")}"><a class="hlink" href="#/sistemas" aria-label="Ver todos los sistemas"></a><div class="htile-top"><span class="ico s64" style="--c1:#8CBBEA;--c2:#004EAA">${glifo("capas")}</span><span class="tag-pill">Catálogo</span></div><div class="htxt"><h3>Todos los sistemas</h3><p>Explora el catálogo completo y solicita el que necesites.</p></div></article>`;
+  const main = (s) => `<article class="hmain" style="${colorVars(s.icono.color)}"><a class="hlink" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}"></a><span class="hshow" aria-hidden="true"><span class="hshow-in">${g(s)}</span></span><div class="htxt"><span class="tag-pill t-${tipoDe(s)}">${etqChip(s)}</span><h2>${esc(s.nombre)}</h2><p>${esc(etqDesc(s))}</p><div class="hacts">${btnGet(s, "big", true)}<a class="hmore" href="#/sistema/${enc(s.id)}">Ver detalles</a>${vidBtn(s)}</div></div></article>`;
+  const tile = (s) => `<article class="htile" style="${colorVars(s.icono.color)}"><a class="hlink" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}"></a><div class="htile-top">${icono(s, "s64")}<span class="tag-pill t-${tipoDe(s)}">${etqChip(s)}</span></div><div class="htxt"><h3>${esc(s.nombre)}</h3><p>${esc(etqDesc(s))}</p></div></article>`;
+  const todos = `<article class="htile" style="${colorVars("azul")}"><a class="hlink" href="#/sistemas" aria-label="Ver todos los sistemas"></a><div class="htile-top"><span class="ico s64" style="--c1:#8CBBEA;--c2:#004EAA">${glifo("capas")}</span><span class="tag-pill">${glifo("capas")}Catálogo</span></div><div class="htxt"><h3>Todos los sistemas</h3><p>Explora el catálogo completo y solicita el que necesites.</p></div></article>`;
   const [a, b, c] = feats;
   return `<div class="store-hero ${b ? "" : "solo"}">${main(a)}${b ? `<div class="hero-side">${tile(b)}${c ? tile(c) : todos}</div>` : ""}</div>`;
 }
@@ -2508,7 +2513,7 @@ function cardVer(s) {
   const art = imgOk(s.portada)
     ? `<img class="cv-img" src="${esc(s.portada)}" alt="">`
     : `<span class="cv-glyph">${glifo(GLIFOS.includes(s.icono.glifo) ? s.icono.glifo : "app")}</span>${cap && imgOk(cap.src) ? `<span class="cv-shot"><img src="${esc(cap.src)}" alt=""></span>` : ""}`;
-  return `<article class="cv"><span class="cv-eye">${esc(etqCorta(s))}</span><div class="cv-card"><a class="cv-art" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}">${art}<span class="cv-over">${k ? `<small>${esc(k.nombre)}</small>` : ""}<b>${esc(s.subtitulo || s.nombre)}</b></span></a><div class="cv-bar">${icono(s, "s48")}<span class="cv-t"><b>${esc(s.nombre)}</b><small>${esc(tipoNom(s))} · Versión ${esc(s.version)}${s.area ? " · " + esc(s.area) : ""}</small></span>${btnGet(s, "sm", true)}</div></div></article>`;
+  return `<article class="cv"><span class="cv-eye t-${tipoDe(s)}">${etqChip(s)}</span><div class="cv-card"><a class="cv-art" href="#/sistema/${enc(s.id)}" aria-label="${esc(s.nombre)}">${art}<span class="cv-over">${k ? `<small>${esc(k.nombre)}</small>` : ""}<b>${esc(s.subtitulo || s.nombre)}</b></span></a><div class="cv-bar">${icono(s, "s48")}<span class="cv-t"><b>${esc(s.nombre)}</b><small>${esc(tipoNom(s))} · Versión ${esc(s.version)}${s.area ? " · " + esc(s.area) : ""}</small></span>${btnGet(s, "sm", true)}</div></div></article>`;
 }
 function vHome() {
   const lista = vis(), hoy = new Date();
@@ -2553,8 +2558,8 @@ function vSistemas() {
   if (F2.orden === "usados") l = [...l].sort((a, b) => b.dependencias.length - a.dependencias.length);
   const cats = S.cat.categorias.slice();
   post = iniciarCarrusel;
-  return `${cabecera("Sistemas", "Sistemas, páginas web y portales del catálogo. Cada uno indica de qué tipo es.")}
-    <div class="chips tipos" role="group" aria-label="Filtrar por tipo"><button class="chip txt" data-act="filtro-tipo" data-id="todos" aria-pressed="${F2.tipo === "todos"}">Todos (${nSis + nWeb})</button><button class="chip txt" data-act="filtro-tipo" data-id="sistema" aria-pressed="${F2.tipo === "sistema"}">Sistemas (${nSis})</button><button class="chip txt" data-act="filtro-tipo" data-id="web" aria-pressed="${F2.tipo === "web"}">Páginas web / Portales (${nWeb})</button></div>
+  return `${cabecera("Sistemas", "Sistemas (aplicaciones institucionales) y portales / sitios web (páginas en internet). Cada uno indica claramente de qué tipo es.")}
+    <div class="chips tipos" role="group" aria-label="Filtrar por tipo"><button class="chip txt" data-act="filtro-tipo" data-id="todos" aria-pressed="${F2.tipo === "todos"}">Todos (${nSis + nWeb})</button><button class="chip txt" data-act="filtro-tipo" data-id="sistema" aria-pressed="${F2.tipo === "sistema"}">Sistemas (${nSis})</button><button class="chip txt" data-act="filtro-tipo" data-id="web" aria-pressed="${F2.tipo === "web"}">Portales / Sitios web (${nWeb})</button></div>
     <div class="cv-wrap ch-wrap"><button type="button" class="cv-arrow cv-prev" data-act="cv-prev" aria-label="Anterior" hidden>${glifo("back")}</button><div class="chips bleed" role="group" aria-label="Filtrar por categoría"><button class="chip txt" data-act="filtro-cat" data-id="todas" aria-pressed="${F2.cat === "todas"}">Todos</button>${cats.map((k) => `<button class="chip txt" data-act="filtro-cat" data-id="${esc(k.id)}" aria-pressed="${F2.cat === k.id}">${esc(k.nombre)}</button>`).join("")}</div><button type="button" class="cv-arrow cv-next" data-act="cv-next" aria-label="Siguiente" hidden>${glifo("chev")}</button></div>
     <div class="toolbar"><span class="muted">${l.length} ${plural(l.length, "resultado", "resultados")}</span>
       <label class="sr" for="orden">Ordenar</label><select class="select" id="orden" data-sel="orden"><option value="catalogo" ${F2.orden === "catalogo" ? "selected" : ""}>Orden del catálogo</option><option value="nombre" ${F2.orden === "nombre" ? "selected" : ""}>Nombre (A–Z)</option><option value="recientes" ${F2.orden === "recientes" ? "selected" : ""}>Más recientes</option><option value="usados" ${F2.orden === "usados" ? "selected" : ""}>Más usados</option></select></div>
@@ -2703,7 +2708,7 @@ function vFicha(id) {
   const manualLink = s.enlaces.find((l) => l.tipo === "manual" && urlOk(l.url));
   const rel = relacionados(s, 6), lig = ligadosDe(s);
   const c0 = cats[0];
-  const correo = s.contacto.correo || cfg().correoDestino;
+  const correo = s.contacto.correo;
 
   post = () => {
     const nb = $("#nb"), obj = $("#mainget");
@@ -2717,7 +2722,8 @@ function vFicha(id) {
   };
   const right = (S.admin ? `<a class="btn sm sec" href="#/admin/editar/${enc(s.id)}">${glifo("edit")}Editar</a>` : "") + `<button class="circ" data-act="compartir" data-id="${esc(s.id)}" aria-label="Copiar enlace del sistema">${glifo("share")}</button>` + btnGet(s, "sm", true);
 
-  const filasTec = [["Tipo", tipoNom(s)], ["Categoría", cats.map((c) => c.nombre).join(", ")], ["Plataforma", s.plataforma], ["Disponibilidad", s.estado]]
+  const tipoHtml = `<span class="tipo-tag t-${tipoDe(s)} big">${glifo(TIPO_ICO[tipoDe(s)])}${esc(tipoNom(s))}</span><small class="vsub">${esc(TIPOS_DESC[tipoDe(s)])}</small>`;
+  const filasTec = [["Tipo", tipoNom(s), tipoHtml], ["Categoría", cats.map((c) => c.nombre).join(", ")], ["Plataforma", s.plataforma, s.plataforma ? `<span class="vplat">${esc(s.plataforma)}<span class="vsep">·</span>${tipoTag(s)}</span>` : ""], ["Disponibilidad", s.estado]]
     .concat(s.tecnica.map((t) => [t.k, t.v])).filter(([, v]) => v);
   const adj = s.archivos.map((a) => {
     const [cl, et] = tipoArchivo(a);
@@ -2733,7 +2739,7 @@ function vFicha(id) {
       <p class="sub">${esc(s.subtitulo)}</p>
       <div class="cats">${tipoTag(s)}${cats.map((c) => `<a href="#/categoria/${enc(c.id)}">${esc(c.nombre)}</a>`).join("")}</div>
       ${!s.publicado ? `<div><span class="badge warn">No publicado · solo lo ves tú</span></div>` : ""}
-      <div class="fhead-actions" id="mainget">${btnGet(s, "big")}${prim ? `<a class="btn2" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">Abrir ${tipoDe(s) === "web" ? "página web" : "sistema"} ${glifo("out")}</a>` : ""}<button class="circ" data-act="compartir" data-id="${esc(s.id)}" aria-label="Copiar enlace del sistema" style="color:var(--accent)">${glifo("share")}</button></div>
+      <div class="fhead-actions" id="mainget">${btnGet(s, "big")}${prim ? `<a class="btn2" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">Abrir ${tipoDe(s) === "web" ? "sitio web" : "sistema"} ${glifo("out")}</a>` : ""}<button class="circ" data-act="compartir" data-id="${esc(s.id)}" aria-label="Copiar enlace del sistema" style="color:var(--accent)">${glifo("share")}</button></div>
       ${S.admin ? `<div class="manage" role="group" aria-label="Gestionar este sistema"><button type="button" class="mbtn" data-act="gestionar" data-modo="info" data-id="${esc(s.id)}">${glifo("edit")}Editar información</button><button type="button" class="mbtn" data-act="gestionar" data-modo="imagen" data-id="${esc(s.id)}">${glifo("img")}Cambiar imagen</button><button type="button" class="mbtn" data-act="ren-sis" data-id="${esc(s.id)}">${glifo("edit")}Cambiar nombre</button><button type="button" class="mbtn" data-act="del-sistema" data-id="${esc(s.id)}">${glifo("trash")}Eliminar</button></div>${prim ? "" : `<div class="note warn" style="margin-top:12px">${glifo("warn")}<div>Este sistema aún no tiene enlace para «Abrir sistema». <a href="#/admin/editar/${enc(s.id)}">Agregar el enlace</a></div></div>`}` : ""}
     </div></section>
   <section class="stats" aria-label="Datos del sistema">
@@ -2744,7 +2750,7 @@ function vFicha(id) {
   ${nov ? `<section class="sec"><h2 class="sec-h"><button data-act="historial" data-id="${esc(s.id)}">Novedades ${glifo("chev")}</button></h2><div class="nov"><span>Versión ${esc(nov.version)}</span><span>${esc(hace(nov.fecha))}</span></div><div class="prose">${rich(nov.notas)}</div></section>` : ""}
   ${videoInfo(s.videoDestacado) ? `<section class="sec vsec"><h2 class="sec-h">Video de muestra</h2><div class="vplayer">${videoHtml(videoInfo(s.videoDestacado), s.nombre)}</div></section>` : ""}
   ${s.capturas.length || (s.videos || []).some((v) => videoInfo(v)) ? `<section class="sec"><h2 class="sec-h">Vista previa</h2><div class="gal-wrap"><button type="button" class="gal-arrow gal-prev" data-act="gal-prev" aria-label="Captura anterior" hidden>${glifo("back")}</button><div class="gallery bleed" tabindex="0" aria-label="Capturas y videos del sistema">${s.capturas.filter((c) => imgOk(c.src)).map((c, i) => `<button class="shot" data-act="lightbox" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ampliar captura ${i + 1}${c.pie ? ": " + esc(c.pie) : ""}"><img src="${esc(c.src)}" alt="${esc(c.pie || "Captura de " + s.nombre)}" loading="lazy"></button>`).join("")}${(s.videos || []).map((v, i) => videoInfo(v) ? `<button class="shot vshot" data-act="ver-video" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ver video${v.pie ? ": " + esc(v.pie) : ""}">${glifo("play")}<small>${esc(v.pie || "Video de muestra")}</small></button>` : "").join("")}</div><button type="button" class="gal-arrow gal-next" data-act="gal-next" aria-label="Captura siguiente" hidden>${glifo("chev")}</button></div></section>` : ""}
-  ${s.plataforma ? `<div class="platrow">${glifo("tablet")}<span>${esc(s.plataforma)}</span></div>` : ""}
+  ${s.plataforma ? `<div class="platrow">${glifo("tablet")}<span>${esc(s.plataforma)}</span>${tipoTag(s)}</div>` : ""}
   ${s.descripcion ? `<section style="padding-top:18px"><div class="prose clamp" id="desc" style="${descEstilo(s)}">${rich(s.descripcion)}</div><button class="more" id="mas" data-act="toggle-desc">más</button><div style="clear:both"></div></section>` : ""}
   ${s.pasos.length || manualArch || manualLink ? `<section class="sec"><h2 class="sec-h">Manual de uso</h2>${s.pasos.length ? `<ol class="steps">${s.pasos.map((p) => `<li><span>${esc(p)}</span></li>`).join("")}</ol>` : ""}${manualArch ? `<div style="margin-top:14px"><button class="btn sec" data-act="ver-archivo" data-id="${esc(s.id)}" data-fid="${esc(manualArch.id)}">${glifo("libro")}Abrir manual completo</button></div>` : manualLink ? `<div style="margin-top:14px"><a class="btn sec" href="${esc(urlOk(manualLink.url))}" target="_blank" rel="noopener noreferrer">${glifo("libro")}Abrir manual completo</a></div>` : ""}</section>` : ""}
   <section class="sec"><h2 class="sec-h">Dependencias que lo usan</h2>
@@ -2754,8 +2760,8 @@ function vFicha(id) {
   ${adj || encl ? `<section class="sec"><h2 class="sec-h">Documentos y enlaces</h2><ul class="docs">${adj}${encl}</ul></section>` : ""}
   ${s.requisitos.length ? `<section class="sec"><h2 class="sec-h">Requisitos</h2><ul class="checks">${s.requisitos.map((r) => `<li>${glifo("ok")}<span>${esc(r)}</span></li>`).join("")}</ul></section>` : ""}
   <section class="sec"><h2 class="sec-h">Ficha técnica</h2>
-    <div class="kv">${filasTec.map(([k, v]) => `<div><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join("")}
-      ${prim ? `<div><a class="lr" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">Sitio del sistema ${glifo("out")}</a></div>` : ""}
+    <div class="kv">${filasTec.map(([k, v, h]) => `<div><span class="k">${esc(k)}</span><span class="v">${h || esc(v)}</span></div>`).join("")}
+      ${prim ? `<div><a class="lr" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">${tipoDe(s) === "web" ? "Ir al sitio web" : "Ir al sistema"} ${glifo("out")}</a></div>` : ""}
       <div><button class="lr" data-act="contacto" data-id="${esc(s.id)}">Contactar al área responsable ${glifo("correo")}</button></div>
       <div><button class="lr" data-act="contacto" data-id="${esc(s.id)}" data-problema="1">Reportar un problema ${glifo("warn")}</button></div>
     </div></section>
@@ -2769,7 +2775,6 @@ function vContacto() {
   const c = cfg(), dir = Array.isArray(c.directorio) ? c.directorio : [];
   const tel = (t) => String(t || "").replace(/[^\d+]/g, "");
   const med = [
-    c.correoDestino && `<a class="ctc" href="mailto:${esc(c.correoDestino)}">${glifo("correo")}<span><b>Correo</b>${esc(c.correoDestino)}</span></a>`,
     c.telefono && `<a class="ctc" href="tel:${esc(tel(c.telefono))}">${glifo("mensaje")}<span><b>Teléfono</b>${esc(c.telefono)}</span></a>`,
     c.horario && `<div class="ctc">${glifo("reloj")}<span><b>Horario</b>${esc(c.horario)}</span></div>`
   ].filter(Boolean).join("");
@@ -2782,20 +2787,21 @@ function vContacto() {
 function vAyuda() {
   const c = cfg();
   const faq = [
-    ["¿Qué pasa después de enviar mi solicitud?", "Revisamos la solicitud y nos ponemos en contacto con la persona responsable por el correo o teléfono que registraste, para coordinar una reunión."],
-    ["¿Puedo pedir más de un sistema a la vez?", "Sí. En el formulario puedes agregar todos los sistemas que te interesen y se enviarán en una sola solicitud."],
+    ["¿Qué pasa después de enviar mi solicitud?", "Se genera tu folio. Con él elaboras un oficio de solicitud y lo envías al correo que aparece en la pantalla de tu folio."],
+    ["¿Qué debe llevar mi oficio?", "Cita tu folio, el sistema que solicitas y los datos de tu dependencia. Envíalo al correo que se indica al obtener tu folio."],
+    ["¿Puedo pedir más de un sistema a la vez?", "Sí. En el formulario puedes agregar todos los sistemas que te interesen y quedarán en una sola solicitud, con un solo folio."],
     ["¿Qué significa «Requiere validación»?", "Algunos sistemas necesitan una revisión previa de requisitos antes de implementarse. Lo indicamos en la ficha de cada sistema."],
-    ["¿Cómo sé en qué estado va mi solicitud?", "Te responderemos por correo. En «Mis solicitudes» ves el historial de lo que enviaste desde este dispositivo."],
+    ["¿Cómo sé en qué estado va mi solicitud?", "En «Mis solicitudes» ves tu folio y el historial de lo que solicitaste desde este dispositivo. El seguimiento se hace con tu oficio, citando el folio."],
     ["¿Qué hago si el sistema que necesito no aparece?", "Escríbenos desde el formulario eligiendo «Otro» en el tipo de uso y describe lo que necesitas."]
   ];
   return `${cabecera("Cómo solicitar", "Del catálogo a tu dependencia en tres pasos.")}
     <ol class="how" style="margin-top:24px">
       <li><span class="n">1</span><b>Explora el catálogo</b><p>Cada sistema tiene su descripción, manual de uso, requisitos y las dependencias que ya lo usan.</p></li>
-      <li><span class="n">2</span><b>Solicita el sistema</b><p>Llena el formulario con los datos de tu dependencia y el uso que le darás.</p></li>
-      <li><span class="n">3</span><b>Coordinamos contigo</b><p>Te contactamos para resolver dudas y acordar una reunión de implementación.</p></li>
+      <li><span class="n">2</span><b>Solicita y obtén tu folio</b><p>Llena el formulario con los datos de tu dependencia y el uso que le darás. Al terminar se genera tu folio.</p></li>
+      <li><span class="n">3</span><b>Elabora tu oficio</b><p>Redacta un oficio de solicitud citando tu folio y envíalo al correo que se te indica al terminar.</p></li>
     </ol>
     <section class="sec"><h2 class="sec-h">Preguntas frecuentes</h2>${faq.map(([q, a]) => `<details class="faq" style="border-bottom:1px solid var(--sep);padding:14px 0"><summary style="cursor:pointer;font-weight:600;font-size:17px;list-style:none;display:flex;justify-content:space-between;gap:12px">${esc(q)}<span style="color:var(--label-3)">${glifo("down")}</span></summary><p class="muted" style="margin-top:8px;max-width:70ch">${esc(a)}</p></details>`).join("")}</section>
-    <div class="cta-end"><div><b>¿Listo para empezar?</b><p>${c.correoDestino ? `También puedes escribirnos a ${esc(c.correoDestino)}.` : "Elige un sistema y envía tu solicitud."}</p></div><a class="btn" href="#/sistemas">Ver sistemas</a></div>`;
+    <div class="cta-end"><div><b>¿Listo para empezar?</b><p>Elige un sistema, llena tu solicitud y obtén tu folio.</p></div><a class="btn" href="#/sistemas">Ver sistemas</a></div>`;
 }
 
 /* ---------- Solicitud de sistema ---------- */
@@ -2837,7 +2843,7 @@ function vSolicitar(id) {
   const opts = (arr, cur) => arr.map((o) => `<option ${o === cur ? "selected" : ""}>${esc(o)}</option>`).join("");
   const ocon = opcionesContacto(); if (!ocon.includes(v.contactoPref)) v.contactoPref = ocon[0];
   return `${navbar()}
-  <header class="pagehead" style="padding-top:8px"><div><div class="when">Solicitud</div><h1 class="large-title">Solicitar sistema</h1><p class="lede">Cuéntanos quién eres y qué necesitas. Nos pondremos en contacto con tu dependencia para coordinar una reunión.</p></div></header>
+  <header class="pagehead" style="padding-top:8px"><div><div class="when">Solicitud</div><h1 class="large-title">Solicitar sistema</h1><p class="lede">Cuéntanos quién eres y qué necesitas. Al enviar recibirás tu folio para elaborar tu oficio.</p></div></header>
   <form id="form-sol" novalidate class="formgrid">
     <div>
       <p class="hint" style="margin:0 0 6px">Los campos marcados con <span class="req" style="color:var(--bad)">*</span> son obligatorios.</p>
@@ -2867,7 +2873,6 @@ function vSolicitar(id) {
         </div></section>
       ${sug.length ? `<section class="grp"><h2>Te podría interesar también</h2><p class="hint">Sistemas relacionados con lo que elegiste. Agrégalos si los necesitas.</p><div class="card"><ul class="sugg">${sug.map(({ x, s }) => `<li>${icono(x, "s40")}<div class="t"><b>${esc(x.nombre)}</b><small>${esc(motivo(s, x))}</small></div><button type="button" class="get sm" data-act="add-sel" data-id="${esc(x.id)}">Agregar</button></li>`).join("")}</ul></div></section>` : ""}
       <div class="hp" aria-hidden="true"><label for="f-web">No llenar este campo</label><input id="f-web" type="text" tabindex="-1" autocomplete="off" data-form="web"></div>
-      <section class="grp"><label class="chk ${e.acepto ? "bad" : ""}"><input type="checkbox" id="f-acepto" data-form="acepto" ${v.acepto ? "checked" : ""}><span><span class="req" aria-hidden="true">*</span> ${esc(cfg().privacidad)}${linksLegales()}</span></label>${e.acepto ? `<span class="err" role="alert" id="err-acepto">${esc(e.acepto)}</span>` : ""}</section>
       <button class="get big" type="submit" id="btn-enviar" style="padding:14px 34px;font-size:17px">Enviar solicitud</button>
     </div>
     <aside class="sticky-side">
@@ -2887,7 +2892,6 @@ function validarSolicitud() {
   if (!correoOk(v.correo)) e.correo = "Escribe un correo válido, por ejemplo tucorreo@ejemplo.com.";
   if (String(v.telefono || "").replace(/\D/g, "").length < 8) e.telefono = "Escribe un teléfono de al menos 8 dígitos.";
   req("tipoUso", "Elige el tipo de uso."); if (v.tipoUso === "Otro") req("usoOtro", "Escribe cuál será el uso."); req("mensaje", "Cuéntanos brevemente qué necesitas.");
-  if (!v.acepto) e.acepto = "Necesitamos tu aceptación para continuar.";
   return e;
 }
 const folioNuevo = () => { const d = hoyISO().replace(/-/g, ""); return `SOL-${d}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`; };
@@ -2924,23 +2928,13 @@ async function enviarSolicitud() {
     sistemas: F.sel.map((id) => { const s = byId(id); return { id, nombre: s.nombre, version: s.version, requisitos: s.requisitos.map((x) => String(x).trim()).filter(Boolean) }; }),
     base: baseReqs(), checks: {}, listo: false,
     datos: { dependencia: v.dependencia.trim(), area: (v.area || "").trim(), nombre: v.nombre.trim(), cargo: (v.cargo || "").trim(), correo: v.correo.trim(), telefono: v.telefono.trim(), contactoPref: v.contactoPref, horario: (v.horario || "").trim(), tipoUso: v.tipoUso === "Otro" ? "Otro: " + (v.usoOtro || "").trim() : v.tipoUso, fechaUso: v.fechaUso || "", participantes: v.participantes || "", mensaje: v.mensaje.trim() },
-    estado: c.correoDestino ? "pendiente" : "guardada", canal: ""
+    estado: "guardada", canal: ""
   };
   if (SB) {
     try {
       const { error } = await conLimite(SB.from("solicitudes").insert({ folio: sol.folio, dependencia: sol.datos.dependencia, datos: sol.datos, sistemas: sol.sistemas.map((x) => ({ id: x.id, nombre: x.nombre, version: x.version || "" })) }), 15000, { error: { message: "tiempo" } });
       if (!error) { sol.estado = "enviada"; sol.canal = "Supabase"; }
     } catch (err) { /* sigue con el correo */ }
-  }
-  if (sol.estado !== "enviada" && urlOk(c.endpoint)) {
-    try {
-      const r = await fetch(urlOk(c.endpoint), { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(Object.assign({ folio: sol.folio, asunto: asuntoSol(sol), _subject: asuntoSol(sol), mensaje: armarMensaje(sol), email: sol.datos.correo, sistemas: sol.sistemas.map((s) => s.nombre).join(", ") }, sol.datos)) });
-      if (r.ok) { sol.estado = "enviada"; sol.canal = "automático"; }
-    } catch (err) { /* se queda en pendiente o guardada */ }
-  }
-  if (sol.estado !== "enviada") {
-    const para = (c.correoDestino || c.correoAdmin || "").trim();
-    if (para && (await enviarAvisoCorreo(para, asuntoSol(sol), { Folio: sol.folio, Dependencia: sol.datos.dependencia, Contacto: sol.datos.nombre, Correo: sol.datos.correo, Teléfono: sol.datos.telefono, Sistemas: sol.sistemas.map((s) => s.nombre).join(", "), Mensaje: armarMensaje(sol) }))) { sol.estado = "enviada"; sol.canal = "automático"; }
   }
   try { await depsRegistrar(sol.datos.dependencia); } catch (err) {}
   S.sols.unshift(sol); await guardarSolicitudes();
@@ -2954,17 +2948,15 @@ function vGracias(folio) {
   const c = cfg(), ids = sol.sistemas.map((s) => s.id);
   const base = byId(ids[0]);
   const sug = (base ? relacionados(base, 8) : vis()).filter((x) => !ids.includes(x.id) && x.estado !== "En mantenimiento").slice(0, 3);
-  let estado = "";
-  if (sol.estado === "enviada") estado = `<div class="note ok">${glifo("ok")}<div>Enviamos tu solicitud a ${esc(c.organizacion)}. Nos pondremos en contacto con ${esc(sol.datos.nombre)} por ${sol.datos.contactoPref === "Llamada telefónica" ? "teléfono" : sol.datos.contactoPref === "Videollamada" ? "videollamada" : "correo electrónico"} para coordinar la reunión.</div></div>`;
-  else if (sol.estado === "pendiente") estado = `<div class="note warn">${glifo("warn")}<div><b>Falta un paso: envía el correo.</b><br>Tu solicitud quedó guardada. Para que llegue a ${esc(c.organizacion)}, abre el correo ya redactado y presiona Enviar. Se dirige a <b style="user-select:all">${esc(c.correoDestino)}</b>.<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><a class="btn" href="${esc(mailtoSol(sol))}">${glifo("correo")}Abrir correo</a><button class="btn sec" data-act="copiar-sol" data-id="${esc(sol.id)}">${glifo("copy")}Copiar mensaje</button><button class="btn ghost" data-act="marcar-enviada" data-id="${esc(sol.id)}">Ya lo envié</button></div></div></div>`;
-  else estado = `<div class="note info">${glifo("info")}<div>Tu solicitud quedó guardada en este dispositivo, pero este catálogo todavía no tiene un correo de destino configurado, así que no se envió a nadie.${S.admin ? ' Configúralo en <a href="#/admin/config">Administración → Configuración</a>.' : ""}<div style="margin-top:10px"><button class="btn sec" data-act="copiar-sol" data-id="${esc(sol.id)}">${glifo("copy")}Copiar mensaje</button></div></div></div>`;
+  const dest = (c.correoOficio || "").trim();
+  const estado = `<div class="note ok">${glifo("ok")}<div><b>Guarda tu folio y elabora tu oficio.</b><br>Redacta un oficio de solicitud, cita el folio <b>${esc(sol.folio)}</b> y envíalo al correo: ${dest ? `<b style="user-select:all">${esc(dest)}</b>` : "<b>por confirmar</b> (se publicará aquí en cuanto esté definido)"}.${sol.estado === "enviada" ? "" : `<br><span class="muted" style="font-size:13.5px">Tu folio quedó guardado en este dispositivo. Anótalo o cópialo para no perderlo.</span>`}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sec" data-act="copiar" data-v="${esc(sol.folio)}">${glifo("copy")}Copiar folio</button>${dest ? `<button class="btn sec" data-act="copiar" data-v="${esc(dest)}">${glifo("copy")}Copiar correo</button><a class="btn" href="mailto:${esc(dest)}?subject=${enc("Oficio de solicitud · " + sol.folio)}">${glifo("correo")}Abrir correo</a>` : ""}</div></div></div>`;
   return `${navbar({ back: false })}
-  <div class="ok-hero"><div class="big">${glifo("check")}</div><h1 class="large-title">${sol.estado === "enviada" ? "Solicitud enviada" : "Solicitud registrada"}</h1><p class="lede" style="margin-top:0">Tu folio es</p><span class="folio">${esc(sol.folio)}</span></div>
+  <div class="ok-hero"><div class="big">${glifo("check")}</div><h1 class="large-title">Solicitud registrada</h1><p class="lede" style="margin-top:0">Tu folio es</p><span class="folio">${esc(sol.folio)}</span></div>
   <div style="max-width:680px;margin:26px auto 0;display:grid;gap:18px">
     ${estado}
     <div class="card"><div class="lbl" style="margin-bottom:8px">Sistemas solicitados</div>${sol.sistemas.map((s) => { const x = byId(s.id); return `<div style="display:flex;gap:12px;align-items:center;padding:6px 0">${x ? icono(x, "s40") : ""}<b>${esc(s.nombre)}</b></div>`; }).join("")}
       <div class="kv" style="margin-top:8px"><div><span class="k">Dependencia</span><span class="v">${esc(sol.datos.dependencia)}</span></div><div><span class="k">Contacto</span><span class="v">${esc(sol.datos.nombre)}</span></div><div><span class="k">Correo</span><span class="v">${esc(sol.datos.correo)}</span></div><div><span class="k">Fecha</span><span class="v">${esc(fmtFecha(sol.fecha))}</span></div></div></div>
-    <div class="card"><div class="lbl" style="margin-bottom:6px">Siguiente paso</div><p class="muted" style="margin-bottom:12px">Revisa la lista de verificación para confirmar que ya cumples los requisitos. Cuando estén completos, avisa y se da por listo el uso del sistema.</p><a class="btn" href="#/solicitudes">Verificar requisitos</a></div>
+    <div class="card"><div class="lbl" style="margin-bottom:6px">Siguiente paso</div><p class="muted" style="margin-bottom:12px">Mientras preparas tu oficio, revisa la lista de verificación para confirmar que ya cumples los requisitos.</p><a class="btn" href="#/solicitudes">Verificar requisitos</a></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn sec" href="#/solicitudes">Ver mis solicitudes</a><a class="btn ghost" href="#/sistemas">Seguir explorando</a></div>
   </div>
   ${sug.length ? `<section class="sec" style="max-width:680px;margin-inline:auto"><h2 class="sec-h">Otros sistemas que podrían interesarte</h2><div class="rows" style="grid-template-columns:1fr">${sug.map((x) => fila(x, base ? motivo(base, x) : x.subtitulo)).join("")}</div></section>` : ""}`;
@@ -2984,7 +2976,7 @@ function vChecklist(sol) {
   const p = progreso(sol), pct = p.t ? Math.round((p.h / p.t) * 100) : 100, ch = sol.checks || {};
   const grupo = (clave, titulo, items) => items.length ? `<div class="chkgrp"><b>${esc(titulo)}</b>${items.map((t, i) => `<label class="chk"><input type="checkbox" data-chk="${esc(sol.id)}|${esc(clave)}|${i}" ${(ch[clave] || [])[i] ? "checked" : ""}><span>${esc(t)}</span></label>`).join("")}</div>` : "";
   const pie = p.ok
-    ? `<div class="note ok">${glifo("check")}<div><b>Requisitos completos.</b> ${sol.listo ? `Ya avisaste el ${esc(fmtFecha(sol.listoFecha || hoyISO()))}: todo está listo para usar el sistema.` : "Avisa para que se pueda implementar el sistema en tu ocasión."}${sol.listo ? "" : `<div style="margin-top:10px"><button class="btn sm" data-act="chk-avisar" data-id="${esc(sol.id)}">Avisar que ya cumplo</button></div>`}</div></div>`
+    ? `<div class="note ok">${glifo("check")}<div><b>Requisitos completos.</b> ${sol.listo ? `Lo marcaste como listo el ${esc(fmtFecha(sol.listoFecha || hoyISO()))}.` : "Márcalo como listo y menciónalo en tu oficio."}${sol.listo ? "" : `<div style="margin-top:10px"><button class="btn sm" data-act="chk-avisar" data-id="${esc(sol.id)}">Marcar como listo</button></div>`}</div></div>`
     : `<div class="note warn">${glifo("warn")}<div>Faltan ${p.t - p.h} ${plural(p.t - p.h, "requisito", "requisitos")} por cumplir antes de implementar el sistema.</div></div>`;
   return `<div class="chkl"><div class="chkl-h"><b>Lista de verificación de requisitos</b><span class="badge ${p.ok ? "ok" : "warn"}">${p.h}/${p.t}</span></div><div class="bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
     ${grupo("_base", "Generales", baseDe(sol))}${sol.sistemas.map((si) => grupo(si.id, si.nombre, propiosDe(si))).join("")}${p.t === 0 ? '<p class="muted" style="font-size:14px">Estos sistemas no tienen requisitos registrados.</p>' : ""}${pie}</div>`;
@@ -3076,12 +3068,12 @@ function vSesionRequerida(titulo, sub, texto) {
 }
 function vSolicitudes() {
   const lista = misSols();
-  const est = { enviada: ["ok", "Enviada"], pendiente: ["warn", "Falta enviar el correo"], guardada: ["", "Guardada en este dispositivo"] };
+  const est = { enviada: ["ok", "Registrada"], pendiente: ["", "Guardada en este dispositivo"], guardada: ["", "Guardada en este dispositivo"] };
   return `${cabecera("Mis solicitudes", "Historial de las solicitudes que hiciste desde este dispositivo.")}
     <div class="sp"></div>
     ${lista.length ? lista.map((sol) => { const [cl, tx] = est[sol.estado] || ["", sol.estado]; return `<article class="solcard"><header><div><b style="font-size:17px">${esc(sol.sistemas.map((s) => s.nombre).join(", "))}</b><div class="muted" style="font-size:14px">${esc(sol.datos.dependencia)} · ${esc(fmtFecha(sol.fecha))}</div></div><span class="badge ${cl}">${esc(tx)}</span></header>
       <div class="muted" style="font-size:14px">Folio <span class="folio" style="font-size:13px;padding:2px 8px">${esc(sol.folio)}</span>${sol.listo ? ' <span class="badge ok">Listo para implementar</span>' : ""}</div>${vChecklist(sol)}
-      <div class="acts">${sol.estado === "pendiente" ? `<a class="btn sm" href="${esc(mailtoSol(sol))}">${glifo("correo")}Abrir correo</a>` : ""}<button class="btn sm sec" data-act="copiar-sol" data-id="${esc(sol.id)}">${glifo("copy")}Copiar mensaje</button>${sol.estado !== "enviada" ? `<button class="btn sm sec" data-act="marcar-enviada" data-id="${esc(sol.id)}">Marcar como enviada</button>` : ""}<button class="btn sm danger" data-act="del-sol" data-id="${esc(sol.id)}">${glifo("trash")}Eliminar</button></div></article>`; }).join("")
+      <div class="acts"><button class="btn sm sec" data-act="copiar" data-v="${esc(sol.folio)}">${glifo("copy")}Copiar folio</button><button class="btn sm sec" data-act="copiar-sol" data-id="${esc(sol.id)}">${glifo("copy")}Copiar datos</button><button class="btn sm danger" data-act="del-sol" data-id="${esc(sol.id)}">${glifo("trash")}Eliminar</button></div></article>`; }).join("")
       : vacio("Todavía no has enviado solicitudes", "Cuando solicites un sistema aparecerá aquí con su folio.", `<a class="btn" href="#/sistemas">Explorar sistemas</a>`)}
     ${lista.length ? `<p class="muted" style="font-size:13.5px;margin-top:6px">Este historial se guarda solo en este navegador. Las solicitudes llegan al correo de ${esc(cfg().organizacion)}.</p>` : ""}`;
 }
@@ -3107,7 +3099,8 @@ async function hashPin(p) {
 function bannerAdmin() {
   let h = "";
   if (S.memoria) h += `<div class="note warn">${glifo("warn")}<div>Este navegador no permite guardar datos (por ejemplo, ventana privada). Tus cambios se perderán al cerrar la página.</div></div>`;
-  if (S.cat.editado) h += `<div class="note warn">${glifo("warn")}<div><b>Tienes cambios sin publicar.</b> Solo tú los ves en este navegador. Para que los vean todas las dependencias, publícalos siguiendo la guía.${S.super ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm" data-act="como-publicar">Cómo publicar</button></div>` : '<div style="margin-top:6px">Avisa al superadministrador para que los publique.</div>'}</div></div>`;
+  if (S.cat.editado && SB) h += `<div class="note warn">${glifo("warn")}<div><b>Publicando tus cambios…</b> Se publican solos para todas las dependencias; no necesitas subir ningún archivo.<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm" data-act="publicar-ahora">Publicar ahora</button></div></div></div>`;
+  else if (S.cat.editado) h += `<div class="note warn">${glifo("warn")}<div><b>Tienes cambios sin publicar.</b> Solo tú los ves en este navegador. Para que los vean todas las dependencias, publícalos siguiendo la guía.${S.super ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm" data-act="como-publicar">Cómo publicar</button></div>` : '<div style="margin-top:6px">Avisa al superadministrador para que los publique.</div>'}</div></div>`;
   if (S.cat.sistemas.some((s) => s.ejemplo)) h += `<div class="note info">${glifo("info")}<div>Estás viendo sistemas de ejemplo. Cuando tengas los tuyos, puedes quitarlos${S.super ? ' todos de una vez.<div style="margin-top:10px"><button class="btn sm sec" data-act="quitar-ejemplos">Eliminar sistemas de ejemplo</button></div>' : ". Puedes editarlos o eliminarlos uno por uno."}</div></div>`;
   return h ? `<section class="grp avisos"><h2>Avisos</h2><p class="hint">Información sobre el estado del catálogo.</p>${h}</section>` : "";
 }
@@ -3157,10 +3150,31 @@ function vAdminCategorias() {
   <div class="cat-list">${S.cat.categorias.map(tarjeta).join("")}</div>`;
 }
 
+
+/* ---- Vista previa en vivo de la apariencia (tema + color) ---- */
+const apModoOscuro = (c) => { const d = !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches); const t = (c && c.tema) || "auto"; return t === "oscuro" || (t !== "claro" && d); };
+function apPreview(c) {
+  c = c || cfg();
+  const osc = apModoOscuro(c), t = c.tema || "auto", col = COLORES[c.acento] || COLORES.azul, hex = osc ? col[0] : col[1];
+  const nom = osc ? "oscuro" : "claro";
+  const msg = t === "auto" ? `Automático: tu dispositivo está en modo <b>${nom}</b>. La vista previa cambia sola cuando el dispositivo cambia de apariencia.` : `Modo <b>${nom}</b> fijo para todas las personas.`;
+  return `<div id="ap-prev" class="apv-wrap" aria-live="polite"><div class="apv-head"><span class="apv-pill">${glifo(osc ? "estrella" : "globo")}Vista previa · modo ${nom}</span><span class="apv-msg">${msg}</span></div>
+    <div class="apv ${osc ? "osc" : ""}" style="--ac:${hex}" role="img" aria-label="Vista previa del catálogo en modo ${nom}">
+      <div class="apv-side"><div class="apv-brand"><i></i><b>Catálogo</b></div><span class="apv-nav on">Descubrir</span><span class="apv-nav">Sistemas</span><span class="apv-nav">Mis solicitudes</span><span class="apv-nav">Categorías</span></div>
+      <div class="apv-main"><div class="apv-top"><b>Descubrir</b><span class="apv-search">Buscar</span></div>
+        <div class="apv-hero"><span class="apv-tag">${glifo("app")}Sistema</span><b>Sistema de Votaciones</b><small>Cada voto cuenta</small><span class="apv-btn">Solicitar</span></div>
+        <div class="apv-rows">
+          <div class="apv-row"><i style="background:${hex}"></i><span><b>Portal CHIHUAHUA</b><small><em class="w">${glifo("globo")}Portal / Sitio web</em></small></span><span class="apv-get">Solicitar</span></div>
+          <div class="apv-row"><i style="background:${hex};opacity:.7"></i><span><b>Encuestas Interactivas</b><small><em class="s">${glifo("app")}Sistema</em></small></span><span class="apv-get">Solicitar</span></div>
+        </div></div></div></div>`;
+}
+function apRefrescar() { const el = document.getElementById("ap-prev"); if (el) el.outerHTML = apPreview(S.cfgDraft || cfg()); }
+if (window.matchMedia) { try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", apRefrescar); } catch (e) { /* navegador antiguo */ } }
+
 function vAdminConfig(sec) {
   if (!S.cfgDraft) S.cfgDraft = clone(cfg());
   const c = S.cfgDraft;
-  const SECS = [["general", "General", "building"], ["solicitudes", "Solicitudes", "correo"], ["formulario", "Formulario y dependencias", "building"], ["legal", "Privacidad y términos", "escudo"], ["apariencia", "Apariencia", "estrella"], ["seguridad", "Seguridad", "escudo"], ["datos", "Datos y publicación", "nube"]];
+  const SECS = [["general", "General", "building"], ["solicitudes", "Solicitudes", "correo"], ["formulario", "Formulario y dependencias", "building"], ["apariencia", "Apariencia", "estrella"], ["seguridad", "Seguridad", "escudo"], ["datos", "Datos y publicación", "nube"]];
   if (!SECS.some((x) => x[0] === sec)) sec = "general";
   const f = (k, label, o = {}) => `<div class="field ${o.full ? "full" : ""}"><label for="c-${k}">${label}</label><input id="c-${k}" type="${o.tipo || "text"}" data-cfg="${k}" value="${esc(c[k] || "")}" placeholder="${esc(o.ph || "")}" autocomplete="off"><span class="muted" style="font-size:12.5px">${o.hint || ""}</span></div>`;
   const ta = (k, label, hint = "", h = 80) => `<div class="field full"><label for="c-${k}">${label}</label><textarea id="c-${k}" data-cfg="${k}" style="min-height:${h}px">${esc(c[k] || "")}</textarea><span class="muted" style="font-size:12.5px">${hint}</span></div>`;
@@ -3170,10 +3184,9 @@ function vAdminConfig(sec) {
   let panel = "";
   if (sec === "general") {
     panel = `<section class="grp"><h2>Estado del catálogo</h2><p class="hint">Revisión rápida de lo que falta para que el catálogo funcione completo.</p><div class="card">
-      ${g.correoDestino ? item("ok", "Correo de solicitudes", esc(g.correoDestino)) : item("warn", "Correo de solicitudes", "Falta definir a dónde llegan las solicitudes.", `<a class="btn sm sec" href="#/admin/config/solicitudes">Configurar</a>`)}
-      ${g.endpoint ? item("ok", "Envío automático", "Activo: las solicitudes se envían sin abrir el correo.") : item("off", "Envío automático", "Opcional. Sin él, el solicitante envía el correo desde su dispositivo.")}
+      ${g.correoOficio ? item("ok", "Correo para el oficio", esc(g.correoOficio)) : item("warn", "Correo para el oficio", "Aún no se define: los solicitantes verán «por confirmar».", `<a class="btn sm sec" href="#/admin/config/solicitudes">Configurar</a>`)}
       ${item(S.cat.usuarios.some((x) => rolDe(x.rol) === "superadmin" && x.estado === "activo") ? "ok" : "warn", "Usuarios y accesos", `${S.cat.usuarios.length} ${plural(S.cat.usuarios.length, "usuario", "usuarios")} con acceso (correo y contraseña).`, `<a class="btn sm sec" href="#/admin/usuarios">Administrar</a>`)}
-      ${S.pub ? item(S.cat.editado ? "warn" : "ok", "Catálogo publicado", S.cat.editado ? "Tienes cambios locales sin publicar." : "La versión publicada está al día.", S.cat.editado ? `<a class="btn sm sec" href="#/admin/config/datos">Publicar</a>` : "") : item("warn", "Catálogo publicado", "Aún no hay archivo catalogo.json junto a index.html.", `<a class="btn sm sec" href="#/admin/config/datos">Cómo publicar</a>`)}
+      ${SB ? item(S.cat.editado ? "warn" : "ok", "Publicación automática", S.cat.editado ? "Hay cambios por publicar; se envían solos en unos segundos." : "Conectado: los cambios se publican solos, sin subir catalogo.json.", S.cat.editado ? `<button class="btn sm sec" data-act="publicar-ahora">Publicar ahora</button>` : "") : S.pub ? item(S.cat.editado ? "warn" : "ok", "Catálogo publicado", S.cat.editado ? "Tienes cambios locales sin publicar." : "La versión publicada está al día.", S.cat.editado ? `<a class="btn sm sec" href="#/admin/config/datos">Publicar</a>` : "") : item("warn", "Catálogo publicado", "Aún no hay archivo catalogo.json junto a index.html.", `<a class="btn sm sec" href="#/admin/config/datos">Cómo publicar</a>`)}
       ${ej ? item("warn", "Sistemas de ejemplo", `${ej} ${plural(ej, "sistema de ejemplo", "sistemas de ejemplo")} visibles para las dependencias.`, `<a class="btn sm sec" href="#/admin/config/datos">Quitar</a>`) : item("ok", "Contenido propio", "No hay sistemas de ejemplo.")}
     </div></section>
     <section class="grp"><h2>Identidad</h2><div class="card"><div class="fields">
@@ -3191,17 +3204,14 @@ function vAdminConfig(sec) {
     </div></div></section>` + savebar;
   } else if (sec === "solicitudes") {
     const pasos = pasosSigue(c).map(([t, d], i) => `<li><span class="n">${i + 1}</span><div><b>${esc(t)}</b><span>${esc(d)}</span></div></li>`).join("");
-    panel = `<section class="grp"><h2>Recepción de solicitudes</h2><p class="hint">Define a dónde llegan las solicitudes de las dependencias y cómo se envían.</p><div class="card"><div class="fields">
+    panel = `<section class="grp"><h2>Recepción de solicitudes</h2><p class="hint">Las solicitudes solo generan un folio. Define el correo al que cada persona enviará su oficio.</p><div class="card"><div class="fields">
       ${f("correoAdmin", "Correo del administrador (solicitudes de usuario y recuperación)", { tipo: "email", ph: "admin@tudependencia.gob.mx", full: true, hint: "Aquí llegan las solicitudes de nuevos usuarios y de recuperación de contraseña." })}
-      ${f("correoDestino", "Correo que recibe las solicitudes de sistemas", { tipo: "email", ph: "solicitudes@tudependencia.gob.mx", full: true, hint: "Al enviar, se abre el correo del solicitante con el mensaje ya redactado hacia esta dirección." })}
-      ${f("endpoint", "Envío automático (opcional)", { tipo: "url", ph: "https://formspree.io/f/xxxxxxx", full: true, hint: "Si pegas la URL de un servicio de formularios (Formspree, Apps Script…), la solicitud se envía sin que el solicitante abra su correo." })}
-      <div class="field full"><div><button type="button" class="btn sec sm" data-act="probar-correo">${glifo("correo")}Enviar correo de prueba</button></div></div>
+      ${f("correoOficio", "Correo al que se envía el oficio", { tipo: "email", ph: "oficios@tudependencia.gob.mx", full: true, hint: "Se muestra al solicitante junto a su folio. Mientras esté vacío verá «por confirmar»." })}
     </div></div></section>
     <section class="grp"><h2>Seguimiento</h2><p class="hint">Estos textos aparecen en «¿Qué sigue?» cuando alguien llena una solicitud.</p><div class="card"><div class="fields">
       ${f("tiempoRespuesta", "Tiempo de respuesta", { ph: "3 días hábiles", hint: "Ej. «2 días hábiles», «una semana»." })}
       ${ta("reunion", "Qué pasa después de la revisión", "Describe el siguiente paso con la dependencia (reunión, capacitación, accesos…).", 70)}
       ${ta("requisitosBase", "Requisitos generales para todos los sistemas (uno por línea)", "Aparecen en la lista de verificación de cada solicitud, antes de los requisitos propios de cada sistema.", 130)}
-      ${ta("privacidad", "Aviso que acepta el solicitante", "", 80)}
     </div></div></section>
     <section class="grp"><h2>Vista previa de «¿Qué sigue?»</h2><p class="hint">Así lo verá el solicitante. Se actualiza al guardar.</p><div class="card"><ol class="timeline">${pasos}</ol></div></section>` + savebar;
   } else if (sec === "formulario") {
@@ -3209,7 +3219,8 @@ function vAdminConfig(sec) {
   } else if (sec === "legal") {
     panel = vCfgLegal(ta, savebar);
   } else if (sec === "apariencia") {
-    panel = `<section class="grp"><h2>Tema</h2><p class="hint">Elige cómo se ve el catálogo para todas las personas que lo abren.</p><div class="card"><div class="opt-row" role="group" aria-label="Tema">
+    panel = `<section class="grp"><h2>Vista previa</h2><p class="hint">Así se verá el catálogo con lo que elijas abajo. Se actualiza al instante.</p><div class="card">${apPreview(c)}</div></section>
+    <section class="grp"><h2>Tema</h2><p class="hint">Elige cómo se ve el catálogo para todas las personas que lo abren.</p><div class="card"><div class="opt-row" role="group" aria-label="Tema">
       ${[["auto", "Automático"], ["claro", "Claro"], ["oscuro", "Oscuro"]].map(([v, l]) => `<button type="button" data-act="cfg-tema" data-v="${v}" aria-pressed="${(c.tema || "auto") === v}">${l}</button>`).join("")}</div>
       <p class="cfg-note">«Automático» sigue el modo del dispositivo.</p></div></section>
     <section class="grp"><h2>Color de acento</h2><p class="hint">Se usa en botones, enlaces y la barra lateral.</p><div class="card">
@@ -3234,13 +3245,12 @@ function vAdminConfig(sec) {
 }
 function pasosSigue(c) {
   c = c || cfg();
-  const auto = !!(c.endpoint || "").trim(), dest = (c.correoDestino || "").trim();
+  const dest = (c.correoOficio || "").trim();
   return [
-    ["Envías el formulario", "Se genera un folio con el formato SOL-AAAAMMDD-XXXX y la solicitud queda guardada en «Mis solicitudes» de este dispositivo."],
-    auto ? ["Llega al área responsable", "Tu solicitud se envía automáticamente; no tienes que hacer nada más."]
-         : ["Llega al área responsable", dest ? `Se envía automáticamente a ${dest}. Si no se pudiera, se abre tu aplicación de correo con el mensaje ya redactado: solo presiona «Enviar».` : "Se envía automáticamente al área responsable. Si no se pudiera, se abre tu aplicación de correo con el mensaje ya redactado."],
-    ["Revisamos tu solicitud", `Validamos disponibilidad y requisitos. Te respondemos en ${(c.tiempoRespuesta || "").trim() || "unos días hábiles"} al correo que registraste.`],
-    ["Siguiente paso", (c.reunion || "").trim() || "Coordinamos una reunión con tu dependencia para definir accesos y fechas de uso."]
+    ["Envías el formulario", "Se genera tu folio con el formato SOL-AAAAMMDD-XXXX y la solicitud queda guardada en «Mis solicitudes» de este dispositivo."],
+    ["Elaboras tu oficio", "Redacta un oficio de solicitud y cita tu folio, el sistema que solicitas y los datos de tu dependencia."],
+    ["Lo envías por correo", dest ? `Envía tu oficio a ${dest}.` : "El correo al que debes enviar el oficio se te indicará en cuanto esté definido."],
+    ["Siguiente paso", (c.reunion || "").trim() || "Revisamos tu oficio y coordinamos una reunión con tu dependencia para definir accesos y fechas de uso."]
   ];
 }
 
@@ -3283,7 +3293,7 @@ function vEditor(id) {
         <div class="tagedit">${s.usos.map((u) => `<span class="chip txt">${esc(u)}<button type="button" data-act="tag-del" data-t="${esc(u)}" aria-label="Quitar ${esc(u)}">${glifo("x")}</button></span>`).join("")}</div>
         <div style="display:flex;gap:8px;margin-top:8px"><input id="tag-in" type="text" placeholder="Ej. Eventos, Reuniones, Trámites" aria-label="Nueva etiqueta" autocomplete="off"><button type="button" class="btn sec sm" data-act="tag-add">${glifo("plus")}Agregar</button></div>
         ${sinUsar.length ? `<div class="selchips" style="margin-top:8px">${sinUsar.slice(0, 8).map((u) => `<button type="button" class="chip txt" data-act="tag-add" data-t="${esc(u)}" style="font-size:13px;padding:5px 12px">+ ${esc(u)}</button>`).join("")}</div>` : ""}</div>
-      <div class="field"><label for="e-tipoSis">Tipo</label><select class="select" id="e-tipoSis" data-path="tipoSis"><option value="" ${!s.tipoSis ? "selected" : ""}>Automático (${esc(TIPOS[tipoDe(Object.assign({}, s, { tipoSis: "" }))])})</option><option value="sistema" ${s.tipoSis === "sistema" ? "selected" : ""}>Sistema</option><option value="web" ${s.tipoSis === "web" ? "selected" : ""}>Página web / Portal</option></select><span class="muted" style="font-size:12.5px">Es lo que el visitante ve como «Sistema» o «Página web / Portal».</span></div>
+      <div class="field"><label for="e-tipoSis">Tipo</label><select class="select" id="e-tipoSis" data-path="tipoSis"><option value="" ${!s.tipoSis ? "selected" : ""}>Automático (${esc(TIPOS[tipoDe(Object.assign({}, s, { tipoSis: "" }))])})</option><option value="sistema" ${s.tipoSis === "sistema" ? "selected" : ""}>Sistema</option><option value="web" ${s.tipoSis === "web" ? "selected" : ""}>Portal / Sitio web</option></select><span class="muted" style="font-size:12.5px">Es lo que el visitante ve como «Sistema» o «Portal / Sitio web».</span></div>
       <div class="field"><label for="e-estado">Disponibilidad</label><select class="select" id="e-estado" data-path="estado">${optSel(ESTADOS, s.estado)}</select></div>
       ${inp("plataforma", "Plataforma", { ph: "Ej. Web · Tablets · Teléfonos" })}
       <div class="field full"><span class="lbl">Ligado con (opcional)</span><div class="selchips" role="group">${S.cat.sistemas.filter((x) => x.id !== s.id).map((x) => `<button type="button" class="chip txt" data-act="e-lig" data-id="${esc(x.id)}" aria-pressed="${(s.ligados || []).includes(x.id)}">${esc(x.nombre)} · ${esc(tipoNom(x))}</button>`).join("") || '<span class="muted">Aún no hay otros elementos.</span>'}</div><span class="muted" style="font-size:12.5px">Los que marques aparecen en la ficha como «Ligado con» (y en la ficha del otro también).</span></div>
@@ -3411,28 +3421,6 @@ async function subirImagenRapida(kind, id, f) {
 }
 
 /* ---------- Modo de pruebas (QA) ---------- */
-const QA_MANUAL = [
-  ["q1", "Entrar como visitante: ver el catálogo, buscar y solicitar un sistema"],
-  ["q2", "El visitante no puede abrir Administración"],
-  ["q3", "Solicitar acceso: la solicitud llega al administrador (fuera del modo pruebas)"],
-  ["q4", "Un código incorrecto o vencido es rechazado"],
-  ["q5", "Crear un colaborador, entrar con su contraseña temporal y cambiarla"],
-  ["q6", "El colaborador edita sistemas y categorías, pero no ve Usuarios ni Configuración"],
-  ["q7", "Renombrar, editar y eliminar una categoría"],
-  ["q8", "Renombrar y eliminar un sistema"],
-  ["q9", "El botón «Abrir sistema» abre el enlace correcto"],
-  ["q10", "En «Solicitar sistema», «Tus datos» aparece antes de «Te podría interesar también»"],
-  ["q11", "Enviar una solicitud: llega el correo con su folio"],
-  ["q12", "Lista de verificación: marcar todo y «Avisar que ya cumplo» llega por correo"],
-  ["q13", "Probar en celular y en computadora (claro y oscuro)"],
-  ["q14", "Descargar el catálogo, publicarlo como catalogo.json y confirmar que carga"]
-];
-const qaLeerManual = () => { try { return JSON.parse(localStorage.getItem("catalogo-qa-manual") || "{}"); } catch (e) { return {}; } };
-function marcarQA(t) {
-  const o = qaLeerManual(); if (t.checked) o[t.dataset.qa] = true; else delete o[t.dataset.qa];
-  try { localStorage.setItem("catalogo-qa-manual", JSON.stringify(o)); } catch (e) {}
-  keep(() => render(false));
-}
 const qaBanner = () => `<div class="note warn" style="margin-bottom:14px">${glifo("warn")}<div><b>MODO PRUEBAS.</b> Nada de lo que hagas se guarda y los correos solo se simulan.<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><a class="btn sm sec" href="#/admin/qa">Panel QA</a><button class="btn sm danger" data-act="qa-salir">Salir y descartar</button></div></div></div>`;
 async function activarQA() {
   if (S.qa) return;
@@ -3503,7 +3491,7 @@ async function correrQA() {
   await t("Configuración", () => {
     const c = cfg();
     add(correoOk(c.correoAdmin) ? "ok" : "ok", "Registros de usuarios", "Llegan como notificaciones dentro del sistema (campana); no requieren correo.");
-    add(correoOk(c.correoDestino) ? "ok" : "warn", "Correo de solicitudes", correoOk(c.correoDestino) ? c.correoDestino : "Sin definir: se usará el del administrador.");
+    add(correoOk(c.correoOficio) ? "ok" : "warn", "Correo para el oficio", correoOk(c.correoOficio) ? c.correoOficio : "Sin definir: los solicitantes verán «por confirmar».");
     add(baseReqs().length ? "ok" : "warn", "Requisitos generales", baseReqs().length ? `${baseReqs().length} requisitos.` : "No hay requisitos generales.");
   });
   await t("Solicitud simulada", () => {
@@ -3519,11 +3507,10 @@ async function correrQA() {
     S.cat.categorias.forEach((k) => prueba("Categoría " + k.nombre, () => vLista("categoria", k.id)));
     add(fallas.length ? "bad" : "ok", "Pantallas sin errores", fallas.length ? "Fallan: " + fallas.join(", ") : `${5 + S.cat.sistemas.length + S.cat.categorias.length} pantallas generadas correctamente.`);
   });
-  add(S.qa ? "ok" : "warn", "Envío de correos", S.qa ? "Simulado en modo pruebas (ver «Correos simulados»)." : "No probado: la revisión no envía correos reales. Pruébalo con el checklist manual.");
+  add(S.qa ? "ok" : "warn", "Envío de correos", S.qa ? "Simulado en modo pruebas (ver «Correos simulados»)." : "No probado: la revisión no envía correos reales. Pruébalo enviando una solicitud real.");
   S.qaRes = { fecha: new Date().toLocaleString("es-MX"), items: R }; render(false);
 }
 function vAdminQA() {
-  const man = qaLeerManual(), hechos = QA_MANUAL.filter(([id]) => man[id]).length, pct = Math.round((hechos / QA_MANUAL.length) * 100);
   const item = (e, t, d) => `<div class="chk-item"><span class="dot ${e}">${glifo(e === "ok" ? "check" : "warn")}</span><div class="t"><b>${esc(t)}</b><small>${esc(d)}</small></div></div>`;
   const R = S.qaRes, n = (e) => (R ? R.items.filter((x) => x.estado === e).length : 0);
   const prueba = S.cat.sistemas.filter((s) => s.prueba).length;
@@ -3536,11 +3523,7 @@ function vAdminQA() {
     <button class="btn sm" data-act="qa-correr">Ejecutar revisión</button>
     ${R ? `<p class="muted" style="margin:12px 0 4px;font-size:14px">${esc(R.fecha)} · <b>${n("ok")}</b> bien · <b>${n("warn")}</b> por revisar · <b>${n("bad")}</b> con falla</p>${R.items.map((x) => item(x.estado, x.titulo, x.detalle)).join("")}` : ""}</div></section>
   <section class="grp"><h2>Correos simulados</h2><p class="hint">Lo que se habría enviado durante esta sesión de pruebas.</p><div class="card">
-    ${S.qaLog.length ? `<div class="qa-log">${S.qaLog.map((m) => `<details><summary><b>${esc(m.asunto)}</b> <span class="muted">→ ${esc(m.para)} · ${esc(m.fecha)}</span></summary><pre>${esc(Object.entries(m.campos).map(([k, v]) => k + ": " + v).join("\n"))}</pre></details>`).join("")}</div>` : `<p class="muted">${S.qa ? "Aún no se ha simulado ningún correo. Envía una solicitud o avisa que cumples requisitos." : "Activa el modo pruebas para ver aquí los correos simulados."}</p>`}</div></section>
-  <section class="grp"><h2>Checklist de QA</h2><p class="hint">Pasos para revisar a mano durante la prueba piloto. Se guardan solo en este navegador.</p><div class="card">
-    <div class="chkl-h"><b>Avance</b><span class="badge ${hechos === QA_MANUAL.length ? "ok" : "warn"}">${hechos}/${QA_MANUAL.length}</span></div><div class="bar"><i style="width:${pct}%"></i></div>
-    <div class="chkgrp">${QA_MANUAL.map(([id, tx]) => `<label class="chk"><input type="checkbox" data-qa="${id}" ${man[id] ? "checked" : ""}><span>${esc(tx)}</span></label>`).join("")}</div>
-    ${hechos ? `<button class="btn ghost sm" data-act="qa-limpiar-manual">Desmarcar todo</button>` : ""}</div></section>`;
+    ${S.qaLog.length ? `<div class="qa-log">${S.qaLog.map((m) => `<details><summary><b>${esc(m.asunto)}</b> <span class="muted">→ ${esc(m.para)} · ${esc(m.fecha)}</span></summary><pre>${esc(Object.entries(m.campos).map(([k, v]) => k + ": " + v).join("\n"))}</pre></details>`).join("")}</div>` : `<p class="muted">${S.qa ? "Aún no se ha simulado ningún correo. Envía una solicitud o avisa que cumples requisitos." : "Activa el modo pruebas para ver aquí los correos simulados."}</p>`}</div></section>`;
 }
 
 /* ---------- Renombrar sistema y editar categorías ---------- */
@@ -3653,7 +3636,7 @@ const ACT = {
   },
   contacto(t) {
     const s = byId(t.dataset.id); if (!s) return;
-    const prob = !!t.dataset.problema, c = cfg(), correo = s.contacto.correo || c.correoDestino, tel = s.contacto.telefono || c.telefono;
+    const prob = !!t.dataset.problema, c = cfg(), correo = s.contacto.correo, tel = s.contacto.telefono || c.telefono;
     const asunto = (prob ? "Problema con " : "Consulta sobre ") + s.nombre;
     modal({
       titulo: prob ? "Reportar un problema" : "Contactar al área",
@@ -3669,7 +3652,7 @@ const ACT = {
   /* solicitud */
   "quitar-sel"(t) { F.sel = F.sel.filter((x) => x !== t.dataset.id); keep(() => render(false)); },
   "add-sel"(t) { if (!F.sel.includes(t.dataset.id)) F.sel.push(t.dataset.id); keep(() => render(false)); },
-  "copiar-sol"(t) { const s = S.sols.find((x) => x.id === t.dataset.id); if (s) copiar(`Para: ${cfg().correoDestino || "(sin correo configurado)"}\nAsunto: ${asuntoSol(s)}\n\n${armarMensaje(s)}`, "Mensaje copiado"); },
+  "copiar-sol"(t) { const s = S.sols.find((x) => x.id === t.dataset.id); if (s) copiar(`Folio: ${s.folio}\n\n${armarMensaje(s)}`, "Datos copiados"); },
   async "marcar-enviada"(t) { const s = S.sols.find((x) => x.id === t.dataset.id); if (!s) return; s.estado = "enviada"; s.canal = "correo"; await guardarSolicitudes(); toast("Marcada como enviada"); keep(() => render(false)); },
   async "del-sol"(t) { if (!(await confirmar({ titulo: "Eliminar solicitud", texto: "Se quitará del historial de este dispositivo. No cancela lo que ya hayas enviado.", si: "Eliminar", peligro: true }))) return; S.sols = S.sols.filter((x) => x.id !== t.dataset.id); await guardarSolicitudes(); keep(() => render(false)); },
 
@@ -3687,8 +3670,8 @@ const ACT = {
   "cfg-acento"(t) { if (S.cfgDraft) { S.cfgDraft.acento = t.dataset.c; keep(() => render(false)); } },
   "probar-correo"() {
     const d = S.cfgDraft || cfg();
-    if (!correoOk(d.correoDestino)) return toast("Escribe primero un correo de destino válido.");
-    window.open(gmailCompose(d.correoDestino, "Prueba del catálogo de sistemas", "Mensaje de prueba enviado desde la configuración del catálogo."), "_blank", "noopener");
+    if (!correoOk(d.correoOficio)) return toast("Escribe primero un correo válido.");
+    window.open(gmailCompose(d.correoOficio, "Prueba del catálogo de sistemas", "Mensaje de prueba enviado desde la configuración del catálogo."), "_blank", "noopener");
   },
   /* administración */
   "admin-entry"() { go("admin"); },
@@ -3778,9 +3761,8 @@ const ACT = {
   },
   async "guardar-cfg"() {
     const c = S.cfgDraft; if (!c) return;
-    if (c.correoDestino && !correoOk(c.correoDestino)) return toast("El correo de destino no es válido.");
-    if (c.endpoint && !urlOk(c.endpoint)) return toast("La URL de envío automático debe empezar con https://");
-    Object.assign(S.cat.config, c, { correoDestino: c.correoDestino.trim(), endpoint: c.endpoint.trim(), nombre: c.nombre.trim() || CONFIG_BASE.nombre, organizacion: c.organizacion.trim() || CONFIG_BASE.organizacion });
+    if (c.correoOficio && !correoOk(c.correoOficio)) return toast("El correo para el oficio no es válido.");
+    Object.assign(S.cat.config, c, { correoOficio: (c.correoOficio || "").trim(), correoDestino: "", endpoint: "", nombre: c.nombre.trim() || CONFIG_BASE.nombre, organizacion: c.organizacion.trim() || CONFIG_BASE.organizacion });
     S.cat.config.tiempoRespuesta = (S.cat.config.tiempoRespuesta || "").trim(); S.cat.config.reunion = (S.cat.config.reunion || "").trim(); S.cat.config.horario = (S.cat.config.horario || "").trim();
     guardarCatalogo(); S.cfgDraft = null; aplicarApariencia(); toast("Configuración guardada"); render(false);
   },
@@ -3794,6 +3776,15 @@ const ACT = {
     toast("Catálogo descargado. Súbelo junto a index.html.");
   },
   "como-publicar"() {
+    if (SB) return modal({
+      titulo: "Publicación automática", wide: true,
+      body: `<p class="muted">Este catálogo está conectado a la base de datos. Cada cambio que haces con tu sesión de administrador se publica solo para todas las dependencias, en unos segundos.</p>
+        <ol class="timeline"><li><span class="n">1</span><div><b>Edita con tu sesión iniciada</b><span>Sistemas, textos, imágenes, categorías o configuración.</span></div></li>
+        <li><span class="n">2</span><div><b>Espera el aviso</b><span>Aparece «Cambios publicados para todos». Si quieres forzarlo, usa «Publicar ahora».</span></div></li>
+        <li><span class="n">3</span><div><b>Listo</b><span>Quien abra o recargue la página verá la versión nueva. No hay que subir ningún archivo.</span></div></li></ol>
+        <div class="note info">${glifo("info")}<div>«Descargar catálogo» queda solo como copia de respaldo. Si publicaste un <b>${ARCHIVO_PUBLICADO}</b> antes, puedes borrarlo del sitio.</div></div>`,
+      pie: `<button class="btn sec" data-act="exportar">${glifo("download")}Descargar respaldo</button><button class="btn sec" data-act="publicar-ahora">Publicar ahora</button><button class="btn" data-act="cerrar-modal">Entendido</button>`
+    });
     modal({
       titulo: "Cómo publicar tus cambios", wide: true,
       body: `<p class="muted">Los cambios que haces aquí se guardan solo en este navegador. Para que todas las dependencias los vean:</p>
@@ -3804,6 +3795,7 @@ const ACT = {
       pie: `<button class="btn sec" data-act="exportar">${glifo("download")}Descargar catálogo</button><button class="btn" data-act="cerrar-modal">Entendido</button>`
     });
   },
+  async "publicar-ahora"() { if (!SB) return; if (!S.admin) return toast("Inicia sesión como administrador para publicar."); await sbPublicar(); if (!S.cat.editado) toast("Cambios publicados para todos"); render(false); },
   async "descartar-local"() {
     if (!(await confirmar({ titulo: "Descartar mis cambios", texto: "Se borrarán los cambios hechos en este navegador y se usará el catálogo publicado.", si: "Descartar", peligro: true }))) return;
     await IDB.del("catalogo"); S.cat = migrar(S.pub); S.cat.editado = false; S.drafts = {}; S.cfgDraft = null; revalidarSesion(); toast("Usando el catálogo publicado"); render(false);
@@ -3868,12 +3860,8 @@ const ACT = {
   async "chk-avisar"(t) {
     const sol = S.sols.find((x) => x.id === t.dataset.id); if (!sol) return;
     if (!progreso(sol).ok) return toast("Aún faltan requisitos por marcar.");
-    const c = cfg(), para = (c.correoDestino || c.correoAdmin || CORREO_SUPER).trim(), asunto = `Requisitos completos · ${sol.sistemas.map((s) => s.nombre).join(", ")} · ${sol.datos.dependencia} (${sol.folio})`, cuerpo = avisoListo(sol);
-    t.disabled = true; t.textContent = "Enviando…";
-    const ok = await enviarAvisoCorreo(para, asunto, { Folio: sol.folio, Dependencia: sol.datos.dependencia, Contacto: sol.datos.nombre, Correo: sol.datos.correo, Teléfono: sol.datos.telefono, Sistemas: sol.sistemas.map((s) => s.nombre).join(", "), Estado: "Requisitos completos: listo para implementar", Detalle: cuerpo });
     sol.listo = true; sol.listoFecha = hoyISO(); await guardarSolicitudes();
-    if (ok) toast("Aviso enviado. ¡Todo listo para usar el sistema!");
-    else { toast(avisoMailFallo()); setTimeout(() => { location.href = `mailto:${para}?subject=${enc(asunto)}&body=${enc(cuerpo)}`; }, 300); }
+    toast("Listo. Menciona en tu oficio que ya cumples los requisitos.");
     keep(() => render(false));
   },
   "qa-activar"() { activarQA(); },
@@ -3881,7 +3869,6 @@ const ACT = {
   "qa-datos"() { cargarDatosPrueba(); },
   "qa-reiniciar"() { restaurarQA(true); toast("Datos de prueba reiniciados"); render(false); },
   "qa-correr"() { correrQA(); },
-  "qa-limpiar-manual"() { try { localStorage.removeItem("catalogo-qa-manual"); } catch (e) {} keep(() => render(false)); },
   "ver-video"(t) { const s = byId(t.dataset.id); if (!s) return; abrirVideo(t.dataset.k === "dest" ? s.videoDestacado : (s.videos || [])[+t.dataset.i], s.nombre); },
   "e-ver-video"(t) { const dr = draftActual(); if (!dr) return; abrirVideo(t.dataset.k === "dest" ? dr.s.videoDestacado : (dr.s.videos || [])[+t.dataset.i], dr.s.nombre || "Video de muestra"); },
   "e-quitar-videodest"() { const dr = draftActual(); if (!dr) return; dr.s.videoDestacado = { url: "", data: "", nombre: "" }; dr.dirty = true; keep(() => render(false)); },
@@ -3919,7 +3906,7 @@ const ACT = {
 };
 
 const SOLO_SUPER = new Set(["notif-borrar", "notif-borrar-leidas", "notif-borrar-todas", "aviso-borrar-todos", "formato-todos", "aplicar-textos", "bandeja-estado", "bandeja-nota", "bandeja-borrar", "bandeja-archivar-canceladas", "bandeja-borrar-canceladas", "aviso-nuevo", "aviso-editar", "aviso-borrar", "notif-leer", "notif-todas", "notif-reset", "usr-super", "usr-gen", "logo-marca", "logo-color", "logo-forma", "usr-nuevo", "usr-reset", "usr-reset-ok", "usr-toggle", "usr-del", "guardar-cfg", "exportar", "descartar-local", "quitar-ejemplos", "probar-correo", "cfg-tema", "cfg-acento", "quitar-logo", "como-publicar", "qa-activar", "qa-salir", "qa-datos", "qa-reiniciar", "qa-correr", "qa-limpiar-manual", "dep-add", "dep-ren", "dep-del", "dep-reg", "dep-import"]);
-const QA_BLOQ = new Set(["exportar", "como-publicar", "descartar-local"]);
+const QA_BLOQ = new Set(["exportar", "como-publicar", "descartar-local", "publicar-ahora"]);
 const SOLO_GESTION = new Set(["toggle-pub", "mover", "duplicar", "del-sistema", "add-cat", "del-cat", "edit-cat", "ren-sis", "img-quitar", "e-guardar", "e-add", "e-del", "demo-media", "vid-add-url", "fmt", "desc-color-reset", "e-quitar-videodest"]);
 document.addEventListener("click", (e) => {
   const t = e.target.closest("[data-act]");
@@ -3964,7 +3951,6 @@ document.addEventListener("change", (e) => {
   else if (t.dataset.fmtSize !== undefined) { if (t.value) fmtAplicar("tam", t.value); t.value = ""; }
   else if (t.dataset.fmtColor !== undefined) fmtAplicar("color", t.value);
   else if (t.dataset.path === "videoDestacado.url") { const dr = draftActual(); if (dr) { if (t.value.trim()) { dr.s.videoDestacado.data = ""; dr.s.videoDestacado.nombre = ""; } keep(() => render(false)); } }
-  else if (t.dataset.qa) marcarQA(t);
   else if (t.dataset.usrRol) cambiarRolUsuario(t);
   else if (t.dataset.chk) marcarRequisito(t);
   else if (t.dataset.sel === "orden") { F2.orden = t.value; render(false); }
@@ -4021,7 +4007,7 @@ window.addEventListener("scroll", () => { const nb = $("#nb"); if (nb) nb.classL
 let SB = null;
 const conLimite = (p, ms, def) => { let t; return Promise.race([Promise.resolve(p).catch(() => def), new Promise((r) => { t = setTimeout(() => r(def), ms); })]).finally(() => clearTimeout(t)); };
 const cargarScript = (src, ms = 7000) => new Promise((ok, no) => { const s = document.createElement("script"); const t = setTimeout(() => { s.remove(); no(new Error("tiempo")); }, ms); s.src = src; s.onload = () => { clearTimeout(t); ok(); }; s.onerror = () => { clearTimeout(t); s.remove(); no(new Error("red")); }; document.head.appendChild(s); });
-const catPublico = () => { const o = JSON.parse(JSON.stringify(Object.assign({}, S.cat, { editado: false }))); delete o.usuarios; delete o.notificaciones; if (o.config) { delete o.config.pinHash; delete o.config.correoAdmin; } return o; };
+const catPublico = () => { const o = JSON.parse(JSON.stringify(Object.assign({}, S.cat, { editado: false }))); delete o.usuarios; delete o.notificaciones; if (o.config) { delete o.config.pinHash; delete o.config.correoAdmin; delete o.config.correoDestino; } return o; };
 async function sbIniciar() {
   if (!SB_ON) return;
   /* Si una red institucional bloquea o tarda con un servidor, se prueba el otro y, si ninguno responde, el catálogo se muestra igual. */
@@ -4676,20 +4662,21 @@ body{background:#fff!important;color:#172b34}
   --bg:#FFFFFF!important; --bg-soft:#F6F8FC!important; --bg-card:#FFFFFF!important; --bg-input:#FFFFFF!important;
   --label:#14233F!important; --label-2:#55657F!important; --label-3:#7A8AA3!important;
   --sep:#E3E9F3!important; --sep-strong:#CBD6E6!important;
-  --accent:#004EAA!important; --accent-2:#003F8A!important; --accent-ink:#FFFFFF!important;
-  --accent-soft:rgba(0,78,170,.09)!important; --pill:#EAF1FB!important; --pill-ink:#004EAA!important;
-  --glass:rgba(255,255,255,.94)!important; --sidebar:#FFFFFF!important; --sel:rgba(0,78,170,.07)!important;
+  --btn-ink:#FFFFFF;
+  --accent:var(--azul)!important; --accent-2:var(--azul-hover)!important; --accent-ink:var(--btn-ink)!important;
+  --accent-soft:color-mix(in srgb,var(--azul) 10%,transparent)!important; --pill:var(--azul-suave)!important; --pill-ink:var(--azul)!important;
+  --glass:rgba(255,255,255,.94)!important; --sidebar:#FFFFFF!important; --sel:color-mix(in srgb,var(--azul) 8%,transparent)!important;
   --shadow:0 1px 2px rgba(20,35,63,.04),0 10px 30px rgba(20,35,63,.07)!important;
   --ok:#1F7A4A!important; --warn:#8A5A00!important; --bad:#B3261E!important;
-  --pal-profundo:#14233F!important; --pal-apoyo:#003F8A!important; --pal-principal:#004EAA!important;
+  --pal-profundo:#14233F!important; --pal-apoyo:var(--azul-hover)!important; --pal-principal:var(--azul)!important;
   --pal-acento:#9568C6!important; --pal-texto:#14233F!important; --pal-borde:#E3E9F3!important;
 }
-html,body{background:#FFFFFF!important;color:var(--label)!important;overflow-x:hidden}
+html,body{background:var(--bg)!important;color:var(--label)!important;overflow-x:hidden}
 body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 @media(min-width:900px){body{padding-bottom:0}}
 
 /* ---- Barra lateral: blanca ---- */
-.sidebar{background:#FFFFFF!important;color:var(--label)!important;border-right:1px solid var(--sep)!important;box-shadow:none!important}
+.sidebar{background:var(--bg)!important;color:var(--label)!important;border-right:1px solid var(--sep)!important;box-shadow:none!important}
 .sidebar,.sidebar a,.sidebar .brand,.sidebar .brand b,.sidebar .sidenav-a,.sidebar button{color:var(--label)!important}
 .sidebar h6,.sidebar small,.sidebar .mode{color:var(--label-2)!important}
 .sidebar a:hover,.sidebar .sidenav-a:hover{background:var(--bg-soft)!important}
@@ -4702,32 +4689,32 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 
 /* ---- Encabezado de página: claro, azul → lila muy suave ---- */
 .pagehead,.hero,.discover-hero{
-  background:linear-gradient(120deg,#EAF1FB 0%,#F3EEFA 100%)!important;color:var(--label)!important;
+  background:linear-gradient(120deg,var(--azul-suave) 0%,var(--lila-suave) 100%)!important;color:var(--label)!important;
   border:1px solid var(--sep)!important;border-radius:20px!important;box-shadow:0 8px 24px -16px rgba(20,35,63,.25)!important}
 .pagehead *,.hero *,.discover-hero *{color:inherit}
 .pagehead .eyebrow,.pagehead small{color:var(--label-2)!important}
 .pagehead .large-title::before{background:linear-gradient(90deg,var(--azul),var(--lila))!important}
 .pagehead::after{background:radial-gradient(circle,rgba(149,104,198,.18),transparent 65%)!important}
-.avatar,.avatar.on,.avatar-i{background:linear-gradient(145deg,#3B82D6,#004EAA)!important;color:#fff!important;box-shadow:none!important}
+.avatar,.avatar.on,.avatar-i{background:linear-gradient(145deg,color-mix(in srgb,var(--azul) 78%,#fff),var(--azul))!important;color:var(--btn-ink)!important;box-shadow:none!important}
 
 /* ---- Barra de navegación: blanca ---- */
-.tabbar{background:rgba(255,255,255,.96)!important;border:0!important;border-top:1px solid var(--sep)!important;box-shadow:0 -8px 24px rgba(20,35,63,.06)!important}
+.tabbar{background:var(--bg)!important;border:0!important;border-top:1px solid var(--sep)!important;box-shadow:0 -8px 24px rgba(20,35,63,.06)!important}
 .tabbar::after{background:linear-gradient(180deg,var(--azul),transparent 70%)!important}
 .tabbar a:not(.rail-brand),.rail-admin{color:var(--label-2)!important}
 .tabbar a[aria-current="page"]{background:var(--azul-suave)!important;color:var(--azul)!important}
 .tabbar a:not(.rail-brand)::before{background:var(--azul)!important}
 .rail-admin.on{color:var(--azul)!important}
-.navbar.scrolled{background:rgba(255,255,255,.96)!important;color:var(--label)!important;border-bottom-color:var(--sep)!important;box-shadow:0 4px 18px rgba(20,35,63,.06)!important}
+.navbar.scrolled{background:color-mix(in srgb,var(--bg) 96%,transparent)!important;color:var(--label)!important;border-bottom-color:var(--sep)!important;box-shadow:0 4px 18px rgba(20,35,63,.06)!important}
 .navbar.scrolled a,.navbar.scrolled button{color:var(--azul)!important}
 :focus-visible{outline:3px solid var(--azul)!important;outline-offset:2px}
 
 /* ---- Botones ---- */
-.btn,.get.big{background:var(--azul)!important;color:#fff!important;border-color:var(--azul)!important}
+.btn,.get.big{background:var(--azul)!important;color:var(--btn-ink)!important;border-color:var(--azul)!important}
 .btn:hover,.get.big:hover{background:var(--azul-hover)!important;filter:none!important}
-.btn.sec,.navbar.scrolled .btn.sec{background:#fff!important;color:var(--azul)!important;border:1px solid var(--azul-borde)!important}
-.navbar.scrolled .btn{background:var(--azul)!important;color:#fff!important}
+.btn.sec,.navbar.scrolled .btn.sec{background:var(--bg-card)!important;color:var(--azul)!important;border:1px solid var(--azul-borde)!important}
+.navbar.scrolled .btn{background:var(--azul)!important;color:var(--btn-ink)!important}
 .get{background:var(--azul-suave)!important;color:var(--azul)!important;border-radius:999px!important;font-weight:700}
-.get.glass{background:var(--azul)!important;color:#fff!important;backdrop-filter:none!important}
+.get.glass{background:var(--azul)!important;color:var(--btn-ink)!important;backdrop-filter:none!important}
 
 /* ---- Iconos y puntos de color: degradados suaves de la paleta ---- */
 .ico{box-shadow:0 1px 3px rgba(20,35,63,.14)!important}
@@ -4735,15 +4722,15 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 
 /* ---- Tarjetas y chips ---- */
 .card,.system-card,.category-chip,.panel{box-shadow:0 2px 10px rgba(20,35,63,.06)!important}
-.chip{background:#fff!important;color:var(--label)!important;border:1px solid var(--sep)!important}
+.chip{background:var(--bg-card)!important;color:var(--label)!important;border:1px solid var(--sep)!important}
 .eyebrow{color:var(--azul)}
 .row{border-color:var(--sep)}
 .nbadge{background:var(--lila)!important;color:#fff!important}
 .tag{background:var(--lila-suave)!important;color:var(--lila-texto)!important}
 
 /* ---- Colecciones: pastel, texto oscuro ---- */
-.coll{background:linear-gradient(150deg,color-mix(in srgb,var(--c1) 14%,#fff),color-mix(in srgb,var(--c2) 24%,#fff))!important;
-  color:var(--label)!important;border:1px solid color-mix(in srgb,var(--c2) 18%,#fff);box-shadow:var(--shadow)!important}
+.coll{background:linear-gradient(150deg,color-mix(in srgb,var(--c1) 14%,var(--bg)),color-mix(in srgb,var(--c2) 24%,var(--bg)))!important;
+  color:var(--label)!important;border:1px solid color-mix(in srgb,var(--c2) 18%,var(--bg));box-shadow:var(--shadow)!important}
 .coll::before{background:radial-gradient(circle,rgba(255,255,255,.8),transparent 68%)!important}
 .coll .eyebrow{color:var(--label-2)!important}
 .coll small{color:var(--label-2)!important}
@@ -4752,9 +4739,9 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 /* ---- Sistemas destacados: tarjeta única, pastel y relajante ---- */
 .feat-row{grid-auto-columns:min(88%,460px)!important}
 .feat{position:relative;display:grid;min-width:0;border-radius:28px;overflow:hidden;isolation:isolate;
-  background:linear-gradient(165deg,#F4F8FE,#DCE8F8);border:1px solid var(--azul-borde);box-shadow:var(--shadow);
+  background:linear-gradient(165deg,color-mix(in srgb,var(--azul) 5%,var(--bg)),color-mix(in srgb,var(--azul) 16%,var(--bg)));border:1px solid var(--azul-borde);box-shadow:var(--shadow);
   --tinta:var(--azul)}
-.feat:nth-child(even){background:linear-gradient(165deg,#FAF7FD,#E9DEF6);border-color:var(--lila-borde);--tinta:var(--lila-texto)}
+.feat:nth-child(even){background:linear-gradient(165deg,color-mix(in srgb,var(--lila) 5%,var(--bg)),color-mix(in srgb,var(--lila) 20%,var(--bg)));border-color:var(--lila-borde);--tinta:var(--lila-texto)}
 .feat-card{grid-area:1/1;aspect-ratio:auto!important;min-height:440px;background:transparent!important;box-shadow:none!important;border-radius:0!important}
 .feat-art::before{background:radial-gradient(circle,rgba(255,255,255,.85),transparent 68%)!important}
 .feat-art::after{display:none!important}
@@ -4765,18 +4752,18 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .feat-txt strong{color:var(--label)!important;font-size:30px!important;line-height:1.12;font-weight:700}
 .feat-txt .sub{color:var(--label-2)!important;font-size:16px!important;line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.feat-bar{z-index:4;padding:14px 16px!important;gap:12px;background:rgba(255,255,255,.88)!important;backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.9);color:var(--label)!important}
+.feat-bar{z-index:4;padding:14px 16px!important;gap:12px;background:color-mix(in srgb,var(--bg) 88%,transparent)!important;backdrop-filter:blur(8px);border-top:1px solid var(--sep);color:var(--label)!important}
 .feat-bar b{color:var(--label)!important;font-size:17px;font-weight:700}
 .feat-bar small{display:none!important}
-.feat-bar .get,.feat-bar .get.glass{background:var(--azul)!important;color:#fff!important;padding:11px 24px;font-size:15px}
-.feat:nth-child(even) .feat-bar .get{background:var(--lila-texto)!important}
+.feat-bar .get,.feat-bar .get.glass{background:var(--azul)!important;color:var(--btn-ink)!important;padding:11px 24px;font-size:15px}
+.feat:nth-child(even) .feat-bar .get{background:var(--lila-texto)!important;color:var(--btn-ink)!important}
 @media(min-width:900px){.feat-card{min-height:460px}.feat-glyph{width:34%!important}}
 @media(max-width:900px){.feat-glyph{top:9%!important;width:44%!important}}
 
 /* ---- Empalmes vistos en móvil ---- */
 .app,main{scroll-padding-top:90px}
 .searchbox input,.bigsearch input{min-width:0;width:100%;text-overflow:ellipsis}
-#acc-btn{background:var(--azul)!important;color:#fff!important;border:2px solid #fff!important;box-shadow:0 6px 18px rgba(0,78,170,.3)!important;
+#acc-btn{background:var(--azul)!important;color:var(--btn-ink)!important;border:2px solid #fff!important;box-shadow:0 6px 18px rgba(0,78,170,.3)!important;
   bottom:calc(88px + env(safe-area-inset-bottom,0px))!important;right:12px!important;z-index:60}
 #campana{color:var(--azul)!important;border-color:var(--sep)!important}
 @media(max-width:900px){.pagehead{padding-right:78px!important}}
@@ -4784,7 +4771,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 /* ---- Correcciones tras revisión ---- */
 .pagehead .large-title{color:var(--label)!important}
 .pagehead .lede,.pagehead .when{color:var(--label-2)!important;opacity:1!important}
-.tabbar{background:#FFFFFF!important;backdrop-filter:none!important;z-index:50!important}
+.tabbar{background:var(--bg)!important;backdrop-filter:none!important;z-index:50!important}
 .tabbar a:not(.rail-brand) .g,.rail-admin .g{color:inherit!important;stroke:currentColor!important;opacity:1!important}
 .tabbar a:not(.rail-brand),.rail-admin{opacity:1!important}
 
@@ -5435,6 +5422,134 @@ body.auth .col,body.auth main{background:transparent}
   .gal-wrap .gal2-arrow{width:32px;height:32px}
   .gal-wrap .gal2-prev{left:4px}.gal-wrap .gal2-next{right:4px}
 }
+
+/* ---- Modo oscuro: la misma paleta (azul #004EAA y lila #9568C6) en tonos claros sobre azul marino. Lo activa «Apariencia». ---- */
+:root[data-modo="oscuro"]{
+  color-scheme:dark!important;
+  --btn-ink:#0B1730;
+  --bg:#0E1626!important; --bg-soft:#141F33!important; --bg-card:#172339!important; --bg-input:#101A2C!important;
+  --label:#EAF0FA!important; --label-2:#A9B6CC!important; --label-3:#8191AA!important;
+  --sep:#26344D!important; --sep-strong:#364862!important;
+  --lila:#B392DD; --lila-texto:#CDB5EA; --lila-suave:rgba(179,146,221,.14); --lila-borde:rgba(179,146,221,.34);
+  --glass:rgba(14,22,38,.94)!important; --sidebar:#0E1626!important;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35)!important;
+  --ok:#5BD08F!important; --warn:#E6B450!important; --bad:#FF8A80!important;
+  --pal-profundo:#EAF0FA!important; --pal-texto:#EAF0FA!important; --pal-borde:#26344D!important;
+}
+:root[data-modo="oscuro"] .admbar{background:color-mix(in srgb,var(--azul) 12%,var(--bg))!important;border-color:var(--sep)!important;color:var(--label)!important}
+:root[data-modo="oscuro"] .pagehead::after{background:radial-gradient(circle,rgba(179,146,221,.22),transparent 65%)!important}
+:root[data-modo="oscuro"] .feat-art::before,:root[data-modo="oscuro"] .coll::before{background:radial-gradient(circle,rgba(255,255,255,.10),transparent 68%)!important}
+:root[data-modo="oscuro"] .ico::after{background:linear-gradient(rgba(255,255,255,.14),transparent 55%)!important}
+:root[data-modo="oscuro"] .card,:root[data-modo="oscuro"] .system-card,:root[data-modo="oscuro"] .panel{box-shadow:0 2px 10px rgba(0,0,0,.35)!important}
+:root[data-modo="oscuro"] #acc-btn{border-color:var(--bg)!important}
+
+/* ---- Modo oscuro: superficies de las capas anteriores (fondos claros fijos → paleta oscura) ---- */
+html[data-modo="oscuro"],html[data-modo="oscuro"] body{background:#0E1626!important}
+html[data-modo="oscuro"] .app{background:#0E1626!important}
+html[data-modo="oscuro"] .sidebar{background:var(--bg)!important}
+html[data-modo="oscuro"] .sec,html[data-modo="oscuro"] .cv-card,html[data-modo="oscuro"] .cv-shot{background:var(--bg-card)}
+html[data-modo="oscuro"] .how li{background:var(--bg-soft)}
+html[data-modo="oscuro"] .ch-wrap .cv-arrow{background:linear-gradient(90deg,var(--bg) 70%,transparent)}
+html[data-modo="oscuro"] .ch-wrap .cv-next{background:linear-gradient(270deg,var(--bg) 70%,transparent)}
+html[data-modo="oscuro"] .ch-wrap .cv-arrow,html[data-modo="oscuro"] .fc-arrow,html[data-modo="oscuro"] .fc-wrap .fc-arrow,html[data-modo="oscuro"] .gal-arrow,html[data-modo="oscuro"] .gal-wrap .gal2-arrow{background:var(--bg-card)!important;color:var(--azul)}
+html[data-modo="oscuro"] .searchbox,html[data-modo="oscuro"] .bigsearch,html[data-modo="oscuro"] .sidebar .searchbox{background:var(--bg-soft)!important}
+html[data-modo="oscuro"] .searchbox:focus-within,html[data-modo="oscuro"] .bigsearch:focus-within,html[data-modo="oscuro"] .sidebar .searchbox:focus-within{background:var(--bg-input)!important}
+html[data-modo="oscuro"] .icb[aria-pressed="true"],html[data-modo="oscuro"] .fc-count{background:var(--azul-suave)}
+html[data-modo="oscuro"] .cdot.has-img,html[data-modo="oscuro"] .sidebar .sidenav a.cat .cdot.has-img{background:var(--bg-card)!important}
+html[data-modo="oscuro"] .sidebar .sidenav a:hover,html[data-modo="oscuro"] .sidebar .sidenav button:hover,html[data-modo="oscuro"] .sidebar .sidenav-a:hover,
+html[data-modo="oscuro"] .sidebar .sidenav a[aria-current="page"],html[data-modo="oscuro"] .sidebar .sidenav a.active{background:var(--azul-suave)!important}
+html[data-modo="oscuro"] .sidebar .side-foot::before{background:linear-gradient(90deg,transparent,var(--sep-strong) 20%,var(--lila-borde) 80%,transparent)}
+html[data-modo="oscuro"] .htile{background:linear-gradient(150deg,color-mix(in srgb,var(--azul) 10%,var(--bg)),color-mix(in srgb,var(--azul) 24%,var(--bg)))}
+html[data-modo="oscuro"] .hero-side .htile:nth-child(2),html[data-modo="oscuro"] .colls .coll:nth-child(3n){background:linear-gradient(150deg,color-mix(in srgb,#F2A04A 12%,var(--bg)),color-mix(in srgb,#F2A04A 26%,var(--bg)))!important}
+html[data-modo="oscuro"] .feat,html[data-modo="oscuro"] .feat:nth-child(even),html[data-modo="oscuro"] .feat:nth-child(3n){
+  --tinta:color-mix(in srgb,var(--c2) 55%,#fff);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--c1) 24%,var(--bg)) 0%,color-mix(in srgb,var(--c1) 42%,var(--bg)) 26%,color-mix(in srgb,var(--c1) 55%,var(--c2)) 56%,color-mix(in srgb,var(--c2) 90%,#0b1b3a) 100%)!important}
+html[data-modo="oscuro"] .adm-flota{background:color-mix(in srgb,var(--bg) 92%,transparent)!important}
+html[data-modo="oscuro"] .adm-flota .seg{background:var(--bg-soft)}
+html[data-modo="oscuro"] .cat-card,html[data-modo="oscuro"] .cat-card:nth-child(even),html[data-modo="oscuro"] .cat-card:nth-child(odd){background:var(--bg-card)!important}
+html[data-modo="oscuro"] .cat-card .select,html[data-modo="oscuro"] .cat-card input[type=text]{background:var(--bg-input)}
+html[data-modo="oscuro"] .cat-foot .btn.sec,html[data-modo="oscuro"] .cat-foot .btn.ghost,html[data-modo="oscuro"] .cat-del,html[data-modo="oscuro"] .acciones .btn.sec{background:var(--bg-card)!important}
+html[data-modo="oscuro"] .authcard{background:var(--bg-card)!important}
+html[data-modo="oscuro"] .authcard h1{color:var(--label)!important}
+html[data-modo="oscuro"] .auth-tabs{background:var(--bg-soft)!important}
+html[data-modo="oscuro"] .auth-tabs button:hover:not([aria-selected="true"]){background:var(--sep)}
+html[data-modo="oscuro"] .authcard .field input,html[data-modo="oscuro"] .authcard .field select{background:var(--bg-input)!important}
+html[data-modo="oscuro"] .btn-google{background:var(--bg-card)!important;color:var(--label)!important;border-color:var(--sep)!important}
+html[data-modo="oscuro"] .auth-or::before,html[data-modo="oscuro"] .auth-or::after{background:var(--sep)!important}
+html[data-modo="oscuro"] .authcard .auth-visor,html[data-modo="oscuro"] .authcard .btn.big.auth-visor:not(.sec){background:var(--bg-soft)!important}
+
+/* ---- Chips activos y elementos que quedaban claros en modo oscuro ---- */
+.chip[aria-pressed="true"],.chip.on{background:var(--azul-suave)!important;color:var(--azul)!important;border-color:var(--azul)!important;font-weight:700}
+html[data-modo="oscuro"] .selchip{background:var(--bg-soft)!important;color:var(--label)!important;border-color:var(--sep)!important}
+html[data-modo="oscuro"] .selchip *{color:var(--label)}
+html[data-modo="oscuro"] .fhead-actions .get.big{background:var(--azul)!important;color:var(--btn-ink)!important}
+html[data-modo="oscuro"] .sidebar{border:1px solid var(--sep)!important}
+html[data-modo="oscuro"] .sec{border-color:var(--sep)!important}
+
+/* ===== Etiquetas de tipo (Sistema / Portal o Sitio web): un solo estilo, siempre el mismo significado ===== */
+.tipo-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.01em;border-radius:999px;padding:3px 11px 3px 8px;margin-right:6px;vertical-align:middle;white-space:nowrap;border:1px solid transparent}
+.tipo-tag .g{width:14px;height:14px;stroke-width:2.1;flex:none}
+.tipo-tag.t-sistema{background:#EAF1FB;color:#004EAA;border-color:#C9DAF1}
+.tipo-tag.t-web{background:#E4F5F1;color:#0B6B5C;border-color:#BDE5DC}
+.tipo-tag.big{font-size:13.5px;padding:5px 13px 5px 10px;margin:0}
+.tipo-tag.big .g{width:16px;height:16px}
+.fhead .cats .tipo-tag{font-size:13px;padding:5px 13px 5px 10px;margin-right:0;align-self:center}
+.kv .v{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.kv .v .vsub{font-size:13px;color:var(--label-2);font-weight:400;line-height:1.35;max-width:300px}
+.kv .v .vplat{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.kv .v .vplat .vsep{color:var(--label-3)}
+.kv .v .vplat .tipo-tag{margin:0}
+.platrow .tipo-tag{margin:0 0 0 4px}
+/* Etiqueta sobre tarjetas del catálogo y portada */
+.cv-eye{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;font-size:12px;font-weight:700;letter-spacing:.02em;text-transform:none;border-radius:999px;padding:3px 11px 3px 8px;border:1px solid transparent}
+.cv-eye .g{width:14px;height:14px;stroke-width:2.1;flex:none}
+.cv-eye.t-sistema,.cv:nth-child(n) .cv-eye.t-sistema{background:#EAF1FB;color:#004EAA;border-color:#C9DAF1}
+.cv-eye.t-web,.cv:nth-child(n) .cv-eye.t-web{background:#E4F5F1;color:#0B6B5C;border-color:#BDE5DC}
+.tag-pill{display:inline-flex!important;align-items:center;gap:6px;background:rgba(255,255,255,.94)!important;color:#1d2b44!important;border:0!important;border-radius:999px!important;padding:5px 12px 5px 9px!important;font-size:12.5px;font-weight:700;letter-spacing:.01em;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.tag-pill .g{width:15px;height:15px;stroke-width:2.1;flex:none}
+.tag-pill.t-sistema .g{color:#004EAA}
+.tag-pill.t-web .g{color:#0B6B5C}
+.hmain .tag-pill{background:rgba(255,255,255,.94)!important;color:#1d2b44!important}
+.feat-txt .eyebrow{display:inline-flex;align-items:center;gap:6px;text-transform:none!important;letter-spacing:.01em!important;font-size:12.5px!important}
+.feat-txt .eyebrow .g{width:15px;height:15px;stroke-width:2.1}
+@media(max-width:900px){.kv .v .vsub{max-width:220px}}
+.row-t small .tipo-tag{display:flex;width:max-content;margin:0 0 3px}
+.row-t small .tag{display:inline-block;margin-bottom:3px}
+
+/* ===== Vista previa de apariencia ===== */
+.apv-wrap{display:grid;gap:12px}
+.apv-head{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap}
+.apv-pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;border-radius:999px;padding:4px 12px 4px 9px;background:var(--accent-soft);color:var(--accent)}
+.apv-pill .g{width:15px;height:15px}
+.apv-msg{font-size:13.5px;color:var(--label-2)}
+.apv{--bg:#ffffff;--soft:#f1f4fa;--tx:#1d2b44;--tx2:#5b6b82;--ln:#e1e7f0;--wtag-bg:#E4F5F1;--wtag:#0B6B5C;--stag-bg:#EAF1FB;--stag:#004EAA;display:grid;grid-template-columns:150px minmax(0,1fr);min-height:300px;border:1px solid var(--ln);border-radius:16px;overflow:hidden;background:var(--bg);color:var(--tx);font-size:13px;pointer-events:none;user-select:none;transition:background .25s,color .25s}
+.apv.osc{--bg:#0E1626;--soft:#17223a;--tx:#EAF0FA;--tx2:#9fb0c8;--ln:#26344D;--wtag-bg:rgba(91,208,143,.14);--wtag:#5BD08F;--stag-bg:rgba(127,176,236,.16);--stag:#9CC4F2}
+.apv-side{background:var(--soft);padding:14px 10px;display:flex;flex-direction:column;gap:4px;border-right:1px solid var(--ln)}
+.apv-brand{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.apv-brand i{width:22px;height:22px;border-radius:7px;background:var(--ac)}
+.apv-nav{padding:7px 10px;border-radius:9px;color:var(--tx2);font-weight:600}
+.apv-nav.on{background:color-mix(in srgb,var(--ac) 16%,transparent);color:var(--ac)}
+.apv-main{padding:14px 16px;display:grid;gap:12px;align-content:start;min-width:0}
+.apv-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.apv-top b{font-size:17px}
+.apv-search{background:var(--soft);color:var(--tx2);border-radius:999px;padding:5px 14px}
+.apv-hero{display:grid;gap:4px;justify-items:start;border-radius:14px;padding:16px;color:#fff;background:linear-gradient(150deg,color-mix(in srgb,var(--ac) 70%,#fff),var(--ac))}
+.apv.osc .apv-hero{background:linear-gradient(150deg,color-mix(in srgb,var(--ac) 55%,#0E1626),color-mix(in srgb,var(--ac) 80%,#0E1626))}
+.apv-hero b{font-size:18px}
+.apv-hero small{opacity:.9;font-size:13px}
+.apv-tag{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.94);color:#1d2b44;border-radius:999px;padding:3px 10px 3px 7px;font-size:11.5px;font-weight:700;margin-bottom:4px}
+.apv-tag .g,.apv em .g{width:13px;height:13px;stroke-width:2.1}
+.apv-btn{margin-top:6px;background:#fff;color:#004EAA;border-radius:10px;padding:6px 16px;font-weight:700}
+.apv-rows{display:grid;gap:8px}
+.apv-row{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:12px;padding:9px 12px}
+.apv-row>i{width:34px;height:34px;border-radius:10px;flex:none}
+.apv-row>span:nth-child(2){flex:1;min-width:0;display:grid;gap:3px}
+.apv-row small{display:block}
+.apv em{display:inline-flex;align-items:center;gap:4px;font-style:normal;font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px 2px 6px}
+.apv em.s{background:var(--stag-bg);color:var(--stag)}
+.apv em.w{background:var(--wtag-bg);color:var(--wtag)}
+.apv-get{background:var(--bg);color:var(--ac);border-radius:9px;padding:5px 14px;font-weight:700}
+@media(max-width:640px){.apv{grid-template-columns:1fr}.apv-side{flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--ln)}.apv-brand{margin:0 8px 0 0}}
 </style>
 <script id="galeria-flechas-v2-js">
 (function(){
