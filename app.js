@@ -873,6 +873,7 @@ function notificar(tipo, titulo, detalle) {
   S.cat.notificaciones = S.cat.notificaciones.slice(0, 200);
 }
 const nNoLeidas = () => (S.super && Array.isArray(S.cat.notificaciones) ? S.cat.notificaciones.filter((n) => !n.leida).length : 0);
+const NOTIF_VER = "2026-10-22.4";   // sube este número en cada entrega: la pantalla «Revisar notificaciones» lo muestra para confirmar que se cargó el archivo nuevo
 /* Las solicitudes nuevas se muestran como notificaciones leyendo la tabla «solicitudes» (ids «sol-…»); lo leído/oculto se recuerda en este dispositivo. */
 const SOL_LEIDAS = "cat-sol-leidas", SOL_OCULTAS = "cat-sol-ocultas", esNotifSol = (id) => String(id).startsWith("sol-");
 const lsSet = (k) => { try { return new Set(JSON.parse(localStorage.getItem(k) || "[]")); } catch (e) { return new Set(); } };
@@ -920,7 +921,7 @@ function iniciarVigilancia() {
   if (!SB || vigilaTimer) return;
   vigilaTimer = setInterval(vigilarNotifs, 15000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) vigilarNotifs(); });
-  try { vigilaCanal = SB.channel("solicitudes-nuevas").on("postgres_changes", { event: "*", schema: "public", table: "solicitudes" }, () => vigilarNotifs()).subscribe(); } catch (e) { /* queda la revisión cada 15 s */ }
+  try { vigilaCanal = SB.channel("solicitudes-nuevas").on("postgres_changes", { event: "*", schema: "public", table: "solicitudes" }, () => vigilarNotifs()).subscribe((st) => { S.rtEstado = st; }); } catch (e) { /* queda la revisión cada 15 s */ }
 }
 async function borrarNotifs(ids) {
   if (!ids.length) return;
@@ -1007,7 +1008,7 @@ function vAdminNotif() {
   const fecha = (iso) => { try { return new Date(iso).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" }); } catch (e) { return ""; } };
   const dato = (k, v) => (v ? `<div><span class="k">${k}</span><span class="v">${esc(v)}</span></div>` : "");
   const sinSB = SB_ON ? "" : `<div class="note warn" style="margin-bottom:14px">${glifo("warn")}<div>Sin servidor conectado, estos avisos solo aparecen cuando la persona se registra <b>en este mismo navegador</b>. Para recibirlos desde cualquier dispositivo, conecta Supabase.</div></div>`;
-  return `<div class="admbar" style="margin-top:0"><span class="muted">${L.length ? `${nl} sin leer · ${L.length} en total` : "Sin notificaciones"}</span>${nl ? `<button class="btn sec sm" data-act="notif-todas">${glifo("check")}Marcar todas como leídas</button>` : ""}${L.length - nl ? `<button class="btn sec sm" data-act="notif-borrar-leidas">${glifo("trash")}Borrar leídas</button>` : ""}${L.length ? `<button class="btn danger sm" data-act="notif-borrar-todas">${glifo("trash")}Borrar todas</button>` : ""}</div>${sinSB}
+  return `<div class="admbar" style="margin-top:0"><span class="muted">${L.length ? `${nl} sin leer · ${L.length} en total` : "Sin notificaciones"}</span><button class="btn sec sm" data-act="notif-diag">${glifo("info")}Revisar notificaciones</button>${nl ? `<button class="btn sec sm" data-act="notif-todas">${glifo("check")}Marcar todas como leídas</button>` : ""}${L.length - nl ? `<button class="btn sec sm" data-act="notif-borrar-leidas">${glifo("trash")}Borrar leídas</button>` : ""}${L.length ? `<button class="btn danger sm" data-act="notif-borrar-todas">${glifo("trash")}Borrar todas</button>` : ""}</div>${sinSB}
   ${L.length ? `<div class="list-card">${L.map((n) => { const d = n.detalle || {}, rec = n.tipo === "recuperacion", sol = n.tipo === "solicitud"; return `<div class="arow" style="align-items:flex-start;${n.leida ? "opacity:.72" : ""}"><span class="avatar-i" style="${n.leida ? "" : "background:linear-gradient(145deg,var(--accent),#2bb5a0);color:#fff"}">${glifo(rec ? "candado" : sol ? "send" : "user")}</span>
     <div class="t"><b>${esc(n.titulo)}</b> ${n.leida ? "" : '<span class="badge acc">Nueva</span>'}<small>${esc(fecha(n.fecha))}</small>
       <div class="kv" style="margin-top:8px">${dato("Folio", d.folio)}${dato("Sistemas", d.sistemas)}${dato("Dependencia", d.dependencia)}${dato("Área", d.area)}${dato("Cargo", d.cargo)}${dato("Nombre", sol ? d.nombre : "")}${dato("Correo", d.correo)}${dato("Teléfono", d.telefono)}</div></div>
@@ -2123,8 +2124,8 @@ async function enviarSolicitud() {
   if (SB) {
     try {
       const { error } = await conLimite(SB.from("solicitudes").insert({ folio: sol.folio, dependencia: sol.datos.dependencia, datos: sol.datos, sistemas: sol.sistemas.map((x) => ({ id: x.id, nombre: x.nombre, version: x.version || "" })) }), 15000, { error: { message: "tiempo" } });
-      if (!error) { sol.estado = "enviada"; sol.canal = "Supabase"; }
-    } catch (err) { /* sigue con el correo */ }
+      if (!error) { sol.estado = "enviada"; sol.canal = "Supabase"; } else { sol.errorEnvio = String(error.message || error.code || "error"); console.error("Solicitud no enviada a Supabase:", error); }
+    } catch (err) { sol.errorEnvio = String((err && err.message) || err); console.error("Solicitud no enviada a Supabase:", err); }
   }
   try { await depsRegistrar(sol.datos.dependencia); } catch (err) {}
   if (!S.qa) {   // avisa al superadministrador en Notificaciones
@@ -2145,7 +2146,7 @@ function vGracias(folio) {
   const base = byId(ids[0]);
   const sug = (base ? relacionados(base, 8) : vis()).filter((x) => !ids.includes(x.id) && x.estado !== "En mantenimiento").slice(0, 3);
   const dest = (c.correoOficio || "").trim();
-  const estado = `<div class="note ok">${glifo("ok")}<div><b>Guarda tu folio y elabora tu oficio.</b><br>Redacta un oficio de solicitud, cita el folio <b>${esc(sol.folio)}</b> y envíalo al correo: ${dest ? `<b style="user-select:all">${esc(dest)}</b>` : "<b>por confirmar</b> (se publicará aquí en cuanto esté definido)"}.${sol.estado === "enviada" ? "" : `<br><span class="muted" style="font-size:13.5px">Tu folio quedó guardado en este dispositivo. Anótalo o cópialo para no perderlo.</span>`}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sec" data-act="copiar" data-v="${esc(sol.folio)}">${glifo("copy")}Copiar folio</button>${dest ? `<button class="btn sec" data-act="copiar" data-v="${esc(dest)}">${glifo("copy")}Copiar correo</button><a class="btn" href="mailto:${esc(dest)}?subject=${enc("Oficio de solicitud · " + sol.folio)}">${glifo("correo")}Abrir correo</a>` : ""}</div></div></div>`;
+  const estado = `<div class="note ok">${glifo("ok")}<div><b>Guarda tu folio y elabora tu oficio.</b><br>Redacta un oficio de solicitud, cita el folio <b>${esc(sol.folio)}</b> y envíalo al correo: ${dest ? `<b style="user-select:all">${esc(dest)}</b>` : "<b>por confirmar</b> (se publicará aquí en cuanto esté definido)"}.${sol.estado === "enviada" ? "" : `<br><span class="muted" style="font-size:13.5px">Tu folio quedó guardado en este dispositivo. Anótalo o cópialo para no perderlo.</span>${sol.errorEnvio ? `<br><span class="muted" style="font-size:12.5px">No llegó al administrador. Motivo técnico: ${esc(sol.errorEnvio)}</span>` : ""}`}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sec" data-act="copiar" data-v="${esc(sol.folio)}">${glifo("copy")}Copiar folio</button>${dest ? `<button class="btn sec" data-act="copiar" data-v="${esc(dest)}">${glifo("copy")}Copiar correo</button><a class="btn" href="mailto:${esc(dest)}?subject=${enc("Oficio de solicitud · " + sol.folio)}">${glifo("correo")}Abrir correo</a>` : ""}</div></div></div>`;
   return `${navbar({ back: false })}
   <div class="ok-hero"><div class="big">${glifo("check")}</div><h1 class="large-title">Solicitud registrada</h1><p class="lede" style="margin-top:0">Tu folio es</p><span class="folio">${esc(sol.folio)}</span></div>
   <div style="max-width:680px;margin:26px auto 0;display:grid;gap:18px">
@@ -3041,6 +3042,26 @@ const ACT = {
   "guardar-directorio"() { const t = $("#dir-txt"); if (!t) return; cfg().directorio = t.value.split("\n").map((l) => l.split("|").map((x) => x.trim())).filter((a) => a[0]).map((a) => ({ nombre: a[0], cargo: a[1] || "", correo: a[2] || "", telefono: a[3] || "" })); guardarCatalogo(); toast("Directorio guardado"); render(true); },
   "recup-cancelar"() { S.recup = false; if (SB) SB.auth.signOut(); S.authView = "login"; location.hash = "#/acceso"; render(true); },
   "ir-registro"() { cerrarModal(); if (!/^#\/acceso/.test(location.hash)) S.retorno = location.hash; S.authView = "registro"; if (location.hash === "#/acceso") render(true); else location.hash = "#/acceso"; },
+  async "notif-diag"() {
+    toast("Revisando…");
+    const L = [], add = (ok, tit, det) => L.push(`<div class="note ${ok === true ? "ok" : "warn"}" style="margin-bottom:8px">${glifo(ok === true ? "ok" : "warn")}<div><b>${esc(tit)}</b>${det ? `<br><span class="muted" style="font-size:13.5px">${det}</span>` : ""}</div></div>`);
+    add(true, "Versión del código cargada", `<b>${esc(NOTIF_VER)}</b>. Si no coincide con la última que te di, el navegador o el hosting sigue usando el archivo anterior (recarga con Ctrl + F5).`);
+    add(!!SB, "Conexión con Supabase", SB ? "" : "Sin conexión: las notificaciones de otros dispositivos no pueden llegar.");
+    add(!!S.super, "Sesión de superadministrador", S.super ? "" : "Esta sesión no es de superadministrador.");
+    if (SB) {
+      try {
+        const r = await SB.from("solicitudes").select("id,folio,creado,estado", { count: "exact" }).order("creado", { ascending: false }).limit(1);
+        if (r.error) add(false, "Lectura de solicitudes", `Error: ${esc(r.error.message || r.error.code || "desconocido")}. La cuenta no puede leer la tabla «solicitudes».`);
+        else add(true, "Lectura de solicitudes", `${r.count ?? (r.data || []).length} en total${r.data && r.data[0] ? `. La más reciente: ${esc(r.data[0].folio)} (${esc(fmtFecha(String(r.data[0].creado).slice(0, 10)))})` : ". Todavía no hay ninguna: si alguien ya solicitó un sistema, la solicitud no llegó al servidor."}`);
+      } catch (e) { add(false, "Lectura de solicitudes", esc(String(e.message || e))); }
+      try { const r = await SB.from("solicitudes").select("notif_leida,notif_oculta").limit(1); add(!r.error, "Estado compartido entre dispositivos", r.error ? "Falta ejecutar supabase-notificaciones.sql en Supabase. Mientras tanto, lo leído se recuerda solo en este dispositivo." : ""); } catch (e) { add(false, "Estado compartido entre dispositivos", "Falta ejecutar supabase-notificaciones.sql."); }
+      try { const r = await SB.rpc("cancelar_solicitud", { p_folio: "DIAGNOSTICO" }); add(!r.error, "Cancelar solicitud", r.error ? "Falta ejecutar supabase-cancelar-solicitud.sql en Supabase." : ""); } catch (e) { add(false, "Cancelar solicitud", "Falta ejecutar supabase-cancelar-solicitud.sql."); }
+      add(S.rtEstado === "SUBSCRIBED", "Tiempo real", S.rtEstado === "SUBSCRIBED" ? "Activo: los avisos llegan al instante." : `No está activo (${esc(String(S.rtEstado || "sin conexión"))}). Los avisos llegan con la revisión cada 15 segundos. Para activarlo, ejecuta supabase-notificaciones.sql.`);
+    }
+    const nn = S.cat.notificaciones || [];
+    add(true, "Notificaciones en la lista", `${nn.length} en total · ${nn.filter((n) => !n.leida).length} sin leer`);
+    modal({ titulo: "Revisión de notificaciones", body: L.join(""), pie: `<button class="btn" data-act="cerrar-modal">Cerrar</button>` });
+  },
   "notif-ver-sol"(t) { cerrarNotif(); marcarNotifs(t.dataset.id).then(() => refrescarCampana()); },
   "notif-leer"(t) { marcarNotifs(t.dataset.id).then(() => { refrescarCampana(); keep(() => render(false)); }); },
   "notif-todas"() { marcarNotifs().then(() => { refrescarCampana(); keep(() => render(false)); }); },
@@ -3109,7 +3130,7 @@ const ACT = {
   "conf-no"() { if (confFin) confFin(false); }
 };
 
-const SOLO_SUPER = new Set(["notif-ver-sol", "notif-borrar", "notif-borrar-leidas", "notif-borrar-todas", "aviso-borrar-todos", "formato-todos", "aplicar-textos", "bandeja-estado", "bandeja-nota", "bandeja-borrar", "bandeja-archivar-canceladas", "bandeja-borrar-canceladas", "aviso-nuevo", "aviso-editar", "aviso-borrar", "notif-leer", "notif-todas", "notif-reset", "usr-super", "usr-gen", "logo-marca", "logo-color", "logo-forma", "usr-nuevo", "usr-reset", "usr-reset-ok", "usr-toggle", "usr-del", "guardar-cfg", "exportar", "descartar-local", "quitar-ejemplos", "probar-correo", "cfg-tema", "cfg-acento", "quitar-logo", "como-publicar", "qa-activar", "qa-salir", "qa-datos", "qa-reiniciar", "qa-correr", "qa-limpiar-manual", "dep-add", "dep-ren", "dep-del", "dep-reg", "dep-import"]);
+const SOLO_SUPER = new Set(["notif-diag", "notif-ver-sol", "notif-borrar", "notif-borrar-leidas", "notif-borrar-todas", "aviso-borrar-todos", "formato-todos", "aplicar-textos", "bandeja-estado", "bandeja-nota", "bandeja-borrar", "bandeja-archivar-canceladas", "bandeja-borrar-canceladas", "aviso-nuevo", "aviso-editar", "aviso-borrar", "notif-leer", "notif-todas", "notif-reset", "usr-super", "usr-gen", "logo-marca", "logo-color", "logo-forma", "usr-nuevo", "usr-reset", "usr-reset-ok", "usr-toggle", "usr-del", "guardar-cfg", "exportar", "descartar-local", "quitar-ejemplos", "probar-correo", "cfg-tema", "cfg-acento", "quitar-logo", "como-publicar", "qa-activar", "qa-salir", "qa-datos", "qa-reiniciar", "qa-correr", "qa-limpiar-manual", "dep-add", "dep-ren", "dep-del", "dep-reg", "dep-import"]);
 const QA_BLOQ = new Set(["exportar", "como-publicar", "descartar-local", "publicar-ahora"]);
 const SOLO_GESTION = new Set(["toggle-pub", "mover", "duplicar", "del-sistema", "add-cat", "del-cat", "edit-cat", "ren-sis", "img-quitar", "e-guardar", "e-add", "e-del", "demo-media", "vid-add-url", "fmt", "desc-color-reset", "e-quitar-videodest"]);
 document.addEventListener("click", (e) => {
