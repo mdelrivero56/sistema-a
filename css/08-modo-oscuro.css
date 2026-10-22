@@ -65,3 +65,22 @@ html[data-modo="oscuro"] .selchip *{color:var(--label)}
 html[data-modo="oscuro"] .fhead-actions .get.big{background:var(--azul)!important;color:var(--btn-ink)!important}
 html[data-modo="oscuro"] .sidebar{border:1px solid var(--sep)!important}
 html[data-modo="oscuro"] .sec{border-color:var(--sep)!important}
+
+/* ---- Panel de accesibilidad: selector Claro / Oscuro (apariencia personal) ---- */
+#acc-pop .acc-tema{display:grid;gap:8px;margin-bottom:4px}
+#acc-pop .acc-tema-t{font-size:12.5px;font-weight:600;opacity:.75}
+#acc-pop .acc-tema-b{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px;border-radius:12px;background:rgba(127,140,160,.16)}
+#acc-pop .acc-tema-b button{justify-content:center;gap:7px;padding:9px 8px;border:1.5px solid transparent;background:transparent;font-weight:600}
+#acc-pop .acc-tema-b button[aria-pressed="true"]{background:var(--azul,#004EAA);color:#fff;border-color:var(--azul,#004EAA);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+:root[data-modo="oscuro"] #acc-pop .acc-tema-b button[aria-pressed="true"]{color:var(--btn-ink,#0B1730)}
+#acc-pop .acc-tema-b button:focus-visible{outline:2px solid var(--azul,#004EAA);outline-offset:2px}
+/* El panel sigue la apariencia elegida (aunque el sistema operativo use la contraria) */
+:root[data-modo="oscuro"] #acc-pop{background:var(--bg-card)!important;color:var(--label)!important;border-color:var(--sep)!important}
+:root[data-modo="oscuro"] #acc-pop button{background:var(--bg-soft);color:var(--label);border-color:var(--sep)}
+:root[data-modo="oscuro"] #acc-pop .acc-tema-b button{background:transparent;border-color:transparent}
+:root[data-modo="oscuro"] #acc-pop .acc-tema-b button[aria-pressed="true"]{background:var(--azul)}
+:root[data-modo="oscuro"] #acc-pop i{background:#4a5b78}
+:root[data-modo="claro"] #acc-pop{background:#fff;color:var(--pal-texto);border-color:var(--pal-borde)}
+:root[data-modo="claro"] #acc-pop button{background:#fff;color:inherit;border-color:var(--pal-borde)}
+:root[data-modo="claro"] #acc-pop .acc-tema-b button{background:transparent;border-color:transparent}
+:root[data-modo="claro"] #acc-pop .acc-tema-b button[aria-pressed="true"]{background:var(--azul,#004EAA);color:#fff;border-color:var(--azul,#004EAA)}

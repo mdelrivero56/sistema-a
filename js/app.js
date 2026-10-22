@@ -131,7 +131,7 @@ const capturas = (c, t) => [0, 1, 2].map((v) => mock(c, v, t));
 function sistemaBase(o) {
   return Object.assign({
     id: uid("sis"), nombre: "", subtitulo: "", icono: { glifo: "app", color: "azul", imagen: "" }, portada: "",
-    categorias: [], usos: [], estado: "Disponible", publicado: true, destacado: false, etiqueta: "", tipoSis: "", ligados: [],
+    categorias: [], usos: [], estado: "Disponible", publicado: true, destacado: false, etiqueta: "", tipoSis: "", tipoOtro: "", ligados: [],
     version: "1.0", actualizado: hoyISO(), area: "", contacto: { correo: "", telefono: "" },
     descripcion: "", plataforma: "Web", requisitos: [], pasos: [], enlaces: [], tecnica: [],
     dependencias: [], novedades: [], capturas: [], archivos: [], videos: [], videoDestacado: { url: "", data: "", nombre: "" }, descTam: "16", descColor: "", ejemplo: false
@@ -786,12 +786,13 @@ function logoSvg(c) {
 const logoInner = (c) => imgOk(c.logo) ? `<img src="${esc(c.logo)}" alt="">` : logoSvg(c);
 const logoHtml = (c) => `<span class="ico s40${imgOk(c.logo) ? "" : " lg"}" style="${colorVars("azul")}">${logoInner(c)}</span>`;
 
-const TIPOS = { sistema: "Sistema", web: "Portal / Sitio web" };
-const TIPOS_DESC = { sistema: "Aplicación institucional: requiere solicitar acceso.", web: "Página en internet: se consulta abriendo el enlace." };
-const TIPO_ICO = { sistema: "app", web: "globo" };
-const tipoDe = (s) => (TIPOS[s.tipoSis] ? s.tipoSis : (s.categorias || []).includes("portales") ? "web" : "sistema");
-const tipoNom = (s) => TIPOS[tipoDe(s)];
+const TIPOS = { sistema: "Sistema", portal: "Portal", web: "Sitio web", otro: "Otro" };
+const TIPOS_DESC = { sistema: "Aplicación institucional: requiere solicitar acceso.", portal: "Punto de acceso a información, trámites o servicios en internet.", web: "Página informativa en internet: se consulta abriendo el enlace.", otro: "Otro tipo de recurso digital." };
+const TIPO_ICO = { sistema: "app", portal: "capas", web: "globo", otro: "caja" };
+const tipoDe = (s) => (TIPOS[s.tipoSis] ? s.tipoSis : (s.categorias || []).includes("portales") ? "portal" : "sistema");
+const tipoNom = (s) => (tipoDe(s) === "otro" && (s.tipoOtro || "").trim() ? s.tipoOtro.trim() : TIPOS[tipoDe(s)]);
 const tipoTag = (s) => `<span class="tipo-tag t-${tipoDe(s)}">${glifo(TIPO_ICO[tipoDe(s)])}${esc(tipoNom(s))}</span>`;
+
 function ligadosDe(s) {
   const ids = new Set(Array.isArray(s.ligados) ? s.ligados : []);
   vis().forEach((x) => { if (x.id !== s.id && Array.isArray(x.ligados) && x.ligados.includes(s.id)) ids.add(x.id); });
@@ -894,7 +895,7 @@ async function sbNotifs() {
       const ocultas = lsSet(SOL_OCULTAS), leidas = lsSet(SOL_LEIDAS), limite = Date.now() - 3 * 864e5;
       sols = data.filter((x) => !ocultas.has("sol-" + x.id) && !x.notif_oculta).map((x) => {
         const d = x.datos || {}, nom = (x.sistemas || []).map((y) => y.nombre).join(", ");
-        return { id: "sol-" + x.id, tipo: "solicitud", titulo: `${d.nombre || "Alguien"} ${x.estado === "cancelada" ? "canceló su solicitud de" : "solicitó"} ${nom}`, fecha: x.creado,
+        return { id: "sol-" + x.id, tipo: "solicitud", titulo: `${d.nombre || "Alguien"} ${x.estado === "cancelada" ? "— solicitud cancelada:" : "solicitó"} ${nom}`, fecha: x.creado,
           leida: !!x.notif_leida || leidas.has("sol-" + x.id) || (!S.solCol && new Date(x.creado).getTime() < limite),
           detalle: { folio: x.folio, nombre: d.nombre, correo: d.correo, telefono: d.telefono, dependencia: d.dependencia, area: d.area, cargo: d.cargo, sistemas: nom, cancelada: x.estado === "cancelada" } };
       });
@@ -1547,9 +1548,12 @@ const mezclar = (hex, con, p) => { const a = [1, 3, 5].map((k) => parseInt(hex.s
 function aplicarApariencia(c) {
   c = c || cfg();
   const r = document.documentElement, st = r.style;
-  if (c.tema === "claro") r.dataset.theme = "light"; else if (c.tema === "oscuro") r.dataset.theme = "dark"; else delete r.dataset.theme;
+  /* Preferencia personal (panel de accesibilidad): tiene prioridad sobre la configuración general, salvo mientras se edita la vista previa de apariencia. */
+  let pref = ""; try { pref = S.cfgDraft ? "" : (localStorage.getItem("catalogo-tema") || ""); } catch (e) {}
+  const tema = (pref === "claro" || pref === "oscuro") ? pref : c.tema;
+  if (tema === "claro") r.dataset.theme = "light"; else if (tema === "oscuro") r.dataset.theme = "dark"; else delete r.dataset.theme;
   const delSistema = !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
-  const oscuro = c.tema === "oscuro" || (c.tema !== "claro" && delSistema);
+  const oscuro = tema === "oscuro" || (tema !== "claro" && delSistema);
   r.dataset.modo = oscuro ? "oscuro" : "claro";
   ["--accent", "--accent-soft", "--pill-ink", "--azul", "--azul-hover", "--azul-suave", "--azul-borde"].forEach((k) => st.removeProperty(k));
   const col = COLORES[c.acento];
@@ -1750,7 +1754,7 @@ function vHome() {
 
 function vSistemas() {
   let l = vis();
-  const nSis = l.filter((s) => tipoDe(s) === "sistema").length, nWeb = l.length - nSis;
+  const nTipo = (k) => l.filter((s) => tipoDe(s) === k).length;
   if (F2.tipo !== "todos") l = l.filter((s) => tipoDe(s) === F2.tipo);
   if (F2.cat !== "todas") l = l.filter((s) => s.categorias.includes(F2.cat));
   if (F2.orden === "nombre") l = [...l].sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
@@ -1758,8 +1762,8 @@ function vSistemas() {
   if (F2.orden === "usados") l = [...l].sort((a, b) => b.dependencias.length - a.dependencias.length);
   const cats = S.cat.categorias.slice();
   post = iniciarCarrusel;
-  return `${cabecera("Sistemas", "Sistemas (aplicaciones institucionales) y portales / sitios web (páginas en internet). Cada uno indica claramente de qué tipo es.")}
-    <div class="chips tipos" role="group" aria-label="Filtrar por tipo"><button class="chip txt" data-act="filtro-tipo" data-id="todos" aria-pressed="${F2.tipo === "todos"}">Todos (${nSis + nWeb})</button><button class="chip txt" data-act="filtro-tipo" data-id="sistema" aria-pressed="${F2.tipo === "sistema"}">Sistemas (${nSis})</button><button class="chip txt" data-act="filtro-tipo" data-id="web" aria-pressed="${F2.tipo === "web"}">Portales / Sitios web (${nWeb})</button></div>
+  return `${cabecera("Sistemas", "Sistemas, portales, sitios web y otros recursos digitales. Cada uno indica claramente de qué tipo es.")}
+    <div class="chips tipos" role="group" aria-label="Filtrar por tipo"><button class="chip txt" data-act="filtro-tipo" data-id="todos" aria-pressed="${F2.tipo === "todos"}">Todos (${l.length})</button>${Object.entries(TIPOS).map(([k, v]) => `<button class="chip txt" data-act="filtro-tipo" data-id="${k}" aria-pressed="${F2.tipo === k}">${v} (${nTipo(k)})</button>`).join("")}</div>
     <div class="cv-wrap ch-wrap"><button type="button" class="cv-arrow cv-prev" data-act="cv-prev" aria-label="Anterior" hidden>${glifo("back")}</button><div class="chips bleed" role="group" aria-label="Filtrar por categoría"><button class="chip txt" data-act="filtro-cat" data-id="todas" aria-pressed="${F2.cat === "todas"}">Todos</button>${cats.map((k) => `<button class="chip txt" data-act="filtro-cat" data-id="${esc(k.id)}" aria-pressed="${F2.cat === k.id}">${esc(k.nombre)}</button>`).join("")}</div><button type="button" class="cv-arrow cv-next" data-act="cv-next" aria-label="Siguiente" hidden>${glifo("chev")}</button></div>
     <div class="toolbar"><span class="muted">${l.length} ${plural(l.length, "resultado", "resultados")}</span>
       <label class="sr" for="orden">Ordenar</label><select class="select" id="orden" data-sel="orden"><option value="catalogo" ${F2.orden === "catalogo" ? "selected" : ""}>Orden del catálogo</option><option value="nombre" ${F2.orden === "nombre" ? "selected" : ""}>Nombre (A–Z)</option><option value="recientes" ${F2.orden === "recientes" ? "selected" : ""}>Más recientes</option><option value="usados" ${F2.orden === "usados" ? "selected" : ""}>Más usados</option></select></div>
@@ -1923,8 +1927,9 @@ function vFicha(id) {
   const right = (S.admin ? `<a class="btn sm sec" href="#/admin/editar/${enc(s.id)}">${glifo("edit")}Editar</a>` : "") + `<button class="circ" data-act="compartir" data-id="${esc(s.id)}" aria-label="Copiar enlace del sistema">${glifo("share")}</button>` + btnGet(s, "sm", true);
 
   const tipoHtml = `<span class="tipo-tag t-${tipoDe(s)} big">${glifo(TIPO_ICO[tipoDe(s)])}${esc(tipoNom(s))}</span><small class="vsub">${esc(TIPOS_DESC[tipoDe(s)])}</small>`;
-  const filasTec = [["Tipo", tipoNom(s), tipoHtml], ["Categoría", cats.map((c) => c.nombre).join(", ")], ["Plataforma", s.plataforma, s.plataforma ? `<span class="vplat">${esc(s.plataforma)}<span class="vsep">·</span>${tipoTag(s)}</span>` : ""], ["Disponibilidad", s.estado]]
-    .concat(s.tecnica.map((t) => [t.k, t.v])).filter(([, v]) => v);
+  const sinDato = "No especificado";
+  const filasTec = [["Tipo", tipoNom(s), tipoHtml], ["Categoría", cats.map((c) => c.nombre).join(", ") || sinDato], ["Plataforma", s.plataforma || sinDato], ["Disponibilidad", s.estado || sinDato], ["Versión", s.version || sinDato], ["Área responsable", s.area || sinDato]]
+    .concat(s.tecnica.filter((t) => (t.k || "").trim() && (t.v || "").trim()).map((t) => [t.k, t.v]));
   const adj = s.archivos.map((a) => {
     const [cl, et] = tipoArchivo(a);
     const esImg = /^image\//.test(a.tipo || "");
@@ -1939,7 +1944,7 @@ function vFicha(id) {
       <p class="sub">${esc(s.subtitulo)}</p>
       <div class="cats">${tipoTag(s)}${cats.map((c) => `<a href="#/categoria/${enc(c.id)}">${esc(c.nombre)}</a>`).join("")}</div>
       ${!s.publicado ? `<div><span class="badge warn">No publicado · solo lo ves tú</span></div>` : ""}
-      <div class="fhead-actions" id="mainget">${btnGet(s, "big")}${prim ? `<a class="btn2" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">Abrir ${tipoDe(s) === "web" ? "sitio web" : "sistema"} ${glifo("out")}</a>` : ""}<button class="circ" data-act="compartir" data-id="${esc(s.id)}" aria-label="Copiar enlace del sistema" style="color:var(--accent)">${glifo("share")}</button></div>
+      <div class="fhead-actions" id="mainget">${btnGet(s, "big")}${prim ? `<a class="btn2" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">Abrir ${tipoDe(s) === "sistema" ? "sistema" : tipoDe(s) === "portal" ? "portal" : tipoDe(s) === "web" ? "sitio web" : "enlace"} ${glifo("out")}</a>` : ""}<button class="circ" data-act="compartir" data-id="${esc(s.id)}" aria-label="Copiar enlace del sistema" style="color:var(--accent)">${glifo("share")}</button></div>
       ${S.admin ? `<div class="manage" role="group" aria-label="Gestionar este sistema"><button type="button" class="mbtn" data-act="gestionar" data-modo="info" data-id="${esc(s.id)}">${glifo("edit")}Editar información</button><button type="button" class="mbtn" data-act="gestionar" data-modo="imagen" data-id="${esc(s.id)}">${glifo("img")}Cambiar imagen</button><button type="button" class="mbtn" data-act="ren-sis" data-id="${esc(s.id)}">${glifo("edit")}Cambiar nombre</button><button type="button" class="mbtn" data-act="del-sistema" data-id="${esc(s.id)}">${glifo("trash")}Eliminar</button></div>${prim ? "" : `<div class="note warn" style="margin-top:12px">${glifo("warn")}<div>Este sistema aún no tiene enlace para «Abrir sistema». <a href="#/admin/editar/${enc(s.id)}">Agregar el enlace</a></div></div>`}` : ""}
     </div></section>
   <section class="stats" aria-label="Datos del sistema">
@@ -1961,7 +1966,7 @@ function vFicha(id) {
   ${s.requisitos.length ? `<section class="sec"><h2 class="sec-h">Requisitos</h2><ul class="checks">${s.requisitos.map((r) => `<li>${glifo("ok")}<span>${esc(r)}</span></li>`).join("")}</ul></section>` : ""}
   <section class="sec"><h2 class="sec-h">Ficha técnica</h2>
     <div class="kv">${filasTec.map(([k, v, h]) => `<div><span class="k">${esc(k)}</span><span class="v">${h || esc(v)}</span></div>`).join("")}
-      ${prim ? `<div><a class="lr" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">${tipoDe(s) === "web" ? "Ir al sitio web" : "Ir al sistema"} ${glifo("out")}</a></div>` : ""}
+      ${prim ? `<div><a class="lr" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">Ir a${tipoDe(s) === "sistema" ? "l sistema" : tipoDe(s) === "portal" ? "l portal" : tipoDe(s) === "web" ? "l sitio web" : "l enlace"} ${glifo("out")}</a></div>` : ""}
       <div><button class="lr" data-act="contacto" data-id="${esc(s.id)}">Contactar al área responsable ${glifo("correo")}</button></div>
       <div><button class="lr" data-act="contacto" data-id="${esc(s.id)}" data-problema="1">Reportar un problema ${glifo("warn")}</button></div>
     </div></section>
@@ -2253,7 +2258,7 @@ function vBandeja(foco) {
     return `<details class="ban-card" id="ban-${esc(r.folio)}"${foco && r.folio === foco ? " open" : ""}><summary><span class="ban-sis">${esc((r.sistemas || []).map((x) => x.nombre).join(", "))}</span><span class="badge ${cl}">${tx}</span><small>${esc(fmtFecha(String(r.creado).slice(0, 10)))} · ${esc(r.folio)}</small></summary>
       <div class="ban-grid">${dato("Nombre", d.nombre)}${dato("Cargo", d.cargo)}${dato("Correo", d.correo, "mailto:" + d.correo + "?subject=" + encodeURIComponent("Seguimiento de tu solicitud " + r.folio))}${dato("Teléfono", d.telefono, tel ? "tel:" + tel : "")}${dato("Prefiere que lo contacten por", d.contactoPref)}${dato("Horario para contactarlo", d.horario)}${dato("Área o unidad", d.area)}${dato("Uso previsto", d.tipoUso)}${dato("Fecha estimada", d.fechaUso ? fmtFecha(d.fechaUso) : "")}${dato("Personas que lo usarían", d.participantes)}</div>
       ${d.mensaje ? `<p class="ban-msg"><small>Lo que necesita</small>${esc(d.mensaje)}</p>` : ""}
-      ${`<div class="ban-acts">${Object.entries(ESTADOS_BAN).filter(([k]) => k !== r.estado).map(([k, v]) => `<button class="btn sm sec" data-act="bandeja-estado" data-id="${esc(r.id)}" data-v="${k}">${k === "archivada" ? "Archivar" : r.estado === "archivada" && k === "nueva" ? "Restaurar" : "Marcar: " + v[1]}</button>`).join("")}<button class="btn sm danger" data-act="bandeja-borrar" data-id="${esc(r.id)}">${glifo("trash")}Eliminar</button></div>
+      ${`<div class="ban-acts">${Object.entries(ESTADOS_BAN).filter(([k]) => k !== r.estado).map(([k, v]) => `<button class="btn sm sec" data-act="bandeja-estado" data-id="${esc(r.id)}" data-v="${k}">${k === "archivada" ? "Archivar" : k === "cancelada" ? "Cancelar solicitud" : r.estado === "archivada" && k === "nueva" ? "Restaurar" : "Marcar: " + v[1]}</button>`).join("")}<button class="btn sm danger" data-act="bandeja-borrar" data-id="${esc(r.id)}">${glifo("trash")}Eliminar</button></div>
       <label class="sr" for="nota-${esc(r.id)}">Nota interna</label><textarea id="nota-${esc(r.id)}" class="ban-nota" placeholder="Nota interna (solo la ves tú)">${esc(r.nota || "")}</textarea><button class="btn sm" data-act="bandeja-nota" data-id="${esc(r.id)}">Guardar nota</button>`}</details>`; };
   const estado = SB ? (S.inbox === "cargando" || S.inbox === undefined ? '<div class="note info">' + glifo("info") + "<div>Cargando solicitudes…</div></div>" : S.inbox === "error" ? '<div class="note warn">' + glifo("warn") + "<div>No se pudieron cargar las solicitudes. Revisa tu conexión y que tu cuenta sea superadministrador.</div></div>" : "") : '<div class="note info">' + glifo("info") + "<div>Aún no está conectado Supabase, así que solo ves las solicitudes hechas desde este dispositivo. Al conectarlo recibirás aquí las de todas las dependencias.</div></div>";
   const bulk = S.bf === "cancelada" && vis.length ? `<div class="note warn" style="margin:12px 0">${glifo("warn")}<div><b>${vis.length} ${plural(vis.length, "solicitud cancelada", "solicitudes canceladas")}.</b> Archívalas para conservarlas fuera de la lista, o elimínalas definitivamente.<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm sec" data-act="bandeja-archivar-canceladas">Archivar todas</button><button class="btn sm danger" data-act="bandeja-borrar-canceladas">${glifo("trash")}Eliminar todas</button></div></div></div>` : "";
@@ -2271,10 +2276,10 @@ function vSolicitudes() {
   return `${cabecera("Mis solicitudes", "Historial de las solicitudes que hiciste desde este dispositivo.")}
     <div class="sp"></div>
     ${lista.length ? lista.map((sol) => { const [cl, tx] = est[sol.cancelada ? "cancelada" : sol.estado] || ["", sol.estado]; return `<article class="solcard${sol.cancelada ? " cancelada" : ""}"><header><div><b style="font-size:17px">${esc(sol.sistemas.map((s) => s.nombre).join(", "))}</b><div class="muted" style="font-size:14px">${esc(sol.datos.dependencia)} · ${esc(fmtFecha(sol.fecha))}</div></div><span class="badge ${cl}">${esc(tx)}</span></header>
-      <div class="muted" style="font-size:14px">Folio <span class="folio" style="font-size:13px;padding:2px 8px">${esc(sol.folio)}</span>${sol.listo && !sol.cancelada ? ' <span class="badge ok">Listo para implementar</span>' : ""}</div>${sol.cancelada ? `<p class="muted" style="font-size:14px;margin:6px 0 0">Cancelaste esta solicitud${sol.canceladaFecha ? " el " + esc(fmtFecha(sol.canceladaFecha)) : ""}. Si aún necesitas el sistema, haz una solicitud nueva.</p>` : vChecklist(sol)}
-      <div class="acts"><button class="btn sm sec" data-act="copiar" data-v="${esc(sol.folio)}">${glifo("copy")}Copiar folio</button><button class="btn sm sec" data-act="copiar-sol" data-id="${esc(sol.id)}">${glifo("copy")}Copiar datos</button>${sol.cancelada ? "" : `<button class="btn sm danger" data-act="cancelar-sol" data-id="${esc(sol.id)}">${glifo("x")}Cancelar solicitud</button>`}</div></article>`; }).join("")
+      <div class="muted" style="font-size:14px">Folio <span class="folio" style="font-size:13px;padding:2px 8px">${esc(sol.folio)}</span>${sol.listo && !sol.cancelada ? ' <span class="badge ok">Listo para implementar</span>' : ""}</div>${sol.cancelada ? `<p class="muted" style="font-size:14px;margin:6px 0 0">El administrador canceló esta solicitud${sol.canceladaFecha ? " el " + esc(fmtFecha(sol.canceladaFecha)) : ""}. Si aún necesitas el sistema, haz una solicitud nueva.</p>` : vChecklist(sol)}
+      <div class="acts"><button class="btn sm sec" data-act="copiar" data-v="${esc(sol.folio)}">${glifo("copy")}Copiar folio</button><button class="btn sm sec" data-act="copiar-sol" data-id="${esc(sol.id)}">${glifo("copy")}Copiar datos</button></div></article>`; }).join("")
       : vacio("Todavía no has enviado solicitudes", "Cuando solicites un sistema aparecerá aquí con su folio.", `<a class="btn" href="#/sistemas">Explorar sistemas</a>`)}
-    ${lista.length ? `<p class="muted" style="font-size:13.5px;margin-top:6px">Este historial se guarda solo en este navegador. Si ya no necesitas un sistema, usa «Cancelar solicitud»: no se borra, queda marcada como cancelada y se avisa al administrador.</p>` : ""}`;
+    ${lista.length ? `<p class="muted" style="font-size:13.5px;margin-top:6px">Este historial se guarda solo en este navegador. Si ya no necesitas un sistema, pide al administrador que cancele tu solicitud: solo el superadministrador puede cancelarlas.</p>` : ""}`;
 }
 
 /* ---------- Administración ---------- */
@@ -2486,9 +2491,12 @@ function vEditor(id) {
         <div class="tagedit">${s.usos.map((u) => `<span class="chip txt">${esc(u)}<button type="button" data-act="tag-del" data-t="${esc(u)}" aria-label="Quitar ${esc(u)}">${glifo("x")}</button></span>`).join("")}</div>
         <div style="display:flex;gap:8px;margin-top:8px"><input id="tag-in" type="text" placeholder="Ej. Eventos, Reuniones, Trámites" aria-label="Nueva etiqueta" autocomplete="off"><button type="button" class="btn sec sm" data-act="tag-add">${glifo("plus")}Agregar</button></div>
         ${sinUsar.length ? `<div class="selchips" style="margin-top:8px">${sinUsar.slice(0, 8).map((u) => `<button type="button" class="chip txt" data-act="tag-add" data-t="${esc(u)}" style="font-size:13px;padding:5px 12px">+ ${esc(u)}</button>`).join("")}</div>` : ""}</div>
-      <div class="field"><label for="e-tipoSis">Tipo</label><select class="select" id="e-tipoSis" data-path="tipoSis"><option value="" ${!s.tipoSis ? "selected" : ""}>Automático (${esc(TIPOS[tipoDe(Object.assign({}, s, { tipoSis: "" }))])})</option><option value="sistema" ${s.tipoSis === "sistema" ? "selected" : ""}>Sistema</option><option value="web" ${s.tipoSis === "web" ? "selected" : ""}>Portal / Sitio web</option></select><span class="muted" style="font-size:12.5px">Es lo que el visitante ve como «Sistema» o «Portal / Sitio web».</span></div>
+      <div class="field"><label for="e-tipoSis">Tipo</label><select class="select" id="e-tipoSis" data-path="tipoSis"><option value="" ${!s.tipoSis ? "selected" : ""}>Automático (${esc(TIPOS[tipoDe(Object.assign({}, s, { tipoSis: "" }))])})</option>${Object.entries(TIPOS).map(([k, v]) => `<option value="${k}" ${s.tipoSis === k ? "selected" : ""}>${v}</option>`).join("")}</select><span class="muted" style="font-size:12.5px">Sistema, Portal, Sitio web u Otro: es lo que el visitante ve en la ficha.</span></div>
+      ${inp("tipoOtro", "Si elegiste «Otro», especifica el tipo (opcional)", { ph: "Ej. Aplicación móvil" })}
       <div class="field"><label for="e-estado">Disponibilidad</label><select class="select" id="e-estado" data-path="estado">${optSel(ESTADOS, s.estado)}</select></div>
       ${inp("plataforma", "Plataforma", { ph: "Ej. Web · Tablets · Teléfonos" })}
+      ${inp("version", "Versión", { ph: "Ej. 1.0" })}
+      ${inp("area", "Área responsable", { ph: "Ej. Coordinación de Política Digital" })}
       <div class="field full"><span class="lbl">Ligado con (opcional)</span><div class="selchips" role="group">${S.cat.sistemas.filter((x) => x.id !== s.id).map((x) => `<button type="button" class="chip txt" data-act="e-lig" data-id="${esc(x.id)}" aria-pressed="${(s.ligados || []).includes(x.id)}">${esc(x.nombre)} · ${esc(tipoNom(x))}</button>`).join("") || '<span class="muted">Aún no hay otros elementos.</span>'}</div><span class="muted" style="font-size:12.5px">Los que marques aparecen en la ficha como «Ligado con» (y en la ficha del otro también).</span></div>
       <label class="chk full"><input type="checkbox" data-path="publicado" ${s.publicado ? "checked" : ""}><span><b>Publicado</b> — visible para todas las dependencias</span></label>
       <label class="chk full"><input type="checkbox" data-path="destacado" ${s.destacado ? "checked" : ""}><span><b>Destacado</b> — aparece en la tarjeta grande de la portada</span></label>
@@ -2847,6 +2855,7 @@ const ACT = {
   "copiar-sol"(t) { const s = S.sols.find((x) => x.id === t.dataset.id); if (s) copiar(`Folio: ${s.folio}\n\n${armarMensaje(s)}`, "Datos copiados"); },
   async "marcar-enviada"(t) { const s = S.sols.find((x) => x.id === t.dataset.id); if (!s) return; s.estado = "enviada"; s.canal = "correo"; await guardarSolicitudes(); toast("Marcada como enviada"); keep(() => render(false)); },
   async "cancelar-sol"(t) {
+    if (!S.super) return toast("Solo el superadministrador puede cancelar solicitudes.");
     const sol = S.sols.find((x) => x.id === t.dataset.id); if (!sol || sol.cancelada) return;
     if (!(await confirmar({ titulo: "Cancelar solicitud", texto: `Se marcará como cancelada la solicitud ${sol.folio} y se avisará al administrador. No se puede deshacer.`, si: "Sí, cancelar solicitud", no: "No, mantenerla", peligro: true }))) return;
     if (SB && sol.estado === "enviada") {
@@ -3032,7 +3041,9 @@ const ACT = {
   "bandeja-filtro"(t) { S.bf = t.dataset.v; keep(() => render(true)); },
   "bandeja-exportar"() { exportarBandeja(); },
   "bandeja-recargar"() { S.inbox = undefined; render(true); },
-  async "bandeja-estado"(t) { await bandejaEstado([t.dataset.id], t.dataset.v); if (t.dataset.v === "archivada") toast("Solicitud archivada"); else if (t.dataset.v === "cancelada") toast("Marcada como cancelada"); },
+  async "bandeja-estado"(t) {
+    if (t.dataset.v === "cancelada" && !(await confirmar({ titulo: "Cancelar solicitud", texto: "La solicitud quedará marcada como cancelada. Podrás cambiar su estado después si fue un error.", si: "Sí, cancelar solicitud", no: "No, mantenerla", peligro: true }))) return;
+    await bandejaEstado([t.dataset.id], t.dataset.v); if (t.dataset.v === "archivada") toast("Solicitud archivada"); else if (t.dataset.v === "cancelada") toast("Marcada como cancelada"); },
   async "bandeja-nota"(t) {
     const n = $("#nota-" + t.dataset.id); if (!n) return;
     if (SB) { const r = (S.inbox || []).find((x) => x.id === t.dataset.id); if (!r) return; const { error } = await SB.from("solicitudes").update({ nota: n.value }).eq("id", r.id); if (error) return toast("No se pudo guardar la nota."); r.nota = n.value; }
@@ -3058,7 +3069,6 @@ const ACT = {
         else add(true, "Lectura de solicitudes", `${r.count ?? (r.data || []).length} en total${r.data && r.data[0] ? `. La más reciente: ${esc(r.data[0].folio)} (${esc(fmtFecha(String(r.data[0].creado).slice(0, 10)))})` : ". Todavía no hay ninguna: si alguien ya solicitó un sistema, la solicitud no llegó al servidor."}`);
       } catch (e) { add(false, "Lectura de solicitudes", esc(String(e.message || e))); }
       try { const r = await SB.from("solicitudes").select("notif_leida,notif_oculta").limit(1); add(!r.error, "Estado compartido entre dispositivos", r.error ? "Falta ejecutar supabase-notificaciones.sql en Supabase. Mientras tanto, lo leído se recuerda solo en este dispositivo." : ""); } catch (e) { add(false, "Estado compartido entre dispositivos", "Falta ejecutar supabase-notificaciones.sql."); }
-      try { const r = await SB.rpc("cancelar_solicitud", { p_folio: "DIAGNOSTICO" }); add(!r.error, "Cancelar solicitud", r.error ? `Error: ${esc(String(r.error.message || r.error.code || "desconocido"))}. Ejecuta supabase-cancelar-solicitud.sql en Supabase.` : ""); } catch (e) { add(false, "Cancelar solicitud", "Falta ejecutar supabase-cancelar-solicitud.sql."); }
       add(S.rtEstado === "SUBSCRIBED", "Tiempo real", S.rtEstado === "SUBSCRIBED" ? "Activo: los avisos llegan al instante." : `No está activo (${esc(String(S.rtEstado || "sin conexión"))}). Los avisos llegan con la revisión cada 15 segundos. Para activarlo, ejecuta supabase-notificaciones.sql.`);
     }
     const nn = S.cat.notificaciones || [];
@@ -3533,9 +3543,17 @@ function vAuthSB() {
   const b = document.createElement("button"); b.id = "acc-btn"; b.type = "button"; b.setAttribute("aria-label", "Opciones de accesibilidad"); b.setAttribute("aria-expanded", "false");
   b.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="4.5" r="1.8"/><path d="M5 8.5l7 1.5 7-1.5M12 10v4.5m0 0l-3 5.5m3-5.5l3 5.5"/></svg>';
   const pop = document.createElement("div"); pop.id = "acc-pop"; pop.hidden = true; pop.setAttribute("role", "dialog"); pop.setAttribute("aria-label", "Accesibilidad");
-  const draw = () => { pop.innerHTML = "<b>Accesibilidad</b>" + OP.map(([k, t]) => `<button type="button" role="switch" aria-checked="${!!a[k]}" data-k="${k}"><span>${t}</span><i></i></button>`).join(""); };
+  const ICO_SOL = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg>';
+  const ICO_LUNA = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a6.8 6.8 0 0 0 10.7 10.7z"/></svg>';
+  const modoAct = () => (document.documentElement.dataset.modo === "oscuro" ? "oscuro" : "claro");
+  const draw = () => { const m = modoAct(); pop.innerHTML = "<b>Accesibilidad</b>"
+    + `<div class="acc-tema" role="group" aria-label="Apariencia"><span class="acc-tema-t">Apariencia</span><div class="acc-tema-b"><button type="button" data-tema="claro" aria-pressed="${m === "claro"}">${ICO_SOL}<span>Claro</span></button><button type="button" data-tema="oscuro" aria-pressed="${m === "oscuro"}">${ICO_LUNA}<span>Oscuro</span></button></div></div>`
+    + OP.map(([k, t]) => `<button type="button" role="switch" aria-checked="${!!a[k]}" data-k="${k}"><span>${t}</span><i></i></button>`).join(""); };
   draw();
-  pop.onclick = (e) => { const t = e.target.closest("[data-k]"); if (!t) return; a[t.dataset.k] = !a[t.dataset.k]; try { localStorage.setItem(K, JSON.stringify(a)); } catch (x) {} ap(); draw(); };
+  pop.onclick = (e) => {
+    const m = e.target.closest("[data-tema]");
+    if (m) { try { localStorage.setItem("catalogo-tema", m.dataset.tema); } catch (x) {} aplicarApariencia(); draw(); return; }
+    const t = e.target.closest("[data-k]"); if (!t) return; a[t.dataset.k] = !a[t.dataset.k]; try { localStorage.setItem(K, JSON.stringify(a)); } catch (x) {} ap(); draw(); };
   b.onclick = () => { pop.hidden = !pop.hidden; b.setAttribute("aria-expanded", String(!pop.hidden)); };
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !pop.hidden) { pop.hidden = true; b.focus(); } });
   document.body.append(b, pop);

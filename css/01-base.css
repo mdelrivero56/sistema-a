@@ -705,5 +705,7 @@ button.avatar{font:inherit;font-weight:700}
 .tipo-tag{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:1px 8px;margin-right:6px;vertical-align:1px;white-space:nowrap}
 .tipo-tag.t-sistema{background:var(--accent-soft);color:var(--accent)}
 .tipo-tag.t-web{background:var(--ok-soft);color:var(--ok)}
+.tipo-tag.t-portal{background:var(--pill);color:var(--pill-ink)}
+.tipo-tag.t-otro{background:var(--bg-soft);color:var(--label-2)}
 .fhead .cats .tipo-tag{font-size:12.5px;padding:3px 10px;align-self:center;margin-right:0}
 .chips.tipos{margin:12px 0 4px;display:flex;gap:8px;flex-wrap:wrap}
