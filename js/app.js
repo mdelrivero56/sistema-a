@@ -1858,11 +1858,28 @@ function vCategorias() {
 }
 
 function vLista(tipo, id) {
-  let titulo, l, eyebrow;
-  if (tipo === "categoria") { const k = catById(id); if (!k) return vNoEncontrado(); titulo = k.nombre; l = vis().filter((s) => s.categorias.includes(id)); eyebrow = "Categoría"; }
-  else { titulo = id; l = vis().filter((s) => s.usos.includes(id)); eyebrow = "Ideal para"; if (!l.length) return vNoEncontrado(); }
-  return `${navbar()}<header class="pagehead" style="padding-top:8px"><div><div class="when">${eyebrow}</div><h1 class="large-title">${esc(titulo)}</h1><p class="lede">${l.length} ${plural(l.length, "sistema disponible", "sistemas disponibles")}</p></div></header>
-    ${tipo === "categoria" && S.admin ? `<div class="cat-tools" style="margin-top:12px"><button class="btn sm sec" data-act="edit-cat" data-id="${esc(id)}">${glifo("edit")}Renombrar / editar categoría</button><button class="btn sm danger" data-act="del-cat" data-id="${esc(id)}">${glifo("trash")}Eliminar categoría</button></div>` : ""}<div class="sp"></div>${l.length ? `<div class="rows">${l.map((s) => fila(s)).join("")}</div>` : vacio("Sin sistemas todavía", "Aún no hay sistemas en esta categoría.")}`;
+  let titulo, l, eyebrow, k = null, desc = "", color = "azul", glifoCat = "capas";
+  if (tipo === "categoria") { k = catById(id); if (!k) return vNoEncontrado(); titulo = k.nombre; l = vis().filter((s) => s.categorias.includes(id)); eyebrow = "Categoría"; desc = k.descripcion || ""; color = k.color; glifoCat = k.glifo; }
+  else { titulo = id; l = vis().filter((s) => s.usos.includes(id)); eyebrow = "Ideal para"; if (!l.length) return vNoEncontrado(); color = l[0].icono.color; }
+  const n = l.length, cats = S.cat.categorias.slice();
+  const arte = k && imgOk(k.imagen) ? `<img src="${esc(k.imagen)}" alt="">` : glifo(GLIFOS.includes(glifoCat) ? glifoCat : "capas");
+  const tools = tipo === "categoria" && S.admin ? `<div class="cat-tools"><button class="btn sm sec" data-act="edit-cat" data-id="${esc(id)}">${glifo("edit")}Renombrar / editar</button><button class="btn sm danger" data-act="del-cat" data-id="${esc(id)}">${glifo("trash")}Eliminar</button></div>` : "";
+  const otras = tipo === "categoria" && cats.length > 1 ? `<nav class="cat-switch" aria-label="Otras categorías"><a class="chip txt" href="#/sistemas">Todas</a>${cats.map((c) => `<a class="chip txt" href="#/categoria/${enc(c.id)}" ${c.id === id ? 'aria-current="page"' : ""}>${esc(c.nombre)}</a>`).join("")}</nav>` : "";
+  return `<div class="dx cat-page">${navbar()}
+    <header class="cat-hero" style="${colorVars(color)}">
+      <span class="cat-hero-art" aria-hidden="true">${arte}</span>
+      <div class="cat-hero-txt">
+        <p class="cat-eyebrow"><a href="${eyebrow === "Categoría" ? "#/categorias" : "#/"}">${eyebrow === "Categoría" ? "Categorías" : "Inicio"}</a>${glifo("chev")}<span>${esc(titulo)}</span></p>
+        <h1 class="cat-title">${esc(titulo)}</h1>
+        ${desc ? `<p class="cat-desc">${esc(desc)}</p>` : ""}
+        <p class="cat-count"><b>${n}</b> ${plural(n, "sistema disponible", "sistemas disponibles")}</p>
+        ${tools}
+      </div>
+      <div class="cat-hero-stack" aria-hidden="true">${l.slice(0, 4).map((s) => icono(s, "s48")).join("")}</div>
+    </header>
+    ${otras}
+    ${n ? `<div class="cat-grid">${l.map(cardVer).join("")}</div>` : vacio("Sin sistemas todavía", "Aún no hay sistemas en esta categoría.")}
+  </div>`;
 }
 
 const SINONIMOS = [
