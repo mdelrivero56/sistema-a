@@ -77,3 +77,10 @@
   .rows.paged .row-t small.row-meta{-webkit-line-clamp:unset}
   .rows.paged .row-t small.row-meta .row-sub{-webkit-line-clamp:1}
 }
+
+/* ===== Solicitud abierta desde una notificación: se resalta un momento ===== */
+.ban-card{scroll-margin-top:96px}
+.ban-card.ban-resalta{box-shadow:0 0 0 3px var(--accent);transition:box-shadow .3s}
+
+/* ===== Solicitud cancelada en «Mis solicitudes» ===== */
+.solcard.cancelada{opacity:.78}
