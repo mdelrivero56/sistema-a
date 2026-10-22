@@ -13,17 +13,31 @@
 <!-- Seguridad básica (no limita scripts ni estilos, para no romper la edición) -->
 <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<link rel="stylesheet" href="css/01-base.css?v=20261022-12">
-<link rel="stylesheet" href="css/02-identidad.css?v=20261022-12">
-<link rel="stylesheet" href="css/03-avisos.css?v=20261022-12">
-<link rel="stylesheet" href="css/04-paleta.css?v=20261022-12">
-<link rel="stylesheet" href="css/05-tienda.css?v=20261022-12">
-<link rel="stylesheet" href="css/06-mejoras.css?v=20261022-12">
-<link rel="stylesheet" href="css/07-acceso.css?v=20261022-12">
-<link rel="stylesheet" href="css/08-modo-oscuro.css?v=20261022-12">
-<link rel="stylesheet" href="css/09-etiquetas-y-vista-previa.css?v=20261022-12">
-<link rel="stylesheet" href="css/10-bandeja.css?v=20261022-12">
-<link rel="stylesheet" href="css/11-bandeja-visual.css?v=20261022-12">
+<link rel="stylesheet" href="css/01-base.css?v=20261022-14">
+<link rel="stylesheet" href="css/02-identidad.css?v=20261022-14">
+<link rel="stylesheet" href="css/03-avisos.css?v=20261022-14">
+<link rel="stylesheet" href="css/04-paleta.css?v=20261022-14">
+<link rel="stylesheet" href="css/05-tienda.css?v=20261022-14">
+<link rel="stylesheet" href="css/06-mejoras.css?v=20261022-14">
+<link rel="stylesheet" href="css/07-acceso.css?v=20261022-14">
+<link rel="stylesheet" href="css/08-modo-oscuro.css?v=20261022-14">
+<link rel="stylesheet" href="css/09-etiquetas-y-vista-previa.css?v=20261022-14">
+<link rel="stylesheet" href="css/10-bandeja.css?v=20261022-14">
+<link rel="stylesheet" href="css/11-bandeja-visual.css?v=20261022-14">
+<style id="chips-azul">
+/* Botones de filtro (Todas, Nueva, En contacto…) en azul dentro del modo oscuro */
+html:root[data-modo="oscuro"] .chips a,html:root[data-modo="oscuro"] .chips button,
+html:root[data-theme="dark"] .chips a,html:root[data-theme="dark"] .chips button{background:#0F2F63!important;color:#E3EEFF!important;border:1px solid #2F6BC4!important;box-shadow:0 1px 3px rgba(0,0,0,.4)!important;opacity:1!important;text-shadow:none!important}
+html:root[data-modo="oscuro"] .chips a:hover,html:root[data-modo="oscuro"] .chips button:hover,
+html:root[data-theme="dark"] .chips a:hover,html:root[data-theme="dark"] .chips button:hover{background:#174584!important;border-color:#4C8DE6!important;color:#fff!important}
+html:root[data-modo="oscuro"] .chips a[aria-current="page"],html:root[data-modo="oscuro"] .chips .on,html:root[data-modo="oscuro"] .chips button[aria-current="true"],
+html:root[data-theme="dark"] .chips a[aria-current="page"],html:root[data-theme="dark"] .chips .on,html:root[data-theme="dark"] .chips button[aria-current="true"]{background:#2F7DE1!important;color:#fff!important;border-color:#5C9BEE!important}
+html:root[data-modo="oscuro"] .chips svg,html:root[data-theme="dark"] .chips svg{color:inherit!important;opacity:1!important}
+@media (prefers-color-scheme:dark){
+html:root:not([data-theme="light"]) .chips a,html:root:not([data-theme="light"]) .chips button{background:#0F2F63!important;color:#E3EEFF!important;border:1px solid #2F6BC4!important;opacity:1!important}
+html:root:not([data-theme="light"]) .chips a[aria-current="page"],html:root:not([data-theme="light"]) .chips .on,html:root:not([data-theme="light"]) .chips button[aria-current="true"]{background:#2F7DE1!important;color:#fff!important;border-color:#5C9BEE!important}
+}
+</style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -127,9 +141,9 @@
   <nav class="tabbar" id="tabbar" aria-label="Navegación"></nav>
 </div>
 <div id="layer"></div>
-<script src="js/config.js?v=20261022-12"></script>
-<script src="js/demo-video.js?v=20261022-12"></script>
-<script src="js/app.js?v=20261022-12"></script>
-<script src="js/galeria-flechas.js?v=20261022-12"></script>
+<script src="js/config.js?v=20261022-14"></script>
+<script src="js/demo-video.js?v=20261022-14"></script>
+<script src="js/app.js?v=20261022-14"></script>
+<script src="js/galeria-flechas.js?v=20261022-14"></script>
 </body>
 </html>

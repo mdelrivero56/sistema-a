@@ -1932,7 +1932,7 @@ function vFicha(id) {
 
   const tipoHtml = `<span class="tipo-tag t-${tipoDe(s)} big">${glifo(TIPO_ICO[tipoDe(s)])}${esc(tipoNom(s))}</span><small class="vsub">${esc(TIPOS_DESC[tipoDe(s)])}</small>`;
   const sinDato = "No especificado";
-  const filasTec = [["Tipo", tipoNom(s), tipoHtml], ["Categoría", cats.map((c) => c.nombre).join(", ") || sinDato], ["Plataforma", s.plataforma || sinDato], ["Disponibilidad", s.estado || sinDato], ["Versión", s.version || sinDato], ["Área responsable", s.area || sinDato]]
+  const filasTec = [["Tipo", tipoNom(s), tipoHtml], ["Categoría", cats.map((c) => c.nombre).join(", ") || sinDato], ["Plataforma", s.plataforma || sinDato], ["Disponibilidad", s.estado || sinDato], ["Versión", s.version || sinDato]]
     .concat(s.tecnica.filter((t) => (t.k || "").trim() && (t.v || "").trim()).map((t) => [t.k, t.v]));
   const adj = s.archivos.map((a) => {
     const [cl, et] = tipoArchivo(a);

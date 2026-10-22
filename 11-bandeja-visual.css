@@ -114,3 +114,45 @@
 :root[data-modo="oscuro"] .ban-hist{border:1px solid var(--sep)!important;background:var(--bg-input,#101A2C)!important}
 :root[data-modo="oscuro"] .ban-hist>summary{color:var(--lila-texto,#CDB5EA)!important}
 :root[data-modo="oscuro"] .sidenav a[aria-current="page"]{color:var(--lila-texto,#CDB5EA)!important}
+
+/* Respaldo: mismos botones oscuros aunque el atributo data-modo no esté puesto */
+:root[data-theme="dark"] .chips a,:root[data-theme="dark"] .chips button{background:#172339!important;color:#EAF0FA!important;border:1px solid #364862!important;box-shadow:0 1px 2px rgba(0,0,0,.35)!important;opacity:1!important}
+:root[data-theme="dark"] .chips a[aria-current="page"],:root[data-theme="dark"] .chips .on,:root[data-theme="dark"] .chips button[aria-current="true"]{background:#004EAA!important;color:#fff!important;border-color:#004EAA!important}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .chips a,:root:not([data-theme="light"]) .chips button{background:#172339!important;color:#EAF0FA!important;border:1px solid #364862!important;box-shadow:0 1px 2px rgba(0,0,0,.35)!important;opacity:1!important}
+  :root:not([data-theme="light"]) .chips a[aria-current="page"],:root:not([data-theme="light"]) .chips .on,:root:not([data-theme="light"]) .chips button[aria-current="true"]{background:#004EAA!important;color:#fff!important;border-color:#004EAA!important}
+}
+
+/* Botones de filtro (Todas, Nueva, En contacto…) en azul dentro del modo oscuro */
+html:root[data-modo="oscuro"] .chips a,html:root[data-modo="oscuro"] .chips button,
+html:root[data-theme="dark"] .chips a,html:root[data-theme="dark"] .chips button{background:#0F2F63!important;color:#E3EEFF!important;border:1px solid #2F6BC4!important;box-shadow:0 1px 3px rgba(0,0,0,.4)!important;opacity:1!important;text-shadow:none!important}
+html:root[data-modo="oscuro"] .chips a:hover,html:root[data-modo="oscuro"] .chips button:hover,
+html:root[data-theme="dark"] .chips a:hover,html:root[data-theme="dark"] .chips button:hover{background:#174584!important;border-color:#4C8DE6!important;color:#fff!important}
+html:root[data-modo="oscuro"] .chips a[aria-current="page"],html:root[data-modo="oscuro"] .chips .on,html:root[data-modo="oscuro"] .chips button[aria-current="true"],
+html:root[data-theme="dark"] .chips a[aria-current="page"],html:root[data-theme="dark"] .chips .on,html:root[data-theme="dark"] .chips button[aria-current="true"]{background:#2F7DE1!important;color:#fff!important;border-color:#5C9BEE!important}
+html:root[data-modo="oscuro"] .chips svg,html:root[data-theme="dark"] .chips svg{color:inherit!important;opacity:1!important}
+@media (prefers-color-scheme:dark){
+html:root:not([data-theme="light"]) .chips a,html:root:not([data-theme="light"]) .chips button{background:#0F2F63!important;color:#E3EEFF!important;border:1px solid #2F6BC4!important;opacity:1!important}
+html:root:not([data-theme="light"]) .chips a[aria-current="page"],html:root:not([data-theme="light"]) .chips .on,html:root:not([data-theme="light"]) .chips button[aria-current="true"]{background:#2F7DE1!important;color:#fff!important;border-color:#5C9BEE!important}
+}
+
+/* ==========================================================================
+   Ficha del sistema: video de muestra y vista previa
+   ========================================================================== */
+/* Video centrado, con marco y sombra */
+.vsec .vplayer{max-width:820px;width:100%;margin:8px auto 6px;border-radius:16px;border:1px solid rgba(16,40,90,.14);box-shadow:0 2px 4px rgba(16,40,90,.10),0 18px 40px -14px rgba(16,40,90,.45)}
+.vsec{padding-bottom:22px}
+:root[data-modo="oscuro"] .vsec .vplayer{border-color:rgba(255,255,255,.10);box-shadow:0 2px 4px rgba(0,0,0,.5),0 18px 40px -14px rgba(0,0,0,.85)}
+
+/* Vista previa: la captura principal grande y centrada desde el inicio */
+.gal-wrap{--gw:min(640px,100cqw)}
+.gal-wrap .gallery.bleed{scroll-snap-type:x mandatory;scroll-padding-inline:0}
+.gallery .shot{aspect-ratio:16/10;border-radius:16px;box-shadow:0 2px 4px rgba(16,40,90,.10),0 14px 30px -14px rgba(16,40,90,.45)!important}
+.gallery .shot img{object-fit:cover;object-position:center top}
+:root[data-modo="oscuro"] .gallery .shot{box-shadow:0 2px 4px rgba(0,0,0,.5),0 14px 30px -14px rgba(0,0,0,.8)!important}
+@media(max-width:700px){.gal-wrap{--gw:100cqw}}
+@media(max-width:700px){
+  .gal-wrap{padding-inline:0!important;--gw:100cqw}
+  .gal-wrap .gal2-arrow{background:rgba(255,255,255,.92);box-shadow:0 2px 8px rgba(16,40,90,.35);z-index:3}
+  .gal-wrap .gal2-prev{left:8px}.gal-wrap .gal2-next{right:8px}
+}
