@@ -874,7 +874,7 @@ function notificar(tipo, titulo, detalle) {
   S.cat.notificaciones = S.cat.notificaciones.slice(0, 200);
 }
 const nNoLeidas = () => (S.super && Array.isArray(S.cat.notificaciones) ? S.cat.notificaciones.filter((n) => !n.leida).length : 0);
-const NOTIF_VER = "2026-10-22.5";   // sube este número en cada entrega: la pantalla «Revisar notificaciones» lo muestra para confirmar que se cargó el archivo nuevo
+const NOTIF_VER = "2026-10-22.6";   // sube este número en cada entrega: la pantalla «Revisar notificaciones» lo muestra para confirmar que se cargó el archivo nuevo
 /* Las solicitudes nuevas se muestran como notificaciones leyendo la tabla «solicitudes» (ids «sol-…»); lo leído/oculto se recuerda en este dispositivo. */
 const SOL_LEIDAS = "cat-sol-leidas", SOL_OCULTAS = "cat-sol-ocultas", esNotifSol = (id) => String(id).startsWith("sol-");
 const lsSet = (k) => { try { return new Set(JSON.parse(localStorage.getItem(k) || "[]")); } catch (e) { return new Set(); } };
@@ -2234,21 +2234,53 @@ const fmtHora = (iso) => { if (!iso) return ""; if (String(iso).length <= 10) re
 async function bandejaPersistir(r, campos) {
   campos = campos || {};
   if (SB) {
-    try { const { data, error } = await SB.from("solicitudes").update(Object.assign({ datos: r.datos }, campos)).eq("id", r.id).select("id"); return !error && Array.isArray(data) && data.length > 0; } catch (e) { return false; }
+    let res; try { res = await SB.from("solicitudes").update(Object.assign({ datos: r.datos }, campos)).eq("id", r.id).select("id"); } catch (e) { res = { error: e }; }
+    const ok = !res.error && Array.isArray(res.data) && res.data.length > 0;
+    if (!ok) bandejaSinPermisoEditar(res.error);
+    return ok;
   }
   const x = S.sols.find((y) => y.id === r.id); if (!x) return false;
   x.datos = r.datos; if ("estado" in campos) x.estadoBan = campos.estado; if ("nota" in campos) x.nota = campos.nota;
   await guardarSolicitudes(); return true;
 }
+/* Identificadores: en la base pueden ser texto o número; en pantalla siempre llegan como texto. Se comparan siempre como texto. */
+const banId = (x) => String(x);
+const banFila = (id) => filasBandeja().find((x) => banId(x.id) === banId(id));
+const sqlEditarSolicitudes = () => `-- Permite al superadministrador ACTUALIZAR solicitudes (estado, oficio y notas)
+alter table public.solicitudes add column if not exists nota text;
+grant update on public.solicitudes to authenticated;
+drop policy if exists "superadmin actualiza solicitudes" on public.solicitudes;
+create policy "superadmin actualiza solicitudes" on public.solicitudes
+  for update to authenticated
+  using (
+    lower(coalesce(auth.jwt() ->> 'email', '')) = lower('${CORREO_SUPER}')
+    or exists (select 1 from public.perfiles p where p.id = auth.uid() and p.rol in ('superadmin', 'admin'))
+  )
+  with check (
+    lower(coalesce(auth.jwt() ->> 'email', '')) = lower('${CORREO_SUPER}')
+    or exists (select 1 from public.perfiles p where p.id = auth.uid() and p.rol in ('superadmin', 'admin'))
+  );`;
+function bandejaSinPermisoEditar(err) {
+  const sql = sqlEditarSolicitudes();
+  const det = err && (err.message || err.code) ? `<p class="muted" style="font-size:13px;margin-top:12px">Detalle técnico: ${esc(String(err.message || err.code))}</p>` : "";
+  modal({
+    titulo: "No se pudo guardar el cambio", wide: true,
+    body: `<p class="muted">Supabase no permitió modificar la solicitud: a tu cuenta le falta el permiso de edición en la tabla «solicitudes». Se corrige una sola vez:</p>
+      <ol class="timeline" style="margin:14px 0"><li><span class="n">1</span><div><b>Abre Supabase → SQL Editor</b><span>En el proyecto del catálogo.</span></div></li><li><span class="n">2</span><div><b>Pega este código y presiona Run</b><span>Usa el botón «Copiar código».</span></div></li><li><span class="n">3</span><div><b>Vuelve aquí y repite la acción</b><span>No se perdió nada: la solicitud sigue como estaba.</span></div></li></ol>
+      <pre class="sqlbox">${esc(sql)}</pre>${det}`,
+    pie: `<button class="btn sec" data-act="copiar" data-v="${esc(sql)}">${glifo("copy")}Copiar código</button><button class="btn" data-act="cerrar-modal">Cerrar</button>`
+  });
+}
 async function bandejaEstado(ids, v) {
   if (!S.super || !ids.length) return;
   let fallos = 0;
-  await Promise.all(filasBandeja().filter((r) => ids.includes(r.id)).map(async (r) => {
+  const idsT = new Set(ids.map(banId));
+  await Promise.all(filasBandeja().filter((r) => idsT.has(banId(r.id))).map(async (r) => {
     const antes = r.estado; if (antes === v) return;
     const g = gestionEdit(r); g.historial.push(evBan("estado", `${(ESTADOS_BAN[antes] || [, antes])[1]} → ${ESTADOS_BAN[v][1]}`)); histRecortar(g);
     if (await bandejaPersistir(r, { estado: v })) r.estado = v; else { g.historial.pop(); fallos++; }
   }));
-  if (fallos) toast(fallos === 1 ? "No se pudo actualizar el estado." : `No se pudo actualizar el estado de ${fallos} solicitudes.`);
+  if (fallos && !$("#modal")) toast(fallos === 1 ? "No se pudo actualizar el estado." : `No se pudo actualizar el estado de ${fallos} solicitudes.`);
   keep(() => render(true));
 }
 const sqlBorrarSolicitudes = () => `-- Permite al superadministrador eliminar solicitudes
@@ -2280,9 +2312,9 @@ async function bandejaBorrar(ids, texto) {
     let r; try { r = await SB.from("solicitudes").delete().in("id", ids).select("id"); } catch (e) { r = { error: e }; }
     borrados = r && !r.error && Array.isArray(r.data) ? r.data.map((x) => x.id) : [];
     if (!borrados.length) return bandejaSinPermiso(ids, r && r.error);
-    S.inbox = (S.inbox || []).filter((x) => !borrados.includes(x.id));
-  } else { S.sols = S.sols.filter((x) => !ids.includes(x.id)); await guardarSolicitudes(); borrados = ids.slice(); }
-  borrados.forEach((id) => S.banSel.delete(id));
+    const bT = new Set(borrados.map(banId)); S.inbox = (S.inbox || []).filter((x) => !bT.has(banId(x.id)));
+  } else { const iT = new Set(ids.map(banId)); S.sols = S.sols.filter((x) => !iT.has(banId(x.id))); await guardarSolicitudes(); borrados = ids.slice(); }
+  borrados.forEach((id) => S.banSel.delete(banId(id)));
   const faltan = ids.length - borrados.length;
   toast(faltan ? `Se eliminaron ${borrados.length} de ${ids.length}: a las demás les falta permiso en Supabase.` : ids.length === 1 ? "Solicitud eliminada" : `${ids.length} solicitudes eliminadas`); keep(() => render(true));
 }
@@ -2321,21 +2353,21 @@ function bandejaCard(r, foco) {
   const hist = g.historial.slice().reverse().map((h) => `<li><span class="ban-h-f">${esc(fmtHora(h.f))}</span><b>${esc(h.d || "")}</b><small>${esc(h.q || "")}</small></li>`).join("") + `<li><span class="ban-h-f">${esc(fmtHora(r.creado))}</span><b>Solicitud registrada</b><small>Solicitante</small></li>`;
   return `<details class="ban-card" id="ban-${esc(r.folio)}"${abierta ? " open" : ""}><summary><span class="ban-sis">${esc((r.sistemas || []).map((x) => x.nombre).join(", "))}</span><span class="badge ${cl}">${tx}</span>${of.recibido ? '<span class="badge ok">Oficio recibido</span>' : ""}<small>${esc(fmtFecha(String(r.creado).slice(0, 10)))} · ${esc(r.folio)}</small></summary>
       <div class="ban-grid">${banDato("Nombre", d.nombre)}${banDato("Cargo", d.cargo)}${banDato("Correo", d.correo, "mailto:" + d.correo + "?subject=" + encodeURIComponent("Seguimiento de tu solicitud " + r.folio))}${banDato("Teléfono", d.telefono, tel ? "tel:" + tel : "")}${banDato("Prefiere que lo contacten por", d.contactoPref)}${banDato("Horario para contactarlo", d.horario)}${banDato("Área o unidad", d.area)}${banDato("Uso previsto", d.tipoUso)}${banDato("Fecha estimada", d.fechaUso ? fmtFecha(d.fechaUso) : "")}${banDato("Personas que lo usarían", d.participantes)}</div>
-      ${d.mensaje ? `<p class="ban-msg"><small>Lo que necesita</small>${esc(d.mensaje)}</p>` : ""}
+      ${d.mensaje ? `<p class="ban-msg"><small>Lo que necesita</small><span>${esc(d.mensaje)}</span></p>` : ""}
       <fieldset class="ban-oficio"><legend>Oficio de solicitud</legend>
         <label class="ban-of-chk" for="of-r-${id}"><input type="checkbox" id="of-r-${id}"${of.recibido ? " checked" : ""}> Oficio recibido</label>
         <div class="ban-of-row"><div class="field"><label for="of-f-${id}">Fecha de recepción</label><input type="date" id="of-f-${id}" value="${esc(of.fecha)}"></div><div class="field"><label for="of-n-${id}">No. de oficio</label><input type="text" id="of-n-${id}" value="${esc(of.numero)}" placeholder="Ej. OF-123/2026" autocomplete="off"></div></div>
         <button type="button" class="btn sm" data-act="bandeja-oficio" data-id="${id}">Guardar oficio</button>
       </fieldset>
-      <div class="ban-acts">${Object.entries(ESTADOS_BAN).filter(([k]) => k !== r.estado).map(([k, v]) => `<button class="btn sm sec" data-act="bandeja-estado" data-id="${id}" data-v="${k}">${k === "archivada" ? "Archivar" : k === "cancelada" ? "Cancelar solicitud" : r.estado === "archivada" && k === "nueva" ? "Restaurar" : "Marcar: " + v[1]}</button>`).join("")}<button class="btn sm danger" data-act="bandeja-borrar" data-id="${id}">${glifo("trash")}Eliminar</button></div>
-      <label class="sr" for="nota-${id}">Nota interna</label><textarea id="nota-${id}" class="ban-nota" placeholder="Nota interna (solo la ves tú)">${esc(r.nota || "")}</textarea><button class="btn sm" data-act="bandeja-nota" data-id="${id}">Guardar nota</button>
+      <section class="ban-bloque"><h3 class="ban-tit">Estado de la solicitud</h3><div class="ban-acts">${Object.entries(ESTADOS_BAN).filter(([k]) => k !== r.estado).map(([k, v]) => `<button class="btn sm sec" data-act="bandeja-estado" data-id="${id}" data-v="${k}">${k === "archivada" ? "Archivar" : k === "cancelada" ? "Cancelar solicitud" : r.estado === "archivada" && k === "nueva" ? "Restaurar" : "Marcar: " + v[1]}</button>`).join("")}<button class="btn sm danger" data-act="bandeja-borrar" data-id="${id}">${glifo("trash")}Eliminar</button></div></section>
+      <section class="ban-bloque"><h3 class="ban-tit"><label for="nota-${id}">Nota interna</label></h3><textarea id="nota-${id}" class="ban-nota" placeholder="Nota interna (solo la ves tú)">${esc(r.nota || "")}</textarea><button type="button" class="btn sm" data-act="bandeja-nota" data-id="${id}">Guardar nota</button></section>
       <details class="ban-hist"><summary>Historial de movimientos (${g.historial.length + 1})</summary><ol class="ban-hl">${hist}</ol></details></details>`;
 }
 function bandejaListaHtml(foco) {
   const grupos = new Map();
   bandejaVisibles().forEach((r) => { const k = String((r.datos && r.datos.dependencia) || "Sin dependencia").trim(); const g = k.toLowerCase(); if (!grupos.has(g)) grupos.set(g, { nombre: k, items: [] }); grupos.get(g).items.push(r); });
   if (!grupos.size) return banFiltrosActivos() || S.bf !== "todas" ? vacio("No hay solicitudes con esos filtros", "Prueba con otras palabras o limpia los filtros.", `<button type="button" class="btn sec" data-act="bandeja-limpiar">Limpiar filtros</button>`) : vacio("No hay solicitudes", "Cuando una dependencia solicite un sistema aparecerá aquí.");
-  return [...grupos.values()].map((g) => `<section class="ban-dep"><h2>${esc(g.nombre)} <small>${g.items.length} solicitud${g.items.length === 1 ? "" : "es"}</small></h2>${g.items.map((r) => `<div class="ban-row"><label class="ban-sel" title="Seleccionar"><input type="checkbox" data-ban-sel="${esc(r.id)}"${S.banSel.has(r.id) ? " checked" : ""} aria-label="Seleccionar solicitud ${esc(r.folio)}"></label>${bandejaCard(r, foco)}</div>`).join("")}</section>`).join("");
+  return [...grupos.values()].map((g) => `<section class="ban-dep"><h2>${esc(g.nombre)} <small>${g.items.length} solicitud${g.items.length === 1 ? "" : "es"}</small></h2>${g.items.map((r) => `<div class="ban-row"><label class="ban-sel" title="Seleccionar"><input type="checkbox" data-ban-sel="${esc(r.id)}"${S.banSel.has(banId(r.id)) ? " checked" : ""} aria-label="Seleccionar solicitud ${esc(r.folio)}"></label>${bandejaCard(r, foco)}</div>`).join("")}</section>`).join("");
 }
 /* Repinta solo la lista (así la búsqueda no pierde el cursor al escribir) */
 function pintarBandeja() {
@@ -2362,7 +2394,7 @@ function bandejaHerramientas(rows) {
 function vBandeja(foco) {
   if (SB && S.inbox === undefined) { cargarBandeja().then(() => { if (/^#\/solicitudes/.test(location.hash)) render(true); }); }
   const rows = filasBandeja(), cuenta = (e) => rows.filter((r) => r.estado === e).length;
-  { const ex = new Set(rows.map((r) => r.id)); [...S.banSel].forEach((id) => { if (!ex.has(id)) S.banSel.delete(id); }); }
+  { const ex = new Set(rows.map((r) => banId(r.id))); [...S.banSel].forEach((id) => { if (!ex.has(id)) S.banSel.delete(id); }); }
   /* Si se llega desde una notificación (#/solicitudes/FOLIO): muestra esa solicitud abierta y desplaza la pantalla hasta ella */
   if (!foco) S.focoHecho = null;
   const objetivo = foco ? rows.find((r) => r.folio === foco) : null, primera = !!objetivo && S.focoHecho !== foco;
@@ -3201,12 +3233,12 @@ const ACT = {
   "bandeja-exportar"() { exportarBandeja(); },
   "bandeja-recargar"() { S.inbox = undefined; render(true); },
   async "bandeja-estado"(t) {
-    const r = filasBandeja().find((x) => x.id === t.dataset.id), v = t.dataset.v;
+    const r = banFila(t.dataset.id), v = t.dataset.v; if (!r) return toast("No se encontró la solicitud. Pulsa «Actualizar» e inténtalo de nuevo.");
     if (v === "cancelada" && !(await confirmar({ titulo: "Cancelar solicitud", texto: "La solicitud quedará marcada como cancelada. Podrás cambiar su estado después si fue un error.", si: "Sí, cancelar solicitud", no: "No, mantenerla", peligro: true }))) return;
     if (v === "atendida" && r && !gestionDe(r).oficio.recibido && !(await confirmar({ titulo: "Sin oficio registrado", texto: "Esta solicitud todavía no tiene el oficio marcado como recibido. ¿La marcas como atendida de todos modos?", si: "Sí, marcar atendida", no: "No, volver" }))) return;
-    await bandejaEstado([t.dataset.id], v); if (v === "archivada") toast("Solicitud archivada"); else if (v === "cancelada") toast("Marcada como cancelada"); },
+    await bandejaEstado([r.id], v); if (v === "archivada") toast("Solicitud archivada"); else if (v === "cancelada") toast("Marcada como cancelada"); },
   async "bandeja-oficio"(t) {
-    const id = t.dataset.id, r = filasBandeja().find((x) => x.id === id); if (!r) return;
+    const id = t.dataset.id, r = banFila(id); if (!r) return toast("No se encontró la solicitud. Pulsa «Actualizar» e inténtalo de nuevo.");
     const rec = !!($("#of-r-" + id) || {}).checked; let fecha = (($("#of-f-" + id) || {}).value || "").trim(); const num = (($("#of-n-" + id) || {}).value || "").trim();
     if (rec && !fecha) fecha = hoyISO();
     const g = gestionEdit(r), ant = Object.assign({}, g.oficio), nuevo = { recibido: rec, fecha: rec ? fecha : "", numero: rec ? num : "" };
@@ -3214,15 +3246,15 @@ const ACT = {
     g.oficio = nuevo; g.historial.push(evBan("oficio", rec ? `Oficio recibido${num ? " · No. " + num : ""} · ${fmtFecha(fecha)}` : "Se quitó el registro del oficio")); histRecortar(g);
     if (!(await bandejaPersistir(r, {}))) { g.oficio = ant; g.historial.pop(); return toast("No se pudo guardar el oficio."); }
     toast(rec ? "Oficio registrado" : "Registro de oficio quitado");
-    if (rec && (r.estado === "nueva" || r.estado === "contacto") && await confirmar({ titulo: "Marcar como atendida", texto: "Ya registraste el oficio de esta solicitud. ¿Quieres marcarla como atendida?", si: "Sí, marcar atendida", no: "Todavía no" })) { await bandejaEstado([id], "atendida"); return; }
+    if (rec && (r.estado === "nueva" || r.estado === "contacto") && await confirmar({ titulo: "Marcar como atendida", texto: "Ya registraste el oficio de esta solicitud. ¿Quieres marcarla como atendida?", si: "Sí, marcar atendida", no: "Todavía no" })) { await bandejaEstado([r.id], "atendida"); return; }
     keep(() => render(true));
   },
-  "bandeja-sel-todas"() { bandejaVisibles().forEach((r) => S.banSel.add(r.id)); keep(() => render(true)); },
+  "bandeja-sel-todas"() { bandejaVisibles().forEach((r) => S.banSel.add(banId(r.id))); keep(() => render(true)); },
   "bandeja-sel-ninguna"() { S.banSel.clear(); keep(() => render(true)); },
   async "bandeja-masivo"(t) {
-    const v = t.dataset.v, ids = filasBandeja().filter((r) => S.banSel.has(r.id)).map((r) => r.id); if (!ids.length) return;
+    const v = t.dataset.v, ids = filasBandeja().filter((r) => S.banSel.has(banId(r.id))).map((r) => r.id); if (!ids.length) return;
     if (v === "borrar") { await bandejaBorrar(ids, `Se eliminarán ${ids.length} ${plural(ids.length, "solicitud", "solicitudes")} de forma definitiva. No se puede deshacer; si solo quieres sacarlas de la lista, usa «Archivar».`); return; }
-    if (v === "atendida") { const sin = filasBandeja().filter((r) => ids.includes(r.id) && !gestionDe(r).oficio.recibido).length; if (sin && !(await confirmar({ titulo: "Sin oficio registrado", texto: `${sin} de ${ids.length} no tienen el oficio marcado como recibido. ¿Las marcas como atendidas de todos modos?`, si: "Sí, marcar atendidas", no: "No, volver" }))) return; }
+    if (v === "atendida") { const sin = filasBandeja().filter((r) => ids.some((i) => banId(i) === banId(r.id)) && !gestionDe(r).oficio.recibido).length; if (sin && !(await confirmar({ titulo: "Sin oficio registrado", texto: `${sin} de ${ids.length} no tienen el oficio marcado como recibido. ¿Las marcas como atendidas de todos modos?`, si: "Sí, marcar atendidas", no: "No, volver" }))) return; }
     S.banSel.clear(); await bandejaEstado(ids, v); toast(`${ids.length} ${plural(ids.length, "solicitud actualizada", "solicitudes actualizadas")}`);
   },
   async "bandeja-archivar-pend"() { const ids = S.banPend || []; cerrarModal(); if (ids.length) { await bandejaEstado(ids, "archivada"); toast("Archivada en lugar de eliminarla"); } },
@@ -3230,13 +3262,13 @@ const ACT = {
   async "respaldo-completo"() { await respaldoCompleto(); },
   async "bandeja-nota"(t) {
     const n = $("#nota-" + t.dataset.id); if (!n) return;
-    const r = filasBandeja().find((x) => x.id === t.dataset.id); if (!r) return;
+    const r = banFila(t.dataset.id); if (!r) return toast("No se encontró la solicitud. Pulsa «Actualizar» e inténtalo de nuevo.");
     const cambio = (r.nota || "") !== n.value, g = gestionEdit(r);
     if (cambio) { g.historial.push(evBan("nota", n.value.trim() ? "Nota interna actualizada" : "Nota interna eliminada")); histRecortar(g); }
     if (!(await bandejaPersistir(r, { nota: n.value }))) { if (cambio) g.historial.pop(); return toast("No se pudo guardar la nota."); }
     r.nota = n.value; toast("Nota guardada"); if (cambio) keep(() => render(true));
   },
-  async "bandeja-borrar"(t) { const r = filasBandeja().find((x) => x.id === t.dataset.id); if (r) await bandejaBorrar([r.id], `Se eliminará la solicitud ${r.folio} de ${(r.datos || {}).dependencia || "la dependencia"}. No se puede deshacer; si solo quieres sacarla de la lista, usa «Archivar».`); },
+  async "bandeja-borrar"(t) { const r = banFila(t.dataset.id); if (r) await bandejaBorrar([r.id], `Se eliminará la solicitud ${r.folio} de ${(r.datos || {}).dependencia || "la dependencia"}. No se puede deshacer; si solo quieres sacarla de la lista, usa «Archivar».`); },
   async "bandeja-archivar-canceladas"() { await bandejaEstado(filasBandeja().filter((r) => r.estado === "cancelada").map((r) => r.id), "archivada"); toast("Solicitudes canceladas archivadas"); },
   async "bandeja-borrar-canceladas"() { const ids = filasBandeja().filter((r) => r.estado === "cancelada").map((r) => r.id); await bandejaBorrar(ids, `Se eliminarán ${ids.length} ${plural(ids.length, "solicitud cancelada", "solicitudes canceladas")}. No se puede deshacer; si prefieres conservarlas, usa «Archivar todas».`); },
   "guardar-directorio"() { const t = $("#dir-txt"); if (!t) return; cfg().directorio = t.value.split("\n").map((l) => l.split("|").map((x) => x.trim())).filter((a) => a[0]).map((a) => ({ nombre: a[0], cargo: a[1] || "", correo: a[2] || "", telefono: a[3] || "" })); guardarCatalogo(); toast("Directorio guardado"); render(true); },
