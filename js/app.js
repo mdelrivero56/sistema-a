@@ -1704,6 +1704,9 @@ function iniciarGaleria() {
   g.addEventListener("scroll", act, { passive: true });
   if ("ResizeObserver" in window) new ResizeObserver(act).observe(g);
   g.querySelectorAll("img").forEach((im) => im.addEventListener("load", act, { once: true }));
+  const cnt = $("#gal-count"), tot = g.children.length;
+  const num = () => { if (!cnt || tot < 2) return; const a = g.children[0], b = g.children[1], paso = (b.offsetLeft - a.offsetLeft) || g.clientWidth || 1; cnt.hidden = false; cnt.textContent = `Captura ${Math.min(tot, Math.max(1, Math.round(g.scrollLeft / paso) + 1))} de ${tot}`; };
+  g.addEventListener("scroll", num, { passive: true }); num();
   act();
 }
 function iniciarCarrusel() {
@@ -1737,7 +1740,7 @@ function vHome() {
   const cats = S.cat.categorias.slice();
   const usos = todosUsos().slice(0, 4);
   post = iniciarCarrusel;
-  return `${cabecera("Descubrir", "", cuando)}
+  return `<div class="dx">${cabecera("Descubrir", "", cuando)}
     ${bannerAviso()}
     ${cats.length ? `<div class="cv-wrap ch-wrap"><button type="button" class="cv-arrow cv-prev" data-act="cv-prev" aria-label="Anterior" hidden>${glifo("back")}</button><div class="chips bleed" role="list" aria-label="Categorías">${cats.map((k) => `<a role="listitem" class="chip" href="#/categoria/${enc(k.id)}" style="${colorVars(k.color)}"><span class="cdot${catCls(k)}">${catInner(k)}</span>${esc(k.nombre)}</a>`).join("")}</div><button type="button" class="cv-arrow cv-next" data-act="cv-next" aria-label="Siguiente" hidden>${glifo("chev")}</button></div>` : ""}
     ${destCar(feats)}
@@ -1753,7 +1756,7 @@ function vHome() {
         <li><span class="n">1</span><b>Elige un sistema</b><p>Revisa su descripción, capturas, requisitos y cuáles dependencias ya lo usan.</p></li>
         <li><span class="n">2</span><b>Llena la solicitud</b><p>Cuéntanos quién eres y para qué lo necesitas. Solo toma unos minutos.</p></li>
         <li><span class="n">3</span><b>Te contactamos</b><p>Revisamos tu solicitud y coordinamos una reunión con tu dependencia.</p></li>
-      </ol></section>`;
+      </ol></section></div>`;
 }
 
 function vSistemas() {
@@ -1932,7 +1935,7 @@ function vFicha(id) {
 
   const tipoHtml = `<span class="tipo-tag t-${tipoDe(s)} big">${glifo(TIPO_ICO[tipoDe(s)])}${esc(tipoNom(s))}</span><small class="vsub">${esc(TIPOS_DESC[tipoDe(s)])}</small>`;
   const sinDato = "No especificado";
-  const filasTec = [["Tipo", tipoNom(s), tipoHtml], ["Categoría", cats.map((c) => c.nombre).join(", ") || sinDato], ["Plataforma", s.plataforma || sinDato], ["Disponibilidad", s.estado || sinDato], ["Versión", s.version || sinDato], ["Área responsable", s.area || sinDato]]
+  const filasTec = [["Tipo", tipoNom(s), tipoHtml], ["Categoría", cats.map((c) => c.nombre).join(", ") || sinDato], ["Plataforma", s.plataforma || sinDato], ["Disponibilidad", s.estado || sinDato]]
     .concat(s.tecnica.filter((t) => (t.k || "").trim() && (t.v || "").trim()).map((t) => [t.k, t.v]));
   const adj = s.archivos.map((a) => {
     const [cl, et] = tipoArchivo(a);
@@ -1942,13 +1945,13 @@ function vFicha(id) {
   const encl = otros.map((l) => `<li><span class="dtype link">${glifo("link")}</span><div class="dt"><b>${esc(l.etiqueta || hostDe(l.url))}</b><small>${esc(hostDe(l.url))}</small></div><div class="acts"><a class="get sm" href="${esc(urlOk(l.url))}" target="_blank" rel="noopener noreferrer">Abrir</a></div></li>`).join("");
 
   return `${navbar({ mid: icono(s, "s34"), right })}
-  <section class="fhead">${icono(s, "s128")}
+  <div class="fx"><section class="fhead">${icono(s, "s128")}
     <div class="fhead-t">
       <h1>${esc(s.nombre)}</h1>
       <p class="sub">${esc(s.subtitulo)}</p>
       <div class="cats">${tipoTag(s)}${cats.map((c) => `<a href="#/categoria/${enc(c.id)}">${esc(c.nombre)}</a>`).join("")}</div>
       ${!s.publicado ? `<div><span class="badge warn">No publicado · solo lo ves tú</span></div>` : ""}
-      <div class="fhead-actions" id="mainget">${btnGet(s, "big")}${prim ? `<a class="btn2" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">Abrir ${tipoDe(s) === "sistema" ? "sistema" : tipoDe(s) === "portal" ? "portal" : tipoDe(s) === "web" ? "sitio web" : "enlace"} ${glifo("out")}</a>` : ""}<button class="circ" data-act="compartir" data-id="${esc(s.id)}" aria-label="Copiar enlace del sistema" style="color:var(--accent)">${glifo("share")}</button></div>
+      <div class="fhead-actions" id="mainget">${btnGet(s, "big")}<button class="circ" data-act="compartir" data-id="${esc(s.id)}" aria-label="Copiar enlace del sistema" style="color:var(--accent)">${glifo("share")}</button></div>
       ${S.admin ? `<div class="manage" role="group" aria-label="Gestionar este sistema"><button type="button" class="mbtn" data-act="gestionar" data-modo="info" data-id="${esc(s.id)}">${glifo("edit")}Editar información</button><button type="button" class="mbtn" data-act="gestionar" data-modo="imagen" data-id="${esc(s.id)}">${glifo("img")}Cambiar imagen</button><button type="button" class="mbtn" data-act="ren-sis" data-id="${esc(s.id)}">${glifo("edit")}Cambiar nombre</button><button type="button" class="mbtn" data-act="del-sistema" data-id="${esc(s.id)}">${glifo("trash")}Eliminar</button></div>${prim ? "" : `<div class="note warn" style="margin-top:12px">${glifo("warn")}<div>Este sistema aún no tiene enlace para «Abrir sistema». <a href="#/admin/editar/${enc(s.id)}">Agregar el enlace</a></div></div>`}` : ""}
     </div></section>
   <section class="stats" aria-label="Datos del sistema">
@@ -1956,18 +1959,25 @@ function vFicha(id) {
     <div class="stat"><span class="l">Ideal para</span><b>${esc(s.usos[0] || "General")}</b><span class="s">${s.usos.length > 1 ? "y " + (s.usos.length - 1) + " más" : "uso principal"}</span></div>
     <div class="stat"><span class="l">Categoría</span><b>${c0 ? glifo(c0.glifo) : glifo("capas")}</b><span class="s">${esc(c0 ? c0.nombre : "Sistema")}</span></div>
   </section>
+  <div class="fx-body"><div class="fx-main">
   ${nov ? `<section class="sec"><h2 class="sec-h"><button data-act="historial" data-id="${esc(s.id)}">Novedades ${glifo("chev")}</button></h2><div class="nov"><span>Versión ${esc(nov.version)}</span><span>${esc(hace(nov.fecha))}</span></div><div class="prose">${rich(nov.notas)}</div></section>` : ""}
-  ${videoInfo(s.videoDestacado) ? `<section class="sec vsec"><h2 class="sec-h">Video de muestra</h2><div class="vplayer">${videoHtml(videoInfo(s.videoDestacado), s.nombre)}</div></section>` : ""}
-  ${s.capturas.length || (s.videos || []).some((v) => videoInfo(v)) ? `<section class="sec"><h2 class="sec-h">Vista previa</h2><div class="gal-wrap"><button type="button" class="gal-arrow gal-prev" data-act="gal-prev" aria-label="Captura anterior" hidden>${glifo("back")}</button><div class="gallery bleed" tabindex="0" aria-label="Capturas y videos del sistema">${s.capturas.filter((c) => imgOk(c.src)).map((c, i) => `<button class="shot" data-act="lightbox" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ampliar captura ${i + 1}${c.pie ? ": " + esc(c.pie) : ""}"><img src="${esc(c.src)}" alt="${esc(c.pie || "Captura de " + s.nombre)}" loading="lazy"></button>`).join("")}${(s.videos || []).map((v, i) => videoInfo(v) ? `<button class="shot vshot" data-act="ver-video" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ver video${v.pie ? ": " + esc(v.pie) : ""}">${glifo("play")}<small>${esc(v.pie || "Video de muestra")}</small></button>` : "").join("")}</div><button type="button" class="gal-arrow gal-next" data-act="gal-next" aria-label="Captura siguiente" hidden>${glifo("chev")}</button></div></section>` : ""}
+  ${videoInfo(s.videoDestacado) ? `<section class="sec vsec"><h2 class="sec-h">Video de muestra<span class="sec-sub">Conoce el sistema en acción</span></h2><div class="vplayer">${videoHtml(videoInfo(s.videoDestacado), s.nombre)}</div></section>` : ""}
+  ${s.capturas.length || (s.videos || []).some((v) => videoInfo(v)) ? `<section class="sec fx-prev"><h2 class="sec-h">Vista previa<span class="sec-sub" id="gal-count" hidden></span></h2><div class="gal-wrap"><button type="button" class="gal-arrow gal-prev" data-act="gal-prev" aria-label="Captura anterior" hidden>${glifo("back")}</button><div class="gallery bleed" tabindex="0" aria-label="Capturas y videos del sistema">${s.capturas.filter((c) => imgOk(c.src)).map((c, i) => `<button class="shot" data-act="lightbox" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ampliar captura ${i + 1}${c.pie ? ": " + esc(c.pie) : ""}"><img src="${esc(c.src)}" alt="${esc(c.pie || "Captura de " + s.nombre)}" loading="lazy"></button>`).join("")}${(s.videos || []).map((v, i) => videoInfo(v) ? `<button class="shot vshot" data-act="ver-video" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ver video${v.pie ? ": " + esc(v.pie) : ""}">${glifo("play")}<small>${esc(v.pie || "Video de muestra")}</small></button>` : "").join("")}</div><button type="button" class="gal-arrow gal-next" data-act="gal-next" aria-label="Captura siguiente" hidden>${glifo("chev")}</button></div></section>` : ""}
   ${s.plataforma ? `<div class="platrow">${glifo("tablet")}<span>${esc(s.plataforma)}</span>${tipoTag(s)}</div>` : ""}
-  ${s.descripcion ? `<section style="padding-top:18px"><div class="prose clamp" id="desc" style="${descEstilo(s)}">${rich(s.descripcion)}</div><button class="more" id="mas" data-act="toggle-desc">más</button><div style="clear:both"></div></section>` : ""}
+  ${s.descripcion ? `<section class="sec fx-about"><h2 class="sec-h"><span class="ab-ico">${glifo("info")}</span>Acerca del sistema</h2><div class="prose clamp" id="desc" style="${descEstilo(s)}">${rich(s.descripcion)}</div><button class="more" id="mas" data-act="toggle-desc">más</button><div style="clear:both"></div></section>` : ""}
   ${s.pasos.length || manualArch || manualLink ? `<section class="sec"><h2 class="sec-h">Manual de uso</h2>${s.pasos.length ? `<ol class="steps">${s.pasos.map((p) => `<li><span>${esc(p)}</span></li>`).join("")}</ol>` : ""}${manualArch ? `<div style="margin-top:14px"><button class="btn sec" data-act="ver-archivo" data-id="${esc(s.id)}" data-fid="${esc(manualArch.id)}">${glifo("libro")}Abrir manual completo</button></div>` : manualLink ? `<div style="margin-top:14px"><a class="btn sec" href="${esc(urlOk(manualLink.url))}" target="_blank" rel="noopener noreferrer">${glifo("libro")}Abrir manual completo</a></div>` : ""}</section>` : ""}
+  <section class="sec fx-how"><h2 class="sec-h">Cómo solicitarlo</h2><ol class="fx-steps">
+    <li><span class="n">1</span><b>Envía tu solicitud</b><small>Llenas el formulario y recibes tu folio.</small></li>
+    <li><span class="n">2</span><b>Elabora tu oficio</b><small>Cita tu folio y envíalo al correo indicado.</small></li>
+    <li><span class="n">3</span><b>Coordinamos una reunión</b><small>Definimos accesos y fechas de uso contigo.</small></li></ol></section>
   <section class="sec"><h2 class="sec-h">Dependencias que lo usan</h2>
     ${n ? `<div class="usedby"><div class="big"><b>${n}</b><span>${plural(n, "dependencia", "dependencias")}</span></div><div class="revs">${s.dependencias.map((d) => `<article class="rev"><h3>${esc(d.nombre)}</h3><div class="meta">${d.desde ? "Desde " + esc(d.desde) : "Usuaria del sistema"}</div>${d.nota ? `<p>${esc(d.nota)}</p>` : ""}</article>`).join("")}</div></div>`
       : `<div class="empty-card"><p>Todavía ninguna dependencia lo tiene registrado. Puedes ser de las primeras en usarlo.</p>${btnGet(s, "big", true)}</div>`}
   </section>
   ${adj || encl ? `<section class="sec"><h2 class="sec-h">Documentos y enlaces</h2><ul class="docs">${adj}${encl}</ul></section>` : ""}
   ${s.requisitos.length ? `<section class="sec"><h2 class="sec-h">Requisitos</h2><ul class="checks">${s.requisitos.map((r) => `<li>${glifo("ok")}<span>${esc(r)}</span></li>`).join("")}</ul></section>` : ""}
+  </div><aside class="fx-side">
+  <section class="fx-cta"><h2>Solicita este sistema para tu dependencia</h2><p>Recibirás un folio para elaborar tu oficio y coordinaremos una reunión contigo.</p>${btnGet(s, "big", true)}</section>
   <section class="sec"><h2 class="sec-h">Ficha técnica</h2>
     <div class="kv">${filasTec.map(([k, v, h]) => `<div><span class="k">${esc(k)}</span><span class="v">${h || esc(v)}</span></div>`).join("")}
       ${prim ? `<div><a class="lr" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">Ir a${tipoDe(s) === "sistema" ? "l sistema" : tipoDe(s) === "portal" ? "l portal" : tipoDe(s) === "web" ? "l sitio web" : "l enlace"} ${glifo("out")}</a></div>` : ""}
@@ -1975,9 +1985,10 @@ function vFicha(id) {
       <div><button class="lr" data-act="contacto" data-id="${esc(s.id)}" data-problema="1">Reportar un problema ${glifo("warn")}</button></div>
     </div></section>
   ${s.usos.length ? `<section class="sec"><h2 class="sec-h">Parte de</h2><div class="tagcards">${s.usos.map((u) => `<a class="tagcard" href="#/uso/${enc(u)}"><span class="cdot" style="${colorVars(s.icono.color)}">${glifo("tag")}</span>${esc(u)}</a>`).join("")}</div></section>` : ""}
+  </aside></div>
   ${lig.length ? `<section class="sec"><h2 class="sec-h">Ligado con</h2><p class="muted" style="margin:-4px 0 10px">Sistemas y páginas que forman parte de este mismo conjunto o se conectan con él.</p><div class="rows">${lig.map((x) => fila(x)).join("")}</div></section>` : ""}
-  ${rel.length ? `<section class="sec"><h2 class="sec-h"><a href="#/sistemas">También te podría interesar ${glifo("chev")}</a></h2><div class="rows">${rel.map((x) => fila(x, motivo(s, x))).join("")}</div></section>` : ""}
-  <div class="cta-end"><div><b>¿Te sirve ${esc(s.nombre)}?</b><p>Envía tu solicitud y nos pondremos en contacto con tu dependencia para coordinar una reunión.${correo ? "" : ""}</p></div>${btnGet(s, "big", true)}</div>`;
+  ${rel.length ? `<section class="fx-rel"><div class="fx-rel-h"><h2>También te podría interesar</h2><a href="#/sistemas">Ver todos los sistemas →</a></div><div class="fx-rel-grid">${rel.slice(0, 3).map((x) => `<a class="rcard" href="#/sistema/${enc(x.id)}" style="${colorVars(x.icono.color)}"><span class="rc-top">${icono(x, "s48")}</span><span class="rc-body"><small>${esc(tipoNom(x))}</small><b>${esc(x.nombre)}</b><span class="rc-sub">${esc(motivo(s, x))}</span><em>Ver sistema →</em></span></a>`).join("")}</div></section>` : ""}
+  <div class="cta-end"><div><b>¿Te sirve ${esc(s.nombre)}?</b><p>Envía tu solicitud y nos pondremos en contacto con tu dependencia para coordinar una reunión.${correo ? "" : ""}</p></div>${btnGet(s, "big", true)}</div></div>`;
 }
 
 function vContacto() {
