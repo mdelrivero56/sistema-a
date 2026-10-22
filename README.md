@@ -1,4 +1,4 @@
-# Catálogo de Sistemas
+# GobHub
 
 Sitio web estático para consultar y administrar el catálogo institucional de sistemas digitales.
 

@@ -9,7 +9,7 @@
 
 const FORMATO_AUTOMATICO = true;   // por el momento: da formato automático a todas las descripciones al cargar (pon false para desactivarlo)
 const CONFIG_BASE = {
-  nombre: "Catálogo de Sistemas",
+  nombre: "GobHub",
   organizacion: "Coordinación de Política Digital",
   correoDestino: "",          // (ya no se usa: las solicitudes no llegan por correo)
   correoOficio: "",           // ← correo al que el solicitante envía su oficio con el folio (por definir)

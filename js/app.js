@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Catálogo de Sistemas · lógica de la aplicación
+   GobHub · lógica de la aplicación
    La configuración básica está en js/config.js.
 
    Contenido (en este orden):
@@ -432,6 +432,7 @@ function migrar(c) {
   delete out.config.whatsapp;
   out.config.correoDestino = ""; out.config.endpoint = ""; out.config.correoOficio = String(out.config.correoOficio || "").trim();
   if (!String(out.config.correoAdmin || "").trim()) out.config.correoAdmin = CONFIG_BASE.correoAdmin;
+  if (!String(out.config.nombre || "").trim() || /^cat[aá]logo de sistemas$/i.test(String(out.config.nombre).trim())) out.config.nombre = CONFIG_BASE.nombre;  // el nombre anterior se actualiza a GobHub
   out.usuarios = Array.isArray(c.usuarios) ? c.usuarios.filter((u) => u && (u.correo || u.rfc) && u.hash).map((u) => Object.assign({}, u, { rol: rolDe(u.rol) })) : [];
   out.avisos = Array.isArray(c.avisos) ? c.avisos.filter((a) => a && a.id).slice(0, 300) : [];
   out.notificaciones = Array.isArray(c.notificaciones) ? c.notificaciones.filter((n) => n && n.id).slice(0, 200) : [];
@@ -1663,7 +1664,7 @@ function renderChrome(a) {
     + tabs.map(([k, g, t]) => `<a href="#/${k}" ${act === k ? 'aria-current="page"' : ""}>${glifo(g)}<span>${t}</span></a>`).join("")
     + (S.user ? `<button class="rail-admin ${S.admin ? "on" : ""}" data-act="mi-cuenta" aria-label="Mi cuenta">${glifo("user")}<span>Cuenta</span></button>` : "");
   actualizarCampana();
-  $("#foot").innerHTML = `<span>${esc(c.organizacion)}</span><span>Catálogo de sistemas digitales${c.telefono ? ` · ${esc(c.telefono)}` : ""}· <a href="#/contacto">Contacto y directorio</a></span>`;
+  $("#foot").innerHTML = `<span>${esc(c.organizacion)}</span><span>GobHub · sistemas digitales${c.telefono ? ` · ${esc(c.telefono)}` : ""}· <a href="#/contacto">Contacto y directorio</a></span>`;
 }
 
 /* ---------- Vistas públicas ---------- */
