@@ -34,3 +34,16 @@
 :root[data-modo="oscuro"] .ban-oficio{background:var(--bg-soft);border-color:var(--sep)}
 :root[data-modo="oscuro"] .ban-oficio legend,:root[data-modo="oscuro"] .ban-hist>summary{color:var(--lila-texto,#CDB5EA)}
 :root[data-modo="oscuro"] .ban-hl li::before{background:var(--lila,#B392DD);box-shadow:0 0 0 3px var(--bg-card)}
+
+/* Selección múltiple y acciones masivas */
+.ban-row{display:flex;gap:10px;align-items:flex-start;margin-top:10px}
+.ban-row .ban-card{flex:1 1 auto;margin-top:0;min-width:0}
+.ban-sel{flex:none;display:grid;place-items:center;width:34px;height:34px;margin-top:8px;cursor:pointer;border-radius:10px}
+.ban-sel input{width:18px;height:18px;accent-color:var(--azul,#004EAA);cursor:pointer}
+.ban-sel:hover{background:var(--azul-suave,rgba(0,78,170,.08))}
+.ban-barra{position:sticky;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:30;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0;padding:10px 12px;border-radius:14px;border:1px solid var(--azul-borde,#BFD0EA);background:var(--bg-card,#fff);box-shadow:0 10px 26px -14px rgba(0,40,100,.4)}
+.ban-barra[hidden]{display:none!important}
+.ban-barra b{margin-right:4px}
+:root[data-modo="claro"] .ban-barra{background:#F3F6FD}
+:root[data-modo="oscuro"] .ban-barra{background:var(--bg-soft);border-color:var(--sep)}
+.sqlbox{margin:0;padding:12px 14px;border-radius:12px;background:var(--bg-soft,#EDF3F8);color:var(--label,#203047);border:1px solid var(--sep,#DCE5F3);font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word;user-select:all;max-height:260px;overflow:auto}

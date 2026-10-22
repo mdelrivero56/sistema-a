@@ -913,6 +913,10 @@ async function vigilarNotifs() {
   await sbNotifs();
   const nuevas = (S.cat.notificaciones || []).filter((n) => !n.leida && !antes.has(n.id));
   refrescarCampana();
+  if (nuevas.some((n) => n.tipo === "solicitud") && /^#\/solicitudes/.test(location.hash)) {
+    await cargarBandeja(); const ae = document.activeElement;
+    if (!(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))) keep(() => render(true)); else toast("Llegó una solicitud nueva. Pulsa «Actualizar» para verla.");
+  }
   if (nuevas.length) {
     toast(nuevas.length === 1 ? (nuevas[0].detalle && nuevas[0].detalle.cancelada ? nuevas[0].titulo : `Nueva solicitud: ${nuevas[0].titulo}`) : `${nuevas.length} notificaciones nuevas`);
     if (/^#\/admin\/notificaciones/.test(location.hash)) keep(() => render(false));
@@ -2199,7 +2203,7 @@ function marcarRequisito(t) {
 
 /* ---------- Superadministrador: bandeja de solicitudes recibidas ---------- */
 const ESTADOS_BAN = { nueva: ["warn", "Nueva"], contacto: ["info", "En contacto"], atendida: ["ok", "Atendida"], cancelada: ["bad", "Cancelada"], archivada: ["", "Archivada"] };
-S.bf = "todas"; S.bq = ""; S.bo = "recientes"; S.bdep = ""; S.bsis = ""; S.bof = "";
+S.bf = "todas"; S.bq = ""; S.bo = "recientes"; S.bdep = ""; S.bsis = ""; S.bof = ""; S.banSel = new Set();
 function exportarBandeja() {
   const ver = bandejaVisibles();
   const d = (r) => r.datos || {};
@@ -2247,15 +2251,40 @@ async function bandejaEstado(ids, v) {
   if (fallos) toast(fallos === 1 ? "No se pudo actualizar el estado." : `No se pudo actualizar el estado de ${fallos} solicitudes.`);
   keep(() => render(true));
 }
+const sqlBorrarSolicitudes = () => `-- Permite al superadministrador eliminar solicitudes
+grant delete on public.solicitudes to authenticated;
+drop policy if exists "superadmin elimina solicitudes" on public.solicitudes;
+create policy "superadmin elimina solicitudes" on public.solicitudes
+  for delete to authenticated
+  using (
+    lower(coalesce(auth.jwt() ->> 'email', '')) = lower('${CORREO_SUPER}')
+    or exists (select 1 from public.perfiles p where p.id = auth.uid() and p.rol in ('superadmin', 'admin'))
+  );`;
+/* Supabase no avisa con un error cuando una política impide borrar: simplemente borra 0 filas. Por eso se verifica cuántas se eliminaron de verdad. */
+function bandejaSinPermiso(ids, err) {
+  S.banPend = ids.slice(); const sql = sqlBorrarSolicitudes();
+  const det = err && (err.message || err.code) ? `<p class="muted" style="font-size:13px;margin-top:12px">Detalle técnico: ${esc(String(err.message || err.code))}</p>` : "";
+  modal({
+    titulo: "No se pudo eliminar", wide: true,
+    body: `<p class="muted">Supabase no permitió borrar ${ids.length === 1 ? "la solicitud" : "las solicitudes"}: a tu cuenta le falta el permiso de eliminación en la tabla «solicitudes». Se corrige una sola vez:</p>
+      <ol class="timeline" style="margin:14px 0"><li><span class="n">1</span><div><b>Abre Supabase → SQL Editor</b><span>En tu proyecto del catálogo.</span></div></li><li><span class="n">2</span><div><b>Pega este código y presiona Run</b><span>Usa el botón «Copiar código».</span></div></li><li><span class="n">3</span><div><b>Vuelve aquí y elimina otra vez</b><span>Mientras tanto la solicitud sigue intacta. También puedes archivarla para sacarla de la lista.</span></div></li></ol>
+      <pre class="sqlbox">${esc(sql)}</pre>${det}`,
+    pie: `<button class="btn sec" data-act="bandeja-archivar-pend">Archivar en su lugar</button><button class="btn sec" data-act="copiar" data-v="${esc(sql)}">${glifo("copy")}Copiar código</button><button class="btn" data-act="cerrar-modal">Cerrar</button>`
+  });
+}
 async function bandejaBorrar(ids, texto) {
   if (!S.super || !ids.length) return;
   if (!(await confirmar({ titulo: ids.length === 1 ? "Eliminar solicitud" : "Eliminar solicitudes", texto, si: "Eliminar", peligro: true }))) return;
+  let borrados = [];
   if (SB) {
-    const { error } = await SB.from("solicitudes").delete().in("id", ids);
-    if (error) return toast("No se pudo eliminar: tu cuenta necesita permiso de borrado en Supabase.");
-    S.inbox = (S.inbox || []).filter((r) => !ids.includes(r.id));
-  } else { S.sols = S.sols.filter((x) => !ids.includes(x.id)); await guardarSolicitudes(); }
-  toast(ids.length === 1 ? "Solicitud eliminada" : `${ids.length} solicitudes eliminadas`); keep(() => render(true));
+    let r; try { r = await SB.from("solicitudes").delete().in("id", ids).select("id"); } catch (e) { r = { error: e }; }
+    borrados = r && !r.error && Array.isArray(r.data) ? r.data.map((x) => x.id) : [];
+    if (!borrados.length) return bandejaSinPermiso(ids, r && r.error);
+    S.inbox = (S.inbox || []).filter((x) => !borrados.includes(x.id));
+  } else { S.sols = S.sols.filter((x) => !ids.includes(x.id)); await guardarSolicitudes(); borrados = ids.slice(); }
+  borrados.forEach((id) => S.banSel.delete(id));
+  const faltan = ids.length - borrados.length;
+  toast(faltan ? `Se eliminaron ${borrados.length} de ${ids.length}: a las demás les falta permiso en Supabase.` : ids.length === 1 ? "Solicitud eliminada" : `${ids.length} solicitudes eliminadas`); keep(() => render(true));
 }
 function filasBandeja() {
   if (SB) return Array.isArray(S.inbox) ? S.inbox : [];
@@ -2279,6 +2308,11 @@ function bandejaVisibles() {
   const cmp = { recientes: (a, b) => t(b) - t(a), antiguas: (a, b) => t(a) - t(b), dependencia: (a, b) => banDepK(a).localeCompare(banDepK(b), "es") || t(b) - t(a), estado: (a, b) => BAN_EST_ORDEN.indexOf(a.estado) - BAN_EST_ORDEN.indexOf(b.estado) || t(b) - t(a) }[S.bo] || ((a, b) => t(b) - t(a));
   return v.sort(cmp);
 }
+function bandejaBarraHtml() {
+  const n = S.banSel.size;
+  return `<b>${n} ${plural(n, "seleccionada", "seleccionadas")}</b><button type="button" class="btn sm sec" data-act="bandeja-masivo" data-v="contacto">En contacto</button><button type="button" class="btn sm sec" data-act="bandeja-masivo" data-v="atendida">Atendida</button><button type="button" class="btn sm sec" data-act="bandeja-masivo" data-v="archivada">Archivar</button><button type="button" class="btn sm danger" data-act="bandeja-masivo" data-v="borrar">${glifo("trash")}Eliminar</button><button type="button" class="btn sm ghost" data-act="bandeja-sel-ninguna">Quitar selección</button>`;
+}
+function pintarBarraBan() { const b = $("#ban-barra"); if (!b) return; b.hidden = !S.banSel.size; b.innerHTML = bandejaBarraHtml(); }
 const bandejaCuentaTxt = () => { const n = bandejaVisibles().length; return `Mostrando ${n} ${plural(n, "solicitud", "solicitudes")}${S.bq && S.bf === "todas" ? " (la búsqueda incluye archivadas)" : ""}`; };
 const banDato = (t, x, href) => x ? `<div><small>${t}</small>${href ? `<a href="${esc(href)}">${esc(x)}</a>` : `<span>${esc(x)}</span>`}</div>` : "";
 function bandejaCard(r, foco) {
@@ -2301,7 +2335,7 @@ function bandejaListaHtml(foco) {
   const grupos = new Map();
   bandejaVisibles().forEach((r) => { const k = String((r.datos && r.datos.dependencia) || "Sin dependencia").trim(); const g = k.toLowerCase(); if (!grupos.has(g)) grupos.set(g, { nombre: k, items: [] }); grupos.get(g).items.push(r); });
   if (!grupos.size) return banFiltrosActivos() || S.bf !== "todas" ? vacio("No hay solicitudes con esos filtros", "Prueba con otras palabras o limpia los filtros.", `<button type="button" class="btn sec" data-act="bandeja-limpiar">Limpiar filtros</button>`) : vacio("No hay solicitudes", "Cuando una dependencia solicite un sistema aparecerá aquí.");
-  return [...grupos.values()].map((g) => `<section class="ban-dep"><h2>${esc(g.nombre)} <small>${g.items.length} solicitud${g.items.length === 1 ? "" : "es"}</small></h2>${g.items.map((r) => bandejaCard(r, foco)).join("")}</section>`).join("");
+  return [...grupos.values()].map((g) => `<section class="ban-dep"><h2>${esc(g.nombre)} <small>${g.items.length} solicitud${g.items.length === 1 ? "" : "es"}</small></h2>${g.items.map((r) => `<div class="ban-row"><label class="ban-sel" title="Seleccionar"><input type="checkbox" data-ban-sel="${esc(r.id)}"${S.banSel.has(r.id) ? " checked" : ""} aria-label="Seleccionar solicitud ${esc(r.folio)}"></label>${bandejaCard(r, foco)}</div>`).join("")}</section>`).join("");
 }
 /* Repinta solo la lista (así la búsqueda no pierde el cursor al escribir) */
 function pintarBandeja() {
@@ -2309,6 +2343,7 @@ function pintarBandeja() {
   l.innerHTML = bandejaListaHtml(null);
   const c = $("#ban-cuenta"); if (c) c.textContent = bandejaCuentaTxt();
   const b = $("#ban-limpiar"); if (b) b.hidden = !banFiltrosActivos();
+  pintarBarraBan();
 }
 function bandejaHerramientas(rows) {
   const deps = [...new Map(rows.map((r) => [banDepK(r), String((r.datos && r.datos.dependencia) || "Sin dependencia").trim()])).entries()].sort((a, b) => a[1].localeCompare(b[1], "es"));
@@ -2321,11 +2356,13 @@ function bandejaHerramientas(rows) {
     <div class="field"><label for="ban-sis">Sistema</label><select class="select" id="ban-sis" data-ban="bsis">${opt("", "Todos", S.bsis)}${siss.map((n) => opt(norm(n), n, S.bsis)).join("")}</select></div>
     <div class="field"><label for="ban-of">Oficio</label><select class="select" id="ban-of" data-ban="bof">${opt("", "Todos", S.bof)}${opt("si", "Con oficio recibido", S.bof)}${opt("no", "Sin oficio", S.bof)}</select></div>
   </div>
-  <div class="ban-resumen"><span id="ban-cuenta" aria-live="polite">${bandejaCuentaTxt()}</span><button type="button" class="btn sm ghost" id="ban-limpiar" data-act="bandeja-limpiar"${banFiltrosActivos() ? "" : " hidden"}>Limpiar filtros</button></div>`;
+  <div class="ban-resumen"><span id="ban-cuenta" aria-live="polite">${bandejaCuentaTxt()}</span><button type="button" class="btn sm ghost" id="ban-limpiar" data-act="bandeja-limpiar"${banFiltrosActivos() ? "" : " hidden"}>Limpiar filtros</button><button type="button" class="btn sm ghost" data-act="bandeja-sel-todas">Seleccionar visibles</button></div>
+  <div id="ban-barra" class="ban-barra" role="toolbar" aria-label="Acciones para las solicitudes seleccionadas"${S.banSel.size ? "" : " hidden"}>${bandejaBarraHtml()}</div>`;
 }
 function vBandeja(foco) {
   if (SB && S.inbox === undefined) { cargarBandeja().then(() => { if (/^#\/solicitudes/.test(location.hash)) render(true); }); }
   const rows = filasBandeja(), cuenta = (e) => rows.filter((r) => r.estado === e).length;
+  { const ex = new Set(rows.map((r) => r.id)); [...S.banSel].forEach((id) => { if (!ex.has(id)) S.banSel.delete(id); }); }
   /* Si se llega desde una notificación (#/solicitudes/FOLIO): muestra esa solicitud abierta y desplaza la pantalla hasta ella */
   if (!foco) S.focoHecho = null;
   const objetivo = foco ? rows.find((r) => r.folio === foco) : null, primera = !!objetivo && S.focoHecho !== foco;
@@ -3180,6 +3217,15 @@ const ACT = {
     if (rec && (r.estado === "nueva" || r.estado === "contacto") && await confirmar({ titulo: "Marcar como atendida", texto: "Ya registraste el oficio de esta solicitud. ¿Quieres marcarla como atendida?", si: "Sí, marcar atendida", no: "Todavía no" })) { await bandejaEstado([id], "atendida"); return; }
     keep(() => render(true));
   },
+  "bandeja-sel-todas"() { bandejaVisibles().forEach((r) => S.banSel.add(r.id)); keep(() => render(true)); },
+  "bandeja-sel-ninguna"() { S.banSel.clear(); keep(() => render(true)); },
+  async "bandeja-masivo"(t) {
+    const v = t.dataset.v, ids = filasBandeja().filter((r) => S.banSel.has(r.id)).map((r) => r.id); if (!ids.length) return;
+    if (v === "borrar") { await bandejaBorrar(ids, `Se eliminarán ${ids.length} ${plural(ids.length, "solicitud", "solicitudes")} de forma definitiva. No se puede deshacer; si solo quieres sacarlas de la lista, usa «Archivar».`); return; }
+    if (v === "atendida") { const sin = filasBandeja().filter((r) => ids.includes(r.id) && !gestionDe(r).oficio.recibido).length; if (sin && !(await confirmar({ titulo: "Sin oficio registrado", texto: `${sin} de ${ids.length} no tienen el oficio marcado como recibido. ¿Las marcas como atendidas de todos modos?`, si: "Sí, marcar atendidas", no: "No, volver" }))) return; }
+    S.banSel.clear(); await bandejaEstado(ids, v); toast(`${ids.length} ${plural(ids.length, "solicitud actualizada", "solicitudes actualizadas")}`);
+  },
+  async "bandeja-archivar-pend"() { const ids = S.banPend || []; cerrarModal(); if (ids.length) { await bandejaEstado(ids, "archivada"); toast("Archivada en lugar de eliminarla"); } },
   "bandeja-limpiar"() { S.bq = ""; S.bo = "recientes"; S.bdep = ""; S.bsis = ""; S.bof = ""; keep(() => render(true)); },
   async "respaldo-completo"() { await respaldoCompleto(); },
   async "bandeja-nota"(t) {
@@ -3283,7 +3329,7 @@ const ACT = {
   "conf-no"() { if (confFin) confFin(false); }
 };
 
-const SOLO_SUPER = new Set(["notif-diag", "notif-ver-sol", "notif-borrar", "notif-borrar-leidas", "notif-borrar-todas", "aviso-borrar-todos", "formato-todos", "aplicar-textos", "bandeja-estado", "bandeja-nota", "bandeja-oficio", "bandeja-limpiar", "respaldo-completo", "bandeja-borrar", "bandeja-archivar-canceladas", "bandeja-borrar-canceladas", "aviso-nuevo", "aviso-editar", "aviso-borrar", "notif-leer", "notif-todas", "notif-reset", "usr-super", "usr-gen", "logo-marca", "logo-color", "logo-forma", "usr-nuevo", "usr-reset", "usr-reset-ok", "usr-toggle", "usr-del", "guardar-cfg", "exportar", "descartar-local", "quitar-ejemplos", "probar-correo", "cfg-tema", "cfg-acento", "quitar-logo", "como-publicar", "qa-activar", "qa-salir", "qa-datos", "qa-reiniciar", "qa-correr", "qa-limpiar-manual", "dep-add", "dep-ren", "dep-del", "dep-reg", "dep-import"]);
+const SOLO_SUPER = new Set(["notif-diag", "notif-ver-sol", "notif-borrar", "notif-borrar-leidas", "notif-borrar-todas", "aviso-borrar-todos", "formato-todos", "aplicar-textos", "bandeja-estado", "bandeja-nota", "bandeja-oficio", "bandeja-limpiar", "bandeja-sel-todas", "bandeja-sel-ninguna", "bandeja-masivo", "bandeja-archivar-pend", "respaldo-completo", "bandeja-borrar", "bandeja-archivar-canceladas", "bandeja-borrar-canceladas", "aviso-nuevo", "aviso-editar", "aviso-borrar", "notif-leer", "notif-todas", "notif-reset", "usr-super", "usr-gen", "logo-marca", "logo-color", "logo-forma", "usr-nuevo", "usr-reset", "usr-reset-ok", "usr-toggle", "usr-del", "guardar-cfg", "exportar", "descartar-local", "quitar-ejemplos", "probar-correo", "cfg-tema", "cfg-acento", "quitar-logo", "como-publicar", "qa-activar", "qa-salir", "qa-datos", "qa-reiniciar", "qa-correr", "qa-limpiar-manual", "dep-add", "dep-ren", "dep-del", "dep-reg", "dep-import"]);
 const QA_BLOQ = new Set(["respaldo-completo", "exportar", "como-publicar", "descartar-local", "publicar-ahora"]);
 const SOLO_GESTION = new Set(["toggle-pub", "mover", "duplicar", "del-sistema", "add-cat", "del-cat", "edit-cat", "ren-sis", "img-quitar", "e-guardar", "e-add", "e-del", "demo-media", "vid-add-url", "fmt", "desc-color-reset", "e-quitar-videodest"]);
 document.addEventListener("toggle", (e) => { const d = e.target; if (!d || !d.classList || !d.classList.contains("ban-card")) return; S.banAb = S.banAb || new Set(); S.banAb[d.open ? "add" : "delete"](String(d.id).replace(/^ban-/, "")); }, true);
@@ -3327,7 +3373,8 @@ document.addEventListener("input", (e) => {
 });
 document.addEventListener("change", (e) => {
   const t = e.target;
-  if (t.dataset.ban) { S[t.dataset.ban] = t.value; pintarBandeja(); }
+  if (t.dataset.banSel) { if (t.checked) S.banSel.add(t.dataset.banSel); else S.banSel.delete(t.dataset.banSel); pintarBarraBan(); }
+  else if (t.dataset.ban) { S[t.dataset.ban] = t.value; pintarBandeja(); }
   else if (/^of-r-/.test(t.id)) { const f = $("#of-f-" + t.id.slice(5)); if (f && t.checked && !f.value) f.value = hoyISO(); }
   else if (t.id === "a-depsel") depAuthCambio(t);
   else if (t.dataset.fmtSize !== undefined) { if (t.value) fmtAplicar("tam", t.value); t.value = ""; }
