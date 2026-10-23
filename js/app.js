@@ -899,7 +899,7 @@ async function sbNotifs() {
         const d = x.datos || {}, nom = (x.sistemas || []).map((y) => y.nombre).join(", ");
         return { id: "sol-" + x.id, tipo: "solicitud", titulo: `${d.nombre || "Alguien"} ${x.estado === "cancelada" ? "— solicitud cancelada:" : "solicitó"} ${nom}`, fecha: x.creado,
           leida: !!x.notif_leida || leidas.has("sol-" + x.id) || (!S.solCol && new Date(x.creado).getTime() < limite),
-          detalle: { folio: x.folio, nombre: d.nombre, correo: d.correo, telefono: d.telefono, dependencia: d.dependencia, area: d.area, cargo: d.cargo, sistemas: nom, cancelada: x.estado === "cancelada" } };
+          detalle: { folio: x.folio, nombre: d.nombre, correo: d.correo, telefono: telConExt(d), dependencia: d.dependencia, area: d.area, cargo: d.cargo, sistemas: nom, cancelada: x.estado === "cancelada" } };
       });
     }
   } catch (e) { /* sin solicitudes */ }
@@ -2139,6 +2139,8 @@ function vAyuda() {
     <div class="cta-end"><div><b>¿Listo para empezar?</b><p>Elige un sistema, llena tu solicitud y obtén tu folio.</p></div><a class="btn" href="#/sistemas">Ver sistemas</a></div>`;
 }
 
+/* Teléfono con extensión opcional: "5512345678 ext. 1234" (solo para mostrar; el número se guarda aparte de la extensión) */
+function telConExt(d) { d = d || {}; const t = String(d.telefono || "").trim(), x = String(d.extension || "").trim(); return x ? (t ? t + " ext. " + x : "ext. " + x) : t; }
 /* ---------- Solicitud de sistema ---------- */
 const F = { ini: null, sel: [], vals: { contactoPref: "Correo electrónico", acepto: false }, errs: {}, enviando: false };
 
@@ -2186,7 +2188,8 @@ function vSolicitar(id) {
           ${campo("cargo", "Cargo", { ph: "Opcional", ac: "organization-title" })}
           ${campo("nombre", "Nombre completo", { req: true, full: true, ac: "name" })}
           ${campo("correo", "Correo institucional", { req: true, tipo: "email", ph: DOMINIO_SOLICITUD ? "dominio@" + DOMINIO_SOLICITUD : "tucorreo@ejemplo.com", ac: "email" })}
-          ${campo("telefono", "Teléfono", { req: true, tipo: "tel", ph: "10 dígitos", ac: "tel" })}
+          ${campo("telefono", "Teléfono", { req: true, tipo: "tel", ph: "10 dígitos", ac: "tel" }).replace(/<\/div>$/, `<div style="margin-top:8px"><label class="chk" style="font-size:14px"><input type="checkbox" id="f-conExt" data-form="conExt" ${v.conExt ? "checked" : ""}><span>Mi teléfono tiene extensión</span></label></div></div>`)}
+          ${v.conExt ? campo("extension", "Extensión telefónica", { req: true, tipo: "tel", ph: "Ej. 1234", extra: 'inputmode="numeric" maxlength="8"' }) : ""}
           <div class="field"><label for="f-contactoPref">¿Cómo prefieres que te contactemos? <span class="req" aria-hidden="true">*</span></label><select class="in select" id="f-contactoPref" data-form="contactoPref" style="width:100%">${opts(ocon, v.contactoPref)}</select></div>
           ${campo("horario", "Horario preferido para que te contactemos", { ph: "Ej. lunes a viernes, 10:00 a 14:00" })}
         </div></section>
@@ -2219,6 +2222,7 @@ function validarSolicitud() {
   if (!correoOk(v.correo)) e.correo = "Escribe un correo válido, por ejemplo dominio@gob.mx.";
   else if (!correoGobierno(v.correo)) e.correo = `Solo se aceptan correos de gobierno que terminen en @${DOMINIO_SOLICITUD}, por ejemplo dominio@${DOMINIO_SOLICITUD}.`;
   if (String(v.telefono || "").replace(/\D/g, "").length < 8) e.telefono = "Escribe un teléfono de al menos 8 dígitos.";
+  if (v.conExt) { const x = String(v.extension || "").replace(/\D/g, ""); if (!x) e.extension = "Escribe la extensión o desmarca la casilla."; else if (x.length > 8) e.extension = "La extensión puede tener hasta 8 dígitos."; }
   req("tipoUso", "Elige el tipo de uso."); if (v.tipoUso === "Otro") req("usoOtro", "Escribe cuál será el uso."); req("mensaje", "Cuéntanos brevemente qué necesitas.");
   return e;
 }
@@ -2229,7 +2233,7 @@ function armarMensaje(sol) {
   L.push("SOLICITUD DE SISTEMA", "Folio: " + sol.folio, `Fecha: ${fmtFecha(sol.fecha)}, ${sol.hora}`, "", "SISTEMAS SOLICITADOS");
   sol.sistemas.forEach((s) => L.push("- " + s.nombre + (s.version ? ` (v${s.version})` : "")));
   L.push("", "DATOS DE LA DEPENDENCIA");
-  [["Dependencia", d.dependencia], ["Área o unidad", d.area], ["Nombre", d.nombre], ["Cargo", d.cargo], ["Correo", d.correo], ["Teléfono", d.telefono], ["Contacto preferido", d.contactoPref], ["Horario preferido", d.horario]].forEach(([k, x]) => { if (x) L.push(`${k}: ${x}`); });
+  [["Dependencia", d.dependencia], ["Área o unidad", d.area], ["Nombre", d.nombre], ["Cargo", d.cargo], ["Correo", d.correo], ["Teléfono", telConExt(d)], ["Contacto preferido", d.contactoPref], ["Horario preferido", d.horario]].forEach(([k, x]) => { if (x) L.push(`${k}: ${x}`); });
   L.push("", "USO PREVISTO");
   [["Tipo de uso", d.tipoUso], ["Fecha estimada", d.fechaUso ? fmtFecha(d.fechaUso) : ""], ["Personas que lo usarían", d.participantes]].forEach(([k, x]) => { if (x) L.push(`${k}: ${x}`); });
   L.push("", "NECESIDAD", d.mensaje);
@@ -2265,7 +2269,7 @@ async function enviarSolicitud() {
     id: uid("sol"), folio: folioNuevo(), fecha: hoyISO(), hora: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
     sistemas: F.sel.map((id) => { const s = byId(id); return { id, nombre: s.nombre, version: s.version, requisitos: s.requisitos.map((x) => String(x).trim()).filter(Boolean) }; }),
     base: baseReqs(), checks: {}, listo: false,
-    datos: { dependencia: v.dependencia.trim(), area: (v.area || "").trim(), nombre: v.nombre.trim(), cargo: (v.cargo || "").trim(), correo: v.correo.trim(), telefono: v.telefono.trim(), contactoPref: v.contactoPref, horario: (v.horario || "").trim(), tipoUso: v.tipoUso === "Otro" ? "Otro: " + (v.usoOtro || "").trim() : v.tipoUso, fechaUso: v.fechaUso || "", participantes: v.participantes || "", mensaje: v.mensaje.trim() },
+    datos: { dependencia: v.dependencia.trim(), area: (v.area || "").trim(), nombre: v.nombre.trim(), cargo: (v.cargo || "").trim(), correo: v.correo.trim(), telefono: v.telefono.trim(), extension: v.conExt ? String(v.extension || "").replace(/\D/g, "") : "", contactoPref: v.contactoPref, horario: (v.horario || "").trim(), tipoUso: v.tipoUso === "Otro" ? "Otro: " + (v.usoOtro || "").trim() : v.tipoUso, fechaUso: v.fechaUso || "", participantes: v.participantes || "", mensaje: v.mensaje.trim() },
     estado: "guardada", canal: ""
   };
   if (SB) {
@@ -2278,7 +2282,7 @@ async function enviarSolicitud() {
   if (SB && !S.qa && sol.estado === "enviada") { sol.correoFolio = "enviando"; enviarCorreoFolio(sol); }   // correo formal con el folio (en segundo plano)
   if (!S.qa) {   // avisa al superadministrador en Notificaciones
     const nombres = sol.sistemas.map((x) => x.nombre).join(", "), dd = sol.datos;
-    const det = { folio: sol.folio, nombre: dd.nombre, correo: dd.correo, telefono: dd.telefono, dependencia: dd.dependencia, area: dd.area, cargo: dd.cargo, sistemas: nombres };
+    const det = { folio: sol.folio, nombre: dd.nombre, correo: dd.correo, telefono: telConExt(dd), dependencia: dd.dependencia, area: dd.area, cargo: dd.cargo, sistemas: nombres };
     const tit = `${dd.nombre} solicitó ${nombres}`;
     if (!SB) { notificar("solicitud", tit, det); guardarCatalogo(); }   // con Supabase, el superadministrador las lee directo de la tabla de solicitudes
   }
@@ -2328,7 +2332,7 @@ function vChecklist(sol) {
     ${grupo("_base", "Generales", baseDe(sol))}${sol.sistemas.map((si) => grupo(si.id, si.nombre, propiosDe(si))).join("")}${p.t === 0 ? '<p class="muted" style="font-size:14px">Estos sistemas no tienen requisitos registrados.</p>' : ""}${pie}</div>`;
 }
 function avisoListo(sol) {
-  const L = ["REQUISITOS COMPLETOS", `Folio: ${sol.folio}`, `Fecha: ${fmtFecha(hoyISO())}`, "", `Dependencia: ${sol.datos.dependencia}`, `Contacto: ${sol.datos.nombre} (${sol.datos.correo}, ${sol.datos.telefono})`, `Sistemas: ${sol.sistemas.map((s) => s.nombre).join(", ")}`, "", "REQUISITOS VERIFICADOS"];
+  const L = ["REQUISITOS COMPLETOS", `Folio: ${sol.folio}`, `Fecha: ${fmtFecha(hoyISO())}`, "", `Dependencia: ${sol.datos.dependencia}`, `Contacto: ${sol.datos.nombre} (${sol.datos.correo}, ${telConExt(sol.datos)})`, `Sistemas: ${sol.sistemas.map((s) => s.nombre).join(", ")}`, "", "REQUISITOS VERIFICADOS"];
   baseDe(sol).forEach((r) => L.push("[x] " + r));
   sol.sistemas.forEach((si) => propiosDe(si).forEach((r) => L.push(`[x] ${si.nombre}: ${r}`)));
   L.push("", "Todo está listo para implementar el sistema.");
@@ -2347,7 +2351,7 @@ S.bf = "todas"; S.bq = ""; S.bo = "recientes"; S.bdep = ""; S.bsis = ""; S.bof =
 function exportarBandeja() {
   const ver = bandejaVisibles();
   const d = (r) => r.datos || {};
-  const cols = [["Folio", (r) => r.folio], ["Fecha", (r) => String(r.creado).slice(0, 10)], ["Estado", (r) => (ESTADOS_BAN[r.estado] || ["", r.estado])[1]], ["Dependencia", (r) => d(r).dependencia], ["Área o unidad", (r) => d(r).area], ["Nombre", (r) => d(r).nombre], ["Cargo", (r) => d(r).cargo], ["Correo", (r) => d(r).correo], ["Teléfono", (r) => d(r).telefono], ["Contacto preferido", (r) => d(r).contactoPref], ["Horario para contactarlo", (r) => d(r).horario], ["Sistemas", (r) => (r.sistemas || []).map((x) => x.nombre).join("; ")], ["Uso previsto", (r) => d(r).tipoUso], ["Fecha estimada", (r) => d(r).fechaUso], ["Personas", (r) => d(r).participantes], ["Mensaje", (r) => d(r).mensaje], ["Oficio recibido", (r) => (gestionDe(r).oficio.recibido ? "Sí" : "No")], ["Fecha del oficio", (r) => gestionDe(r).oficio.fecha], ["No. de oficio", (r) => gestionDe(r).oficio.numero], ["Último movimiento", (r) => { const h = gestionDe(r).historial; return h.length ? fmtHora(h[h.length - 1].f) + " · " + (h[h.length - 1].d || "") : ""; }], ["Nota interna", (r) => r.nota]];
+  const cols = [["Folio", (r) => r.folio], ["Fecha", (r) => String(r.creado).slice(0, 10)], ["Estado", (r) => (ESTADOS_BAN[r.estado] || ["", r.estado])[1]], ["Dependencia", (r) => d(r).dependencia], ["Área o unidad", (r) => d(r).area], ["Nombre", (r) => d(r).nombre], ["Cargo", (r) => d(r).cargo], ["Correo", (r) => d(r).correo], ["Teléfono", (r) => telConExt(d(r))], ["Contacto preferido", (r) => d(r).contactoPref], ["Horario para contactarlo", (r) => d(r).horario], ["Sistemas", (r) => (r.sistemas || []).map((x) => x.nombre).join("; ")], ["Uso previsto", (r) => d(r).tipoUso], ["Fecha estimada", (r) => d(r).fechaUso], ["Personas", (r) => d(r).participantes], ["Mensaje", (r) => d(r).mensaje], ["Oficio recibido", (r) => (gestionDe(r).oficio.recibido ? "Sí" : "No")], ["Fecha del oficio", (r) => gestionDe(r).oficio.fecha], ["No. de oficio", (r) => gestionDe(r).oficio.numero], ["Último movimiento", (r) => { const h = gestionDe(r).historial; return h.length ? fmtHora(h[h.length - 1].f) + " · " + (h[h.length - 1].d || "") : ""; }], ["Nota interna", (r) => r.nota]];
   const q = (x) => { let t = String(x == null ? "" : x); if (/^[=+\-@]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; };
   const csv = "\ufeff" + [cols.map((c) => q(c[0])).join(","), ...ver.map((r) => cols.map((c) => q(c[1](r))).join(","))].join("\r\n");
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); a.download = "solicitudes-" + hoyISO() + ".csv"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
@@ -2474,7 +2478,7 @@ function bandejaVisibles() {
     if (S.bdep && banDepK(r) !== S.bdep) return false;
     if (S.bsis && !(r.sistemas || []).some((x) => norm(x.nombre) === S.bsis)) return false;
     const of = gestionDe(r).oficio; if (S.bof === "si" && !of.recibido) return false; if (S.bof === "no" && of.recibido) return false;
-    if (q.length) { const d = r.datos || {}, txt = norm([r.folio, d.dependencia, d.area, d.nombre, d.cargo, d.correo, d.telefono, d.tipoUso, d.mensaje, (r.sistemas || []).map((x) => x.nombre).join(" "), r.nota, of.numero].join(" ")); if (!q.every((w) => txt.includes(w))) return false; }
+    if (q.length) { const d = r.datos || {}, txt = norm([r.folio, d.dependencia, d.area, d.nombre, d.cargo, d.correo, telConExt(d), d.tipoUso, d.mensaje, (r.sistemas || []).map((x) => x.nombre).join(" "), r.nota, of.numero].join(" ")); if (!q.every((w) => txt.includes(w))) return false; }
     return true;
   });
   const cmp = { recientes: (a, b) => t(b) - t(a), antiguas: (a, b) => t(a) - t(b), dependencia: (a, b) => banDepK(a).localeCompare(banDepK(b), "es") || t(b) - t(a), estado: (a, b) => BAN_EST_ORDEN.indexOf(a.estado) - BAN_EST_ORDEN.indexOf(b.estado) || t(b) - t(a) }[S.bo] || ((a, b) => t(b) - t(a));
@@ -2492,7 +2496,7 @@ function bandejaCard(r, foco) {
   const abierta = (foco && r.folio === foco) || (S.banAb && S.banAb.has(r.folio));
   const hist = g.historial.slice().reverse().map((h) => `<li><span class="ban-h-f">${esc(fmtHora(h.f))}</span><b>${esc(h.d || "")}</b><small>${esc(h.q || "")}</small></li>`).join("") + `<li><span class="ban-h-f">${esc(fmtHora(r.creado))}</span><b>Solicitud registrada</b><small>Solicitante</small></li>`;
   return `<details class="ban-card ban-st-${esc(r.estado)}" id="ban-${esc(r.folio)}"${abierta ? " open" : ""}><summary><span class="ban-sis">${esc((r.sistemas || []).map((x) => x.nombre).join(", "))}</span><span class="badge ${cl}">${tx}</span>${of.recibido ? '<span class="badge ok">Oficio recibido</span>' : ""}<small>${esc(fmtFecha(String(r.creado).slice(0, 10)))} · ${esc(r.folio)}</small></summary>
-      <div class="ban-grid">${banDato("Nombre", d.nombre)}${banDato("Cargo", d.cargo)}${banDato("Correo", d.correo, "mailto:" + d.correo + "?subject=" + encodeURIComponent("Seguimiento de tu solicitud " + r.folio))}${banDato("Teléfono", d.telefono, tel ? "tel:" + tel : "")}${banDato("Prefiere que lo contacten por", d.contactoPref)}${banDato("Horario para contactarlo", d.horario)}${banDato("Área o unidad", d.area)}${banDato("Uso previsto", d.tipoUso)}${banDato("Fecha estimada", d.fechaUso ? fmtFecha(d.fechaUso) : "")}${banDato("Personas que lo usarían", d.participantes)}</div>
+      <div class="ban-grid">${banDato("Nombre", d.nombre)}${banDato("Cargo", d.cargo)}${banDato("Correo", d.correo, "mailto:" + d.correo + "?subject=" + encodeURIComponent("Seguimiento de tu solicitud " + r.folio))}${banDato("Teléfono", telConExt(d), tel ? "tel:" + tel : "")}${banDato("Prefiere que lo contacten por", d.contactoPref)}${banDato("Horario para contactarlo", d.horario)}${banDato("Área o unidad", d.area)}${banDato("Uso previsto", d.tipoUso)}${banDato("Fecha estimada", d.fechaUso ? fmtFecha(d.fechaUso) : "")}${banDato("Personas que lo usarían", d.participantes)}</div>
       ${d.mensaje ? `<p class="ban-msg"><small>Lo que necesita</small><span>${esc(d.mensaje)}</span></p>` : ""}
       <div class="ban-cols">
       <section class="ban-bloque ban-estado"><h3 class="ban-tit">Estado de la solicitud</h3>
@@ -3213,7 +3217,7 @@ const ACT = {
       if (res !== "ok" && res !== "ya_cancelada") return toast("No se pudo cancelar. Detalle: " + String((r && r.error && (r.error.message || r.error.code)) || res || "sin respuesta").slice(0, 160));
     }
     sol.cancelada = true; sol.canceladaFecha = hoyISO(); sol.estadoBan = "cancelada";
-    if (!SB) { notificar("solicitud", `${sol.datos.nombre} canceló su solicitud de ${sol.sistemas.map((x) => x.nombre).join(", ")}`, { folio: sol.folio, nombre: sol.datos.nombre, correo: sol.datos.correo, telefono: sol.datos.telefono, dependencia: sol.datos.dependencia, area: sol.datos.area, cargo: sol.datos.cargo, sistemas: sol.sistemas.map((x) => x.nombre).join(", "), cancelada: true }); guardarCatalogo(); }
+    if (!SB) { notificar("solicitud", `${sol.datos.nombre} canceló su solicitud de ${sol.sistemas.map((x) => x.nombre).join(", ")}`, { folio: sol.folio, nombre: sol.datos.nombre, correo: sol.datos.correo, telefono: telConExt(sol.datos), dependencia: sol.datos.dependencia, area: sol.datos.area, cargo: sol.datos.cargo, sistemas: sol.sistemas.map((x) => x.nombre).join(", "), cancelada: true }); guardarCatalogo(); }
     await guardarSolicitudes(); toast("Solicitud cancelada"); keep(() => render(false));
   },
 
@@ -3542,6 +3546,7 @@ document.addEventListener("input", (e) => {
   }
   if (t.dataset.form) {
     const kf = t.dataset.form, ms = /^(dependencia|usoOtro)Sel$/.exec(kf);
+    if (kf === "conExt") { F.vals.conExt = t.checked; if (!t.checked) { F.vals.extension = ""; delete F.errs.extension; } keep(() => render(false)); return; }
     if (ms || kf === "tipoUso") {
       F.nuevo = F.nuevo || {};
       if (ms) { const k = ms[1]; if (t.value === "__nuevo") { F.nuevo[k] = true; F.vals[k] = ""; } else { F.nuevo[k] = false; F.vals[k] = t.value; } delete F.errs[k]; }
