@@ -906,19 +906,39 @@ async function sbNotifs() {
   const base = reales || (S.cat.notificaciones || []).filter((n) => !esNotifSol(n.id));
   S.cat.notificaciones = base.concat(sols).sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 200);
 }
-/* Vigilancia: revisa cada 15 s (y al instante si Supabase Realtime está activo) y avisa cuando llega una solicitud nueva */
+/* Vigilancia: revisa cada 8 s (y al instante si Supabase Realtime está activo) y avisa cuando llega una solicitud nueva */
 let vigilaTimer = null, vigilaCanal = null;
+/* Bandeja de solicitudes: se refresca en silencio (sin parpadeo de «Cargando…») cuando cambia algo en la base */
+let bandejaBusy = false, bandejaOtra = false;
+const firmaBandeja = (l) => (Array.isArray(l) ? l.map((r) => `${r.id}:${r.estado}:${r.actualizado || ""}:${(r.nota || "").length}`).join("|") : "");
+async function refrescarBandeja() {
+  if (!S.super || !SB || !/^#\/solicitudes/.test(location.hash)) return;
+  if (bandejaBusy) { bandejaOtra = true; return; }
+  bandejaBusy = true;
+  try {
+    do {
+      bandejaOtra = false;
+      const { data, error } = await SB.from("solicitudes").select("*").order("creado", { ascending: false }).limit(500);
+      if (error || !data) break;
+      const nueva = data.map((r) => Object.assign(r, { estado: estadoBan(r.estado) }));
+      const cambio = firmaBandeja(nueva) !== firmaBandeja(S.inbox), eraNueva = Array.isArray(S.inbox) && nueva.length > S.inbox.length;
+      if (!cambio) continue;
+      S.inbox = nueva;
+      if (!/^#\/solicitudes/.test(location.hash)) break;
+      const ae = document.activeElement;
+      if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) { if (eraNueva) toast("Llegó una solicitud nueva. Pulsa «Actualizar» para verla."); }
+      else keep(() => render(true));
+    } while (bandejaOtra);
+  } finally { bandejaBusy = false; }
+}
 async function vigilarNotifs() {
   if (!S.super || !SB) { if (vigilaTimer) { clearInterval(vigilaTimer); vigilaTimer = null; } return; }
   if (document.hidden) return;
   const antes = new Set((S.cat.notificaciones || []).filter((n) => !n.leida).map((n) => n.id));
+  refrescarBandeja();   // independiente de las notificaciones: la lista siempre se mantiene al día
   await sbNotifs();
   const nuevas = (S.cat.notificaciones || []).filter((n) => !n.leida && !antes.has(n.id));
   refrescarCampana();
-  if (nuevas.some((n) => n.tipo === "solicitud") && /^#\/solicitudes/.test(location.hash)) {
-    await cargarBandeja(); const ae = document.activeElement;
-    if (!(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))) keep(() => render(true)); else toast("Llegó una solicitud nueva. Pulsa «Actualizar» para verla.");
-  }
   if (nuevas.length) {
     toast(nuevas.length === 1 ? (nuevas[0].detalle && nuevas[0].detalle.cancelada ? nuevas[0].titulo : `Nueva solicitud: ${nuevas[0].titulo}`) : `${nuevas.length} notificaciones nuevas`);
     if (/^#\/admin\/notificaciones/.test(location.hash)) keep(() => render(false));
@@ -926,9 +946,10 @@ async function vigilarNotifs() {
 }
 function iniciarVigilancia() {
   if (!SB || vigilaTimer) return;
-  vigilaTimer = setInterval(vigilarNotifs, 15000);
+  vigilaTimer = setInterval(vigilarNotifs, 8000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) vigilarNotifs(); });
-  try { vigilaCanal = SB.channel("solicitudes-nuevas").on("postgres_changes", { event: "*", schema: "public", table: "solicitudes" }, () => vigilarNotifs()).subscribe((st) => { S.rtEstado = st; }); } catch (e) { /* queda la revisión cada 15 s */ }
+  window.addEventListener("hashchange", () => { if (/^#\/solicitudes/.test(location.hash)) refrescarBandeja(); });
+  try { vigilaCanal = SB.channel("solicitudes-nuevas").on("postgres_changes", { event: "*", schema: "public", table: "solicitudes" }, () => { refrescarBandeja(); vigilarNotifs(); }).subscribe((st) => { S.rtEstado = st; }); } catch (e) { /* queda la revisión cada 15 s */ }
 }
 async function borrarNotifs(ids) {
   if (!ids.length) return;
@@ -1600,6 +1621,7 @@ function render(nav) {
   }
   document.body.classList.remove("auth");
   const [a, b, c] = hashParts();
+  document.body.classList.toggle("en-descubrir", !a);
   navActual = !!nav;
   post = null; if (io) { io.disconnect(); io = null; }
   if (!(a === "admin" && b === "config")) S.cfgDraft = null;
@@ -1749,9 +1771,11 @@ function heroSlide(s, i) {
 }
 function vHero(feats, cats, cuando) {
   const n = feats.length, multi = n > 1;
-  const cuenta = S.admin ? `<a class="avatar on" href="#/admin" aria-label="Administración">${glifo("edit")}</a>` : S.user ? `<button class="avatar" data-act="mi-cuenta" aria-label="Mi cuenta">${esc(iniciales(S.user.nombre))}</button>` : `<a class="hero-login" href="#/acceso">${glifo("user")}Iniciar sesión</a>`;
-  return `<section class="hero" id="hero" aria-roledescription="carrusel" aria-label="Sistemas destacados">
-    ${cats.length ? `<div class="hero-chips" role="list" aria-label="Categorías">${cats.map((k) => `<a role="listitem" class="hchip" href="#/categoria/${enc(k.id)}" style="${colorVars(k.color)}"><span class="cdot${catCls(k)}">${catInner(k)}</span>${esc(k.nombre)}</a>`).join("")}</div>` : ""}
+  const cuenta = S.admin ? `<a class="avatar on" href="#/admin" aria-label="Administración">${glifo("edit")}</a>` : S.user ? `<button class="avatar" data-act="mi-cuenta" aria-label="Mi cuenta">${esc(iniciales(S.user.nombre))}</button>` : "";
+  const chipsHtml = (cl) => cats.length ? `<div class="${cl}" role="list" aria-label="Categorías">${cats.map((k) => `<a role="listitem" class="hchip" href="#/categoria/${enc(k.id)}" style="${colorVars(k.color)}"><span class="cdot${catCls(k)}">${catInner(k)}</span>${esc(k.nombre)}</a>`).join("")}</div>` : "";
+  const barraMovil = `<div class="disc-bar-m"><div class="disc-row"><a class="disc-search" href="#/buscar">${glifo("search")}<span>Buscar sistemas</span></a>${cuenta}</div>${chipsHtml("disc-chips")}</div>`;
+  return `${barraMovil}<section class="hero" id="hero" aria-roledescription="carrusel" aria-label="Sistemas destacados">
+    ${chipsHtml("hero-chips")}
     <div class="hero-top"><a class="hero-search" href="#/buscar">${glifo("search")}<span>Buscar sistemas</span></a><span class="hero-date">${esc(cuando)}</span>${cuenta}</div>
     <div class="hero-stage" aria-live="off">${feats.map((s, i) => heroSlide(s, i).replace("{N}", n)).join("")}</div>
     ${multi ? `<div class="hero-foot"><div class="hero-progress" role="group" aria-label="Elegir sistema destacado">${feats.map((s, i) => `<button type="button" class="hp${i === 0 ? " on" : ""}" data-act="hero-go" data-i="${i}" aria-label="Ver ${esc(s.nombre)}"><i></i></button>`).join("")}</div><div class="hero-nav"><button type="button" class="btn-round" data-act="hero-prev" aria-label="Anterior">${glifo("back")}</button><button type="button" class="btn-round" data-act="hero-next" aria-label="Siguiente">${glifo("chev")}</button></div></div>` : ""}
@@ -1769,6 +1793,7 @@ function iniciarHero() {
   const arrancar = () => {
     clearInterval(heroTimer); heroTimer = null; h.classList.remove("paused"); if (quieto) return;
     const b = bars[i]; if (b) { b.classList.remove("run"); void b.offsetWidth; b.classList.add("run"); }
+    h.classList.remove("hrun"); void h.offsetWidth; h.classList.add("hrun");
     heroTimer = setInterval(() => { if (!document.body.contains(h)) { clearInterval(heroTimer); heroTimer = null; return; } if (!document.hidden) ir(i + 1, true); }, MS);
   };
   let pausado = false;
@@ -1776,6 +1801,7 @@ function iniciarHero() {
     i = (k + slides.length) % slides.length;
     slides.forEach((s, j) => { const on = j === i; s.classList.toggle("on", on); if (on) s.removeAttribute("aria-hidden"); else s.setAttribute("aria-hidden", "true"); const a = $(".hero-cta", s); if (a) a.tabIndex = on ? 0 : -1; });
     bars.forEach((b, j) => { b.classList.toggle("on", j === i); b.classList.remove("run"); });
+    h.classList.remove("hrun");
     if (pausado) clearInterval(heroTimer); else arrancar();
   };
   h._hero = { ir: (d) => ir(i + d), go: (k) => ir(k) };
@@ -1783,7 +1809,7 @@ function iniciarHero() {
     const pausa = (v) => { pausado = v; if (v) parar(); else arrancar(); };
     h.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") pausa(true); });
     h.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") pausa(false); });
-    h.addEventListener("focusin", () => pausa(true));
+    h.addEventListener("focusin", (e) => { if (e.target.matches && e.target.matches(":focus-visible")) pausa(true); });
     h.addEventListener("focusout", () => pausa(false));
     arrancar();
   }
@@ -2216,6 +2242,17 @@ function enfocarError() {
   if (el) { el.scrollIntoView({ block: "center", behavior: "smooth" }); if (el.focus) el.focus({ preventScroll: true }); }
 }
 
+/* Correo formal con el folio: lo envía la Edge Function «enviar-folio» de Supabase (ver supabase/README-correo.md) */
+async function enviarCorreoFolio(sol) {
+  let ok = false;
+  try {
+    const r = await conLimite(SB.functions.invoke("enviar-folio", { body: { folio: sol.folio } }), 25000, { error: { message: "tiempo" } });
+    ok = !!(r && !r.error && r.data && r.data.ok);
+  } catch (e) { ok = false; }
+  sol.correoFolio = ok ? "enviado" : "error";
+  await guardarSolicitudes();
+  if (hashParts()[0] === "gracias" && hashParts()[1] === sol.folio) keep(() => render(false));
+}
 async function enviarSolicitud() {
   F.errs = validarSolicitud();
   if (Object.keys(F.errs).length) { keep(() => render(false)); enfocarError(); return; }
@@ -2238,6 +2275,7 @@ async function enviarSolicitud() {
     } catch (err) { sol.errorEnvio = String((err && err.message) || err); console.error("Solicitud no enviada a Supabase:", err); }
   }
   try { await depsRegistrar(sol.datos.dependencia); } catch (err) {}
+  if (SB && !S.qa && sol.estado === "enviada") { sol.correoFolio = "enviando"; enviarCorreoFolio(sol); }   // correo formal con el folio (en segundo plano)
   if (!S.qa) {   // avisa al superadministrador en Notificaciones
     const nombres = sol.sistemas.map((x) => x.nombre).join(", "), dd = sol.datos;
     const det = { folio: sol.folio, nombre: dd.nombre, correo: dd.correo, telefono: dd.telefono, dependencia: dd.dependencia, area: dd.area, cargo: dd.cargo, sistemas: nombres };
@@ -2261,6 +2299,7 @@ function vGracias(folio) {
   <div class="ok-hero"><div class="big">${glifo("check")}</div><h1 class="large-title">Solicitud registrada</h1><p class="lede" style="margin-top:0">Tu folio es</p><span class="folio">${esc(sol.folio)}</span></div>
   <div style="max-width:680px;margin:26px auto 0;display:grid;gap:18px">
     ${estado}
+    ${sol.correoFolio === "enviando" ? `<div class="note info">${glifo("info")}<div>Enviando una copia de tu folio a <b>${esc(sol.datos.correo)}</b>…</div></div>` : sol.correoFolio === "enviado" ? `<div class="note ok">${glifo("ok")}<div><b>Te enviamos tu folio por correo.</b><br>Revisa <b>${esc(sol.datos.correo)}</b>; si no lo ves, busca también en spam o correo no deseado.</div></div>` : sol.correoFolio === "error" ? `<div class="note warn">${glifo("warn")}<div><b>No pudimos enviar el correo con tu folio.</b><br>Guarda o copia el folio <b>${esc(sol.folio)}</b>: lo necesitas para tu oficio.</div></div>` : ""}
     <div class="card"><div class="lbl" style="margin-bottom:8px">Sistemas solicitados</div>${sol.sistemas.map((s) => { const x = byId(s.id); return `<div style="display:flex;gap:12px;align-items:center;padding:6px 0">${x ? icono(x, "s40") : ""}<b>${esc(s.nombre)}</b></div>`; }).join("")}
       <div class="kv" style="margin-top:8px"><div><span class="k">Dependencia</span><span class="v">${esc(sol.datos.dependencia)}</span></div><div><span class="k">Contacto</span><span class="v">${esc(sol.datos.nombre)}</span></div><div><span class="k">Correo</span><span class="v">${esc(sol.datos.correo)}</span></div><div><span class="k">Fecha</span><span class="v">${esc(fmtFecha(sol.fecha))}</span></div></div></div>
     <div class="card"><div class="lbl" style="margin-bottom:6px">Siguiente paso</div><p class="muted" style="margin-bottom:12px">Mientras preparas tu oficio, revisa la lista de verificación para confirmar que ya cumples los requisitos.</p><a class="btn" href="#/solicitudes">Verificar requisitos</a></div>
@@ -2452,15 +2491,21 @@ function bandejaCard(r, foco) {
   const d = r.datos || {}, [cl, tx] = ESTADOS_BAN[r.estado] || ["", r.estado], tel = String(d.telefono || "").replace(/[^\d+]/g, ""), g = gestionDe(r), of = g.oficio, id = esc(r.id);
   const abierta = (foco && r.folio === foco) || (S.banAb && S.banAb.has(r.folio));
   const hist = g.historial.slice().reverse().map((h) => `<li><span class="ban-h-f">${esc(fmtHora(h.f))}</span><b>${esc(h.d || "")}</b><small>${esc(h.q || "")}</small></li>`).join("") + `<li><span class="ban-h-f">${esc(fmtHora(r.creado))}</span><b>Solicitud registrada</b><small>Solicitante</small></li>`;
-  return `<details class="ban-card" id="ban-${esc(r.folio)}"${abierta ? " open" : ""}><summary><span class="ban-sis">${esc((r.sistemas || []).map((x) => x.nombre).join(", "))}</span><span class="badge ${cl}">${tx}</span>${of.recibido ? '<span class="badge ok">Oficio recibido</span>' : ""}<small>${esc(fmtFecha(String(r.creado).slice(0, 10)))} · ${esc(r.folio)}</small></summary>
+  return `<details class="ban-card ban-st-${esc(r.estado)}" id="ban-${esc(r.folio)}"${abierta ? " open" : ""}><summary><span class="ban-sis">${esc((r.sistemas || []).map((x) => x.nombre).join(", "))}</span><span class="badge ${cl}">${tx}</span>${of.recibido ? '<span class="badge ok">Oficio recibido</span>' : ""}<small>${esc(fmtFecha(String(r.creado).slice(0, 10)))} · ${esc(r.folio)}</small></summary>
       <div class="ban-grid">${banDato("Nombre", d.nombre)}${banDato("Cargo", d.cargo)}${banDato("Correo", d.correo, "mailto:" + d.correo + "?subject=" + encodeURIComponent("Seguimiento de tu solicitud " + r.folio))}${banDato("Teléfono", d.telefono, tel ? "tel:" + tel : "")}${banDato("Prefiere que lo contacten por", d.contactoPref)}${banDato("Horario para contactarlo", d.horario)}${banDato("Área o unidad", d.area)}${banDato("Uso previsto", d.tipoUso)}${banDato("Fecha estimada", d.fechaUso ? fmtFecha(d.fechaUso) : "")}${banDato("Personas que lo usarían", d.participantes)}</div>
       ${d.mensaje ? `<p class="ban-msg"><small>Lo que necesita</small><span>${esc(d.mensaje)}</span></p>` : ""}
+      <div class="ban-cols">
+      <section class="ban-bloque ban-estado"><h3 class="ban-tit">Estado de la solicitud</h3>
+        <div class="ban-seg" role="group" aria-label="Cambiar estado">${["nueva", "contacto", "atendida"].map((k) => `<button type="button" class="ban-seg-b ban-e-${k}" data-act="bandeja-estado" data-id="${id}" data-v="${k}" aria-pressed="${r.estado === k}">${r.estado === k ? glifo("check") : ""}${ESTADOS_BAN[k][1]}</button>`).join("")}</div>
+        ${r.estado === "archivada" || r.estado === "cancelada" ? `<p class="ban-aviso">Esta solicitud está <b>${tx.toLowerCase()}</b>. ${r.estado === "archivada" ? "Restáurala para volver a gestionarla." : "Elige un estado para reabrirla."}</p>${r.estado === "archivada" ? `<button type="button" class="btn sm" data-act="bandeja-estado" data-id="${id}" data-v="nueva">Restaurar solicitud</button>` : ""}` : ""}
+        <details class="ban-mas"><summary class="btn sm sec">Más acciones ${glifo("down")}</summary><div class="ban-mas-menu">${r.estado !== "archivada" ? `<button type="button" data-act="bandeja-estado" data-id="${id}" data-v="archivada">${glifo("carpeta")}Archivar</button>` : ""}${r.estado !== "cancelada" ? `<button type="button" data-act="bandeja-estado" data-id="${id}" data-v="cancelada">${glifo("x")}Cancelar solicitud</button>` : ""}<button type="button" class="peligro" data-act="bandeja-borrar" data-id="${id}">${glifo("trash")}Eliminar definitivamente</button></div></details>
+      </section>
       <fieldset class="ban-oficio"><legend>Oficio de solicitud</legend>
         <label class="ban-of-chk" for="of-r-${id}"><input type="checkbox" id="of-r-${id}"${of.recibido ? " checked" : ""}> Oficio recibido</label>
         <div class="ban-of-row"><div class="field"><label for="of-f-${id}">Fecha de recepción</label><input type="date" id="of-f-${id}" value="${esc(of.fecha)}"></div><div class="field"><label for="of-n-${id}">No. de oficio</label><input type="text" id="of-n-${id}" value="${esc(of.numero)}" placeholder="Ej. OF-123/2026" autocomplete="off"></div></div>
         <button type="button" class="btn sm" data-act="bandeja-oficio" data-id="${id}">Guardar oficio</button>
       </fieldset>
-      <section class="ban-bloque"><h3 class="ban-tit">Estado de la solicitud</h3><div class="ban-acts">${Object.entries(ESTADOS_BAN).filter(([k]) => k !== r.estado).map(([k, v]) => `<button class="btn sm sec" data-act="bandeja-estado" data-id="${id}" data-v="${k}">${k === "archivada" ? "Archivar" : k === "cancelada" ? "Cancelar solicitud" : r.estado === "archivada" && k === "nueva" ? "Restaurar" : "Marcar: " + v[1]}</button>`).join("")}<button class="btn sm danger" data-act="bandeja-borrar" data-id="${id}">${glifo("trash")}Eliminar</button></div></section>
+      </div>
       <section class="ban-bloque"><h3 class="ban-tit"><label for="nota-${id}">Nota interna</label></h3><textarea id="nota-${id}" class="ban-nota" placeholder="Nota interna (solo la ves tú)">${esc(r.nota || "")}</textarea><button type="button" class="btn sm" data-act="bandeja-nota" data-id="${id}">Guardar nota</button></section>
       <details class="ban-hist"><summary>Historial de movimientos (${g.historial.length + 1})</summary><ol class="ban-hl">${hist}</ol></details></details>`;
 }
@@ -2510,11 +2555,16 @@ function vBandeja(foco) {
   const bulk = S.bf === "cancelada" && vis.length ? `<div class="note warn" style="margin:12px 0">${glifo("warn")}<div><b>${vis.length} ${plural(vis.length, "solicitud cancelada", "solicitudes canceladas")}.</b> Archívalas para conservarlas fuera de la lista, o elimínalas definitivamente.<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm sec" data-act="bandeja-archivar-canceladas">Archivar todas</button><button class="btn sm danger" data-act="bandeja-borrar-canceladas">${glifo("trash")}Eliminar todas</button></div></div></div>` : "";
   return `${cabecera("Solicitudes recibidas", "Qué sistemas pidió cada dependencia y cómo contactarla.")}
     <div class="sp"></div>${estado}
-    <div class="ban-kpis"><div><b>${cuenta("nueva")}</b><span>Nuevas</span></div><div><b>${cuenta("contacto")}</b><span>En contacto</span></div><div><b>${cuenta("atendida")}</b><span>Atendidas</span></div><div><b>${nDeps}</b><span>Dependencias</span></div></div>
-    <div class="chips" role="group" aria-label="Filtrar por estado">${[["todas", "Todas (" + activas.length + ")"], ...Object.entries(ESTADOS_BAN).map(([k, v]) => [k, v[1] + " (" + cuenta(k) + ")"])].map(([k, t]) => `<button type="button" data-act="bandeja-filtro" data-v="${k}" ${S.bf === k ? 'aria-current="true" class="on"' : ""}>${t}</button>`).join("")}<button type="button" data-act="bandeja-recargar">${glifo("reloj")}Actualizar</button><button type="button" data-act="bandeja-exportar">Descargar Excel (.csv)</button><button type="button" data-act="respaldo-completo">Respaldo completo</button></div>
+    <div class="ban-kpis">${[["nueva", "Nuevas"], ["contacto", "En contacto"], ["atendida", "Atendidas"]].map(([k, t]) => `<button type="button" class="ban-kpi ban-k-${k}" data-act="bandeja-filtro" data-v="${k}" aria-pressed="${S.bf === k}"><b>${cuenta(k)}</b><span>${t}</span></button>`).join("")}<div class="ban-kpi ban-k-dep"><b>${nDeps}</b><span>Dependencias</span></div></div>
+    <div class="ban-filtros"><div class="chips" role="group" aria-label="Filtrar por estado">${[["todas", "Todas (" + activas.length + ")"], ...Object.entries(ESTADOS_BAN).map(([k, v]) => [k, v[1] + " (" + cuenta(k) + ")"])].map(([k, t]) => `<button type="button" data-act="bandeja-filtro" data-v="${k}" ${S.bf === k ? 'aria-current="true" class="on"' : ""}>${t}</button>`).join("")}</div><div class="ban-filtros-acc"><button type="button" class="btn sm ghost" data-act="bandeja-recargar">${glifo("reloj")}Actualizar</button><button type="button" class="btn sm ghost" data-act="ir-datos">${glifo("download")}Datos y respaldos</button></div></div>
     ${bulk}
     ${bandejaHerramientas(rows)}
-    <div id="ban-lista">${bandejaListaHtml(foco)}</div>`;
+    <div id="ban-lista">${bandejaListaHtml(foco)}</div>
+    <section class="ban-datos" id="ban-datos" aria-labelledby="ban-datos-t"><h2 id="ban-datos-t">Datos y respaldos</h2><p class="muted">Lleva la información fuera del sistema o guarda una copia de seguridad.</p>
+      <div class="ban-datos-grid">
+        <article class="ban-dcard"><span class="ban-dico">${glifo("download")}</span><div><b>Lista en Excel (.csv)</b><p>Descarga las solicitudes que ves ahora, respetando los filtros y la búsqueda activos.</p></div><button type="button" class="btn sec" data-act="bandeja-exportar">Descargar Excel</button></article>
+        <article class="ban-dcard"><span class="ban-dico lila">${glifo("escudo")}</span><div><b>Respaldo completo</b><p>Un solo archivo con los sistemas, imágenes, configuración y todas las solicitudes.</p></div><button type="button" class="btn sec" data-act="respaldo-completo">Descargar respaldo</button></article>
+      </div></section>`;
 }
 function misSols() { return S.user ? S.sols.filter((x) => normCorreo((x.datos || {}).correo || "") === normCorreo(S.user.correo || "")) : S.sols.slice(); }
 function vSolicitudes() {
@@ -3335,6 +3385,7 @@ const ACT = {
   "entrar-visitante"() { S.guest = true; try { sessionStorage.setItem("catalogo-visitante", "1"); } catch (e) {} location.hash = "#/"; render(true); },
   "bandeja-filtro"(t) { S.bf = t.dataset.v; keep(() => render(true)); },
   "bandeja-exportar"() { exportarBandeja(); },
+  "ir-datos"() { const e = document.getElementById("ban-datos"); if (e) e.scrollIntoView({ behavior: "smooth", block: "start" }); },
   "bandeja-recargar"() { S.inbox = undefined; render(true); },
   async "bandeja-estado"(t) {
     const r = banFila(t.dataset.id), v = t.dataset.v; if (!r) return toast("No se encontró la solicitud. Pulsa «Actualizar» e inténtalo de nuevo.");
@@ -3377,7 +3428,7 @@ const ACT = {
   async "bandeja-borrar-canceladas"() { const ids = filasBandeja().filter((r) => r.estado === "cancelada").map((r) => r.id); await bandejaBorrar(ids, `Se eliminarán ${ids.length} ${plural(ids.length, "solicitud cancelada", "solicitudes canceladas")}. No se puede deshacer; si prefieres conservarlas, usa «Archivar todas».`); },
   "guardar-directorio"() { const t = $("#dir-txt"); if (!t) return; cfg().directorio = t.value.split("\n").map((l) => l.split("|").map((x) => x.trim())).filter((a) => a[0]).map((a) => ({ nombre: a[0], cargo: a[1] || "", correo: a[2] || "", telefono: a[3] || "" })); guardarCatalogo(); toast("Directorio guardado"); render(true); },
   "recup-cancelar"() { S.recup = false; if (SB) SB.auth.signOut(); S.authView = "login"; location.hash = "#/acceso"; render(true); },
-  "ir-registro"() { cerrarModal(); if (!/^#\/acceso/.test(location.hash)) S.retorno = location.hash; S.authView = "registro"; if (location.hash === "#/acceso") render(true); else location.hash = "#/acceso"; },
+  "ir-registro"() { cerrarModal(); if (!/^#\/acceso/.test(location.hash)) S.retorno = location.hash; S.authView = "login"; if (location.hash === "#/acceso") render(true); else location.hash = "#/acceso"; },
   async "notif-diag"() {
     toast("Revisando…");
     const L = [], add = (ok, tit, det) => L.push(`<div class="note ${ok === true ? "ok" : "warn"}" style="margin-bottom:8px">${glifo(ok === true ? "ok" : "warn")}<div><b>${esc(tit)}</b>${det ? `<br><span class="muted" style="font-size:13.5px">${det}</span>` : ""}</div></div>`);
@@ -3469,6 +3520,7 @@ const SOLO_SUPER = new Set(["notif-diag", "notif-ver-sol", "notif-borrar", "noti
 const QA_BLOQ = new Set(["respaldo-completo", "exportar", "como-publicar", "descartar-local", "publicar-ahora"]);
 const SOLO_GESTION = new Set(["toggle-pub", "mover", "duplicar", "del-sistema", "add-cat", "del-cat", "edit-cat", "ren-sis", "img-quitar", "e-guardar", "e-add", "e-del", "demo-media", "vid-add-url", "fmt", "desc-color-reset", "e-quitar-videodest"]);
 document.addEventListener("toggle", (e) => { const d = e.target; if (!d || !d.classList || !d.classList.contains("ban-card")) return; S.banAb = S.banAb || new Set(); S.banAb[d.open ? "add" : "delete"](String(d.id).replace(/^ban-/, "")); }, true);
+document.addEventListener("click", (e) => { document.querySelectorAll("details.ban-mas[open]").forEach((d) => { if (!d.contains(e.target)) d.removeAttribute("open"); }); });
 document.addEventListener("click", (e) => {
   const t = e.target.closest("[data-act]");
   if (!t || t.disabled) return;
@@ -3801,7 +3853,7 @@ async function sbPublicar() {
 }
 const sbEnCola = () => { clearTimeout(sbPend); sbPend = setTimeout(sbPublicar, 1200); };
 function vAuthSB() {
-  const c = cfg(), logo = logoInner(c), reg = S.authView === "registro", err = `<div class="err" id="a-err" role="alert"></div>`;
+  const c = cfg(), logo = logoInner(c), reg = false, err = `<div class="err" id="a-err" role="alert"></div>`;
   const fld = (id, label, o = {}) => `<div class="field"><label for="${id}">${label}${o.req ? reqMark : ""}</label>${o.pw ? `<div class="pwrow"><input id="${id}" type="password" autocomplete="${o.auto || "current-password"}" ${o.req ? 'aria-required="true"' : ""}><button type="button" class="showpw" data-act="ver-pass" aria-label="Mostrar u ocultar contraseña">Mostrar</button></div>` : `<input id="${id}" type="${o.tipo || "text"}" autocomplete="${o.auto || "off"}" placeholder="${esc(o.ph || "")}" ${o.extra || ""} ${o.req ? 'aria-required="true"' : ""}>`}${o.hint ? `<span class="muted" style="font-size:12.5px">${o.hint}</span>` : ""}</div>`;
   const cab = `<div class="auth-brand"><span class="auth-logo${imgOk(c.logo) ? "" : " lg"}">${logo}</span><div><b>${esc(c.nombre)}</b><small>${esc(c.organizacion)}</small></div></div>`;
   const vis = `<button class="btn sec big auth-alt" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button>`;
@@ -3845,8 +3897,8 @@ function vAuthSB() {
       <label class="chk"><input type="checkbox" id="a-acepto" aria-required="true"><span>${reqMark.trim()} ${esc(TEXTO_PRIVACIDAD_ACCESO)}${linksLegales()}</span></label>${err}<button class="btn big" type="submit" id="a-reg-btn">Crear mi cuenta</button></form>
     <p class="auth-switch">¿Ya tienes cuenta? <button type="button" class="linkbtn" data-act="auth-ir" data-v="login">Inicia sesión</button></p>
     <div class="auth-divider" role="separator"></div><button class="btn ghost big auth-alt auth-visor" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button></div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
-  const visor = `<div class="auth-divider" role="separator"></div><button class="btn ghost big auth-alt auth-visor" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button><p class="auth-note">Como visualizador puedes ver todo el catálogo. Para solicitar un sistema necesitas iniciar sesión.</p>`;
-  return `<div class="authwrap"><div class="authcard">${cab}${authTabs("usuario")}<h1>Iniciar sesión</h1><p class="lede">Entra con tu cuenta de Google o con tu correo electrónico.${DOMINIO_PERMITIDO ? ` Solo se aceptan correos que terminen en <b>${esc(DOMINIO_PERMITIDO)}</b>.` : ""}</p>
+  const visor = `<div class="auth-divider" role="separator"></div><button class="btn ghost big auth-alt auth-visor" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button><p class="auth-note">Esta pantalla es solo para la administración del catálogo. Para solicitar un sistema no necesitas iniciar sesión.</p>`;
+  return `<div class="authwrap"><div class="authcard">${cab}${authTabs("usuario")}<h1>Acceso de administración</h1><p class="lede">Solo para el personal autorizado. Entra con tu cuenta de Google o con tu correo electrónico.${DOMINIO_PERMITIDO ? ` Solo se aceptan correos que terminen en <b>${esc(DOMINIO_PERMITIDO)}</b>.` : ""}</p>
   ${gBtn("Continuar con Google")}
   <form id="form-login" novalidate data-paso="1">
     ${fld("a-correo", "Correo electrónico", { tipo: "email", auto: "username", ph: "tucorreo@ejemplo.com", req: 1, extra: 'autocapitalize="none" spellcheck="false"' })}
@@ -3856,7 +3908,6 @@ function vAuthSB() {
       <button class="btn big" type="submit">Iniciar sesión</button>
       <p class="auth-switch" style="margin:0">¿Esta cuenta es de Google? <button type="button" class="linkbtn" data-act="google-login">Continuar con Google</button></p>
       <div class="auth-links"><button type="button" data-act="codigo-enviar">Entrar con código por correo</button></div><p class="auth-note" style="margin-top:2px">¿Entraste antes con Google y no tienes contraseña? Pide un código a tu correo.</p>
-      <p class="auth-switch">¿No tienes cuenta? <button type="button" class="linkbtn" data-act="auth-ir" data-v="registro">Crear cuenta</button></p>
     </div>${err}</form>
   ${visor}</div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
 }
@@ -3864,7 +3915,7 @@ function vAuthSB() {
 /* ---------- Accesibilidad: preferencias guardadas en este dispositivo ---------- */
 (function () {
   const K = "catalogo-acc"; let a = {}; try { a = JSON.parse(localStorage.getItem(K) || "{}"); } catch (e) {}
-  const OP = [["big", "Texto más grande"], ["dys", "Letra más espaciada"], ["calm", "Reducir animaciones"]];
+  const OP = [["big", "Texto más grande"], ["dys", "Letra más espaciada"]];
   const ap = () => OP.forEach(([k]) => document.documentElement.classList.toggle("acc-" + k, !!a[k]));
   ap();
   const b = document.createElement("button"); b.id = "acc-btn"; b.type = "button"; b.setAttribute("aria-label", "Opciones de accesibilidad"); b.setAttribute("aria-expanded", "false");

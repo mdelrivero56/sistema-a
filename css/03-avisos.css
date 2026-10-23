@@ -65,7 +65,6 @@ button.nitem:hover{background:var(--sel)}
 @keyframes navflash{0%{background:color-mix(in srgb,var(--accent) 18%,transparent)}}
 .flash{animation:navflash .4s ease-out}
 @media (prefers-reduced-motion:reduce){.blink,.blink-soft,.tap,.flash{animation:none!important}}
-html.acc-calm .blink,html.acc-calm .blink-soft,html.acc-calm .tap,html.acc-calm .flash{animation:none!important}
 
 /* ===== Campana flotante (siempre visible al desplazarse) ===== */
 :root{--bell-top:18px;--bell-right:20px}

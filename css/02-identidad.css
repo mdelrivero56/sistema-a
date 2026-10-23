@@ -51,7 +51,6 @@
 :root{--pal-profundo:#0e2f3d;--pal-apoyo:#12475a;--pal-principal:#0f6e8c;--pal-acento:#f2b632;--pal-exito:#12803f;--pal-aviso:#a14a06;--pal-error:#c0262d;--pal-texto:#13232b;--pal-borde:#dfe7ec}
 :focus-visible{outline:3px solid var(--pal-acento);outline-offset:2px;border-radius:6px}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
-html.acc-calm *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 html.acc-big body{zoom:1.14}
 html.acc-dys body{letter-spacing:.04em;word-spacing:.14em;line-height:1.75}
 /* ===== Botón y panel de accesibilidad ===== */

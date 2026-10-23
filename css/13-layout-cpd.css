@@ -237,3 +237,179 @@ section.hero#hero::after{display:none!important}
   .cat-hero-art{width:64px}
   .cat-grid{gap:16px}
 }
+
+/* ==========================================================================
+   Solicitudes recibidas (superadministrador): vista más cómoda
+   ========================================================================== */
+/* Indicadores: tarjetas que además filtran */
+.ban-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0 6px}
+.ban-kpis .ban-kpi{position:relative;display:grid;gap:2px;text-align:left;padding:16px 18px 14px;border-radius:var(--r-lg);background:var(--bg)!important;border:1px solid var(--sep)!important;box-shadow:0 10px 24px -20px rgba(10,42,94,.55)!important;overflow:hidden;color:var(--label)}
+.ban-kpis .ban-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--azul)}
+.ban-kpis .ban-k-contacto::before{background:var(--lila)}
+.ban-kpis .ban-k-atendida::before{background:var(--ok)}
+.ban-kpis .ban-k-dep::before{background:var(--sep-strong)}
+.ban-kpis .ban-kpi b{font-family:var(--font-display);font-size:32px;line-height:1;font-weight:900;color:var(--label)!important}
+.ban-kpis .ban-kpi span{font-size:13px;font-weight:600;color:var(--label-2);opacity:1!important}
+.ban-kpis button.ban-kpi{cursor:pointer;transition:transform .15s,box-shadow .15s}
+.ban-kpis button.ban-kpi:hover{transform:translateY(-2px)}
+.ban-kpis button.ban-kpi[aria-pressed="true"]{border-color:var(--azul)!important;box-shadow:0 0 0 3px var(--accent-soft),0 10px 24px -18px var(--azul)!important}
+
+/* Filtros por estado + acciones de la lista */
+.ban-filtros{display:flex;align-items:center;justify-content:space-between;gap:12px 18px;flex-wrap:wrap;margin:6px 0 4px}
+.ban-filtros .chips{padding-block:8px;flex-wrap:wrap}
+.ban-filtros-acc{display:flex;gap:8px;flex:none}
+.ban-filtros-acc .btn{gap:6px;color:var(--label-2)}
+.ban-filtros-acc .g{width:16px;height:16px}
+
+/* Buscador y filtros */
+.ban-tools{border-radius:var(--r-lg)!important;padding:16px 18px!important;background:var(--bg)!important;border:1px solid var(--sep)!important;margin-top:10px}
+.ban-resumen{margin:10px 2px 6px}
+
+/* Grupos por dependencia */
+.ban-dep{margin-top:26px}
+.ban-dep h2{font-family:var(--font-display);font-weight:800;border-radius:14px!important}
+.ban-dep h2 small{font-family:var(--font);font-weight:600;color:var(--label-2);margin-left:6px}
+
+/* Tarjeta de solicitud */
+.ban-card{border-radius:22px!important;border-left-width:5px!important;border-left-color:var(--azul)!important;background:var(--bg)!important}
+.ban-card.ban-st-contacto{border-left-color:var(--lila)!important}
+.ban-card.ban-st-atendida{border-left-color:var(--ok)!important}
+.ban-card.ban-st-cancelada{border-left-color:var(--bad)!important}
+.ban-card.ban-st-archivada{border-left-color:var(--sep-strong)!important}
+.ban-card>summary{padding:18px 22px!important;gap:10px 14px!important}
+.ban-card .ban-sis{font-family:var(--font-display);font-weight:800;font-size:18px;line-height:1.25}
+.ban-card>summary small{font-size:12.5px;color:var(--label-2)}
+.ban-grid{padding:20px 22px 8px!important;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))!important;gap:12px!important}
+.ban-grid>div{border-radius:14px!important;background:var(--bg-soft)!important;border-color:var(--sep)!important;box-shadow:none!important}
+.ban-msg{margin:10px 22px 6px!important;border-radius:14px!important}
+
+/* Estado + oficio en dos columnas */
+.ban-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin:14px 22px;align-items:start}
+.ban-cols>.ban-bloque,.ban-cols>.ban-oficio{margin:0!important;height:100%}
+.ban-estado{align-content:start}
+.ban-seg{display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--bg-soft);border:1px solid var(--sep)}
+.ban-seg-b{flex:1 1 0;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 8px;border-radius:999px;font-size:13.5px;font-weight:700;color:var(--label-2);text-align:center;transition:background .15s,color .15s,box-shadow .15s}
+.ban-seg-b:hover{background:var(--sel);color:var(--label)}
+.ban-seg-b .g{width:15px;height:15px;stroke-width:2.6}
+.ban-seg-b[aria-pressed="true"]{color:#fff;box-shadow:0 6px 14px -8px rgba(10,42,94,.7)}
+.ban-seg-b.ban-e-nueva[aria-pressed="true"]{background:var(--azul)}
+.ban-seg-b.ban-e-contacto[aria-pressed="true"]{background:var(--lila-texto)}
+.ban-seg-b.ban-e-atendida[aria-pressed="true"]{background:var(--ok)}
+.ban-aviso{margin:0;font-size:13.5px;color:var(--label-2);line-height:1.45}
+.ban-estado>.btn{justify-self:start}
+.ban-mas{margin:0}
+.ban-mas>summary{list-style:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.ban-mas>summary::-webkit-details-marker{display:none}
+.ban-mas>summary .g{width:14px;height:14px;transition:transform .15s}
+.ban-mas[open]>summary .g{transform:rotate(180deg)}
+.ban-mas-menu{display:grid;gap:2px;margin-top:8px;padding:6px;border:1px solid var(--sep);border-radius:14px;background:var(--bg-soft)}
+.ban-mas-menu button{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;font-size:14px;font-weight:600;color:var(--label);width:100%;text-align:left}
+.ban-mas-menu button:hover{background:var(--sel)}
+.ban-mas-menu button .g{width:17px;height:17px;color:var(--label-2)}
+.ban-mas-menu .peligro,.ban-mas-menu .peligro .g{color:var(--bad)}
+.ban-mas-menu .peligro:hover{background:var(--bad-soft)}
+
+.ban-card>.ban-bloque{margin:12px 22px!important}
+.ban-card>.ban-hist{margin:12px 22px 20px!important}
+.ban-oficio,.ban-bloque,.ban-hist{border-radius:16px!important}
+
+/* Barra de acciones para las seleccionadas: flotante y ordenada */
+.ban-barra:not([hidden]){position:sticky;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:25;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0;padding:10px 14px;border-radius:999px;background:var(--bg);border:1px solid var(--azul-borde);box-shadow:0 18px 40px -16px rgba(10,42,94,.55)}
+.ban-barra b{margin-right:4px;color:var(--azul)}
+
+/* Datos y respaldos */
+.ban-datos{margin-top:48px;padding:24px;border-radius:var(--r-xl);background:var(--bg);border:1px solid var(--sep);scroll-margin-top:20px}
+.ban-datos h2{font-family:var(--font-display);font-weight:800;font-size:22px;letter-spacing:-.02em}
+.ban-datos>.muted{margin:4px 0 16px}
+.ban-datos-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px}
+.ban-dcard{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;align-items:start;padding:18px;border-radius:var(--r-lg);background:var(--bg-soft);border:1px solid var(--sep)}
+.ban-dcard>div b{font-size:16px;font-weight:800;color:var(--label)}
+.ban-dcard p{margin:2px 0 0;font-size:13.5px;line-height:1.5;color:var(--label-2)}
+.ban-dcard .btn{grid-column:1/-1;justify-self:start;margin-top:10px}
+.ban-dico{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:var(--azul-suave);color:var(--azul)}
+.ban-dico.lila{background:var(--lila-suave);color:var(--lila-texto)}
+.ban-dico .g{width:24px;height:24px}
+
+@media (max-width:900px){
+  .ban-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .ban-cols{grid-template-columns:1fr;margin:12px 14px}
+  .ban-card>.ban-bloque,.ban-card>.ban-hist{margin-left:14px!important;margin-right:14px!important}
+  .ban-card>summary{padding:14px 16px!important}
+  .ban-grid{padding:14px 14px 6px!important}
+  .ban-msg{margin-left:14px!important;margin-right:14px!important}
+  .ban-barra:not([hidden]){border-radius:22px;bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+  .ban-datos{padding:18px 14px}
+}
+.ban-filtros-acc .btn,.ban-resumen .btn.ghost{background:var(--bg)!important;color:var(--azul)!important;border:1px solid var(--azul-borde)!important;box-shadow:none!important}
+.ban-filtros-acc .btn:hover,.ban-resumen .btn.ghost:hover{background:var(--azul-suave)!important}
+.ban-filtros-acc .btn .g{color:var(--azul)}
+.ban-oficio{align-content:start}
+.ban-oficio .btn,.ban-bloque .btn{align-self:start}
+
+/* ==========================================================================
+   Descubrir en celular: panel más limpio, buscador y categorías siempre a la vista
+   ========================================================================== */
+.disc-bar-m{display:none}
+@media (max-width:900px){
+  /* Buscador + categorías: barra fija arriba, fuera del panel */
+  .disc-bar-m{display:block;position:sticky;top:0;z-index:40;margin:0 calc(-1*var(--gutter)) 8px;padding:calc(10px + env(safe-area-inset-top,0px)) var(--gutter) 8px;
+    background:color-mix(in srgb,var(--bg-soft) 86%,transparent);-webkit-backdrop-filter:saturate(160%) blur(16px);backdrop-filter:saturate(160%) blur(16px)}
+  .disc-row{display:flex;align-items:center;gap:10px;padding-right:56px}
+  .disc-search{flex:1;min-width:0;display:flex;align-items:center;gap:10px;height:44px;padding:0 16px;border-radius:999px;background:var(--bg);border:1px solid var(--sep);color:var(--label-2)!important;font-size:15px;font-weight:500;box-shadow:0 6px 16px -12px rgba(10,42,94,.5)}
+  .disc-search:hover{text-decoration:none}
+  .disc-search .g{width:18px;height:18px;flex:none;color:var(--azul)}
+  .disc-search span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .disc-row .avatar,.disc-row .avatar.on{display:grid!important;flex:none;width:44px;height:44px;box-shadow:0 6px 16px -10px var(--azul)!important}
+  .disc-row .hero-login{flex:none;padding:0 14px;height:44px;border:1px solid var(--sep);background:var(--bg);color:var(--azul)!important;font-size:13.5px;white-space:nowrap}
+  .disc-chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:10px 0 2px;margin-right:-16px;padding-right:16px;-webkit-overflow-scrolling:touch}
+  .disc-chips::-webkit-scrollbar{display:none}
+  .disc-chips .hchip{background:var(--bg);border:1px solid var(--sep);color:var(--label)!important;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+  .disc-chips .hchip:hover{background:var(--azul-suave);transform:none}
+  /* la campana queda en la misma línea que el buscador */
+  body.en-descubrir{--bell-top:calc(env(safe-area-inset-top,0px) + 10px)}
+
+  /* Panel: compacto, con los borrones visibles */
+  section.hero#hero .hero-top,section.hero#hero .hero-chips{display:none}
+  section.hero#hero{margin-top:2px;padding:20px 18px 16px;gap:10px;border-radius:30px}
+  .hero-stage{min-height:236px}
+  .hero-slide{display:block;position:relative;align-self:stretch}
+  .hero-copy{position:relative;z-index:2;max-width:calc(100% - 92px);gap:8px;padding:0}
+  .hero-eyebrow em{display:none}
+  .hero-eyebrow>span{font-size:11px;padding:4px 10px}
+  .hero-title{font-size:clamp(26px,8vw,34px);line-height:1.05}
+  .hero-sub{font-size:14.5px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .hero-desc{display:none}
+  .hero-actions{gap:8px;margin-top:6px;flex-wrap:wrap}
+  .hero-cta{padding:6px 6px 6px 16px;font-size:14px;gap:8px}
+  .hero-cta .cta-dot{width:30px;height:30px}
+  .hero .get.hero-get{padding:9px 16px;font-size:14px}
+  .hero-visual{position:static;min-height:0;height:auto;order:0;overflow:visible;display:block}
+  .phone{position:absolute;right:-8px;bottom:-46px;width:104px;transform:rotate(6deg);z-index:1;border-radius:24px;padding:5px}
+  .phone-screen{border-radius:19px}
+  .phone-notch{top:9px;height:5px}
+  .hero-badge{display:none}
+  .orb-1{width:260px;right:-70px;top:-90px}
+  .orb-2{width:200px;left:-70px;bottom:-90px}
+  .hero-foot{gap:12px}
+}
+/* overflow-x:hidden en body impide que la barra se quede fija; "clip" evita el desplazamiento lateral sin ese efecto */
+@media (max-width:900px){html,body{overflow-x:clip!important}}
+
+/* ==========================================================================
+   Descubrir en celular: avance del panel bien visible.
+   Misma lógica que en desktop (.hp.run + --hero-t + .paused); aquí solo se amplía y se
+   añade una línea de avance en el borde superior del panel.
+   ========================================================================== */
+@media (max-width:900px){
+  .hero-progress{gap:6px}
+  .hp{height:30px}
+  .hp i{height:8px;border-radius:8px;background:rgba(255,255,255,.34);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+  .hp i::after{border-radius:8px;background:linear-gradient(90deg,rgba(255,255,255,.7),#fff 70%);box-shadow:0 0 12px 1px rgba(255,255,255,.8)}
+  .hp.run i{box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 0 0 3px rgba(255,255,255,.12)}
+}
+@media (max-width:900px) and (prefers-reduced-motion:no-preference){
+  section.hero#hero.hrun::after{display:block!important;content:"";position:absolute;left:0;top:0;height:4px;width:0;z-index:3;pointer-events:none;
+    border-radius:0 4px 4px 0;background:linear-gradient(90deg,rgba(255,255,255,.35),#fff);box-shadow:0 0 14px 2px rgba(255,255,255,.75);
+    animation:hpFill var(--hero-t,7s) linear forwards}
+  section.hero#hero.paused.hrun::after{animation-play-state:paused}
+}
