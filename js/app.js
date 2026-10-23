@@ -2249,10 +2249,13 @@ function enfocarError() {
 /* Correo formal con el folio: lo envía la Edge Function «enviar-folio» de Supabase (ver supabase/README-correo.md) */
 async function enviarCorreoFolio(sol) {
   let ok = false;
-  try {
-    const r = await conLimite(SB.functions.invoke("enviar-folio", { body: { folio: sol.folio } }), 25000, { error: { message: "tiempo" } });
-    ok = !!(r && !r.error && r.data && r.data.ok);
-  } catch (e) { ok = false; }
+  for (let i = 0; i < 2 && !ok; i++) {   // un reintento automático si falla el primer envío
+    if (i) await new Promise((r) => setTimeout(r, 3000));
+    try {
+      const r = await conLimite(SB.functions.invoke("enviar-folio", { body: { folio: sol.folio } }), 25000, { error: { message: "tiempo" } });
+      ok = !!(r && !r.error && r.data && r.data.ok);
+    } catch (e) { ok = false; }
+  }
   sol.correoFolio = ok ? "enviado" : "error";
   await guardarSolicitudes();
   if (hashParts()[0] === "gracias" && hashParts()[1] === sol.folio) keep(() => render(false));
@@ -2274,7 +2277,7 @@ async function enviarSolicitud() {
   };
   if (SB) {
     try {
-      const { error } = await conLimite(SB.from("solicitudes").insert({ folio: sol.folio, dependencia: sol.datos.dependencia, datos: sol.datos, sistemas: sol.sistemas.map((x) => ({ id: x.id, nombre: x.nombre, version: x.version || "" })) }), 15000, { error: { message: "tiempo" } });
+      const { error } = await conLimite(SB.from("solicitudes").insert({ folio: sol.folio, dependencia: sol.datos.dependencia, datos: sol.datos, sistemas: sol.sistemas.map((x) => ({ id: x.id, nombre: x.nombre, version: x.version || "", requisitos: x.requisitos || [] })) }), 15000, { error: { message: "tiempo" } });
       if (!error) { sol.estado = "enviada"; sol.canal = "Supabase"; } else { sol.errorEnvio = String(error.message || error.code || "error"); console.error("Solicitud no enviada a Supabase:", error); }
     } catch (err) { sol.errorEnvio = String((err && err.message) || err); console.error("Solicitud no enviada a Supabase:", err); }
   }
@@ -2303,7 +2306,7 @@ function vGracias(folio) {
   <div class="ok-hero"><div class="big">${glifo("check")}</div><h1 class="large-title">Solicitud registrada</h1><p class="lede" style="margin-top:0">Tu folio es</p><span class="folio">${esc(sol.folio)}</span></div>
   <div style="max-width:680px;margin:26px auto 0;display:grid;gap:18px">
     ${estado}
-    ${sol.correoFolio === "enviando" ? `<div class="note info">${glifo("info")}<div>Enviando una copia de tu folio a <b>${esc(sol.datos.correo)}</b>…</div></div>` : sol.correoFolio === "enviado" ? `<div class="note ok">${glifo("ok")}<div><b>Te enviamos tu folio por correo.</b><br>Revisa <b>${esc(sol.datos.correo)}</b>; si no lo ves, busca también en spam o correo no deseado.</div></div>` : sol.correoFolio === "error" ? `<div class="note warn">${glifo("warn")}<div><b>No pudimos enviar el correo con tu folio.</b><br>Guarda o copia el folio <b>${esc(sol.folio)}</b>: lo necesitas para tu oficio.</div></div>` : ""}
+    ${sol.correoFolio === "enviando" ? `<div class="note info">${glifo("info")}<div>Enviando una copia de tu folio a <b>${esc(sol.datos.correo)}</b>…</div></div>` : sol.correoFolio === "enviado" ? `<div class="note ok">${glifo("ok")}<div><b>Te enviamos tu folio por correo.</b><br>Revisa <b>${esc(sol.datos.correo)}</b>; si no lo ves, busca también en spam o correo no deseado.</div></div>` : sol.correoFolio === "error" ? `<div class="note warn">${glifo("warn")}<div><b>No pudimos enviar el correo con tu folio.</b><br>Guarda o copia el folio <b>${esc(sol.folio)}</b>: lo necesitas para tu oficio.<div style="margin-top:10px"><button class="btn sec" data-act="reenviar-folio" data-id="${esc(sol.id)}">${glifo("correo")}Reintentar envío del correo</button></div></div></div>` : ""}
     <div class="card"><div class="lbl" style="margin-bottom:8px">Sistemas solicitados</div>${sol.sistemas.map((s) => { const x = byId(s.id); return `<div style="display:flex;gap:12px;align-items:center;padding:6px 0">${x ? icono(x, "s40") : ""}<b>${esc(s.nombre)}</b></div>`; }).join("")}
       <div class="kv" style="margin-top:8px"><div><span class="k">Dependencia</span><span class="v">${esc(sol.datos.dependencia)}</span></div><div><span class="k">Contacto</span><span class="v">${esc(sol.datos.nombre)}</span></div><div><span class="k">Correo</span><span class="v">${esc(sol.datos.correo)}</span></div><div><span class="k">Fecha</span><span class="v">${esc(fmtFecha(sol.fecha))}</span></div></div></div>
     <div class="card"><div class="lbl" style="margin-bottom:6px">Siguiente paso</div><p class="muted" style="margin-bottom:12px">Mientras preparas tu oficio, revisa la lista de verificación para confirmar que ya cumples los requisitos.</p><a class="btn" href="#/solicitudes">Verificar requisitos</a></div>
@@ -3164,6 +3167,7 @@ const ACT = {
   solicitar(t) { go("solicitar/" + enc(t.dataset.id)); },
   compartir(t) { copiar(location.href.split("#")[0] + "#/sistema/" + enc(t.dataset.id), "Enlace copiado"); },
   copiar(t) { copiar(t.dataset.v, "Copiado"); },
+  "reenviar-folio"(t) { const s = S.sols.find((x) => x.id === t.dataset.id); if (!s || !SB || s.correoFolio === "enviando") return; s.correoFolio = "enviando"; keep(() => render(false)); enviarCorreoFolio(s); },
   "toggle-desc"(t) { const d = $("#desc"); if (!d) return; d.classList.toggle("open"); t.textContent = d.classList.contains("open") ? "menos" : "más"; },
   lightbox(t) { const s = byId(t.dataset.id); if (!s) return; const items = s.capturas.filter((c) => imgOk(c.src)); abrirLightbox(items, +t.dataset.i); },
   "cv-next"(t) { const g = $(".cv-grid, .chips", t.closest(".cv-wrap")); if (g) g.scrollBy({ left: g.clientWidth + 20, behavior: "smooth" }); },
