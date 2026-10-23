@@ -42,4 +42,4 @@ const ARCHIVO_PUBLICADO = "catalogo.json";   // catálogo compartido con todos l
 const LIMITE_ARCHIVO = 10 * 1024 * 1024;      // 10 MB por adjunto
 const CORREO_SUPER = "delrivero@gmail.com";  // único correo autorizado para Superadministrador
 const DOMINIO_PERMITIDO = "";  // ← por ahora vacío = se acepta cualquier correo. Cuando quieras limitar el acceso, escribe "gob.mx" (el propietario siempre puede entrar)
-const DOMINIO_SOLICITUD = "gob.mx";  // las solicitudes de sistemas solo aceptan correos de gobierno (ej. nombre@gob.mx o nombre@chihuahua.gob.mx). Déjalo vacío ("") para aceptar cualquiera
+const DOMINIO_SOLICITUD = "";  // vacío = las solicitudes de sistemas aceptan cualquier correo. Para limitarlas a gobierno, escribe "gob.mx"

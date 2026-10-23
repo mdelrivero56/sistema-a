@@ -2187,7 +2187,7 @@ function vSolicitar(id) {
           ${campo("area", "Área o unidad", { ph: "Opcional" })}
           ${campo("cargo", "Cargo", { ph: "Opcional", ac: "organization-title" })}
           ${campo("nombre", "Nombre completo", { req: true, full: true, ac: "name" })}
-          ${campo("correo", "Correo institucional", { req: true, tipo: "email", ph: DOMINIO_SOLICITUD ? "dominio@" + DOMINIO_SOLICITUD : "tucorreo@ejemplo.com", ac: "email" })}
+          ${campo("correo", "Correo electrónico", { req: true, tipo: "email", ph: DOMINIO_SOLICITUD ? "dominio@" + DOMINIO_SOLICITUD : "tucorreo@ejemplo.com", ac: "email" })}
           ${campo("telefono", "Teléfono", { req: true, tipo: "tel", ph: "10 dígitos", ac: "tel" }).replace(/<\/div>$/, `<div style="margin-top:8px"><label class="chk" style="font-size:14px"><input type="checkbox" id="f-conExt" data-form="conExt" ${v.conExt ? "checked" : ""}><span>Mi teléfono tiene extensión</span></label></div></div>`)}
           ${v.conExt ? campo("extension", "Extensión telefónica", { req: true, tipo: "tel", ph: "Ej. 1234", extra: 'inputmode="numeric" maxlength="8"' }) : ""}
           <div class="field"><label for="f-contactoPref">¿Cómo prefieres que te contactemos? <span class="req" aria-hidden="true">*</span></label><select class="in select" id="f-contactoPref" data-form="contactoPref" style="width:100%">${opts(ocon, v.contactoPref)}</select></div>
@@ -2219,8 +2219,8 @@ function validarSolicitud() {
   const req = (k, m) => { if (!String(v[k] || "").trim()) e[k] = m; };
   if (!F.sel.length) e.sel = "Elige al menos un sistema.";
   req("dependencia", "Elige o escribe el nombre de tu dependencia."); req("nombre", "Escribe tu nombre completo.");
-  if (!correoOk(v.correo)) e.correo = "Escribe un correo válido, por ejemplo dominio@gob.mx.";
-  else if (!correoGobierno(v.correo)) e.correo = `Solo se aceptan correos de gobierno que terminen en @${DOMINIO_SOLICITUD}, por ejemplo dominio@${DOMINIO_SOLICITUD}.`;
+  if (!correoOk(v.correo)) e.correo = "Escribe un correo válido, por ejemplo nombre@ejemplo.com.";
+  else if (!correoGobierno(v.correo)) e.correo = `Solo se aceptan correos que terminen en @${DOMINIO_SOLICITUD}, por ejemplo nombre@${DOMINIO_SOLICITUD}.`;
   if (String(v.telefono || "").replace(/\D/g, "").length < 8) e.telefono = "Escribe un teléfono de al menos 8 dígitos.";
   if (v.conExt) { const x = String(v.extension || "").replace(/\D/g, ""); if (!x) e.extension = "Escribe la extensión o desmarca la casilla."; else if (x.length > 8) e.extension = "La extensión puede tener hasta 8 dígitos."; }
   req("tipoUso", "Elige el tipo de uso."); if (v.tipoUso === "Otro") req("usoOtro", "Escribe cuál será el uso."); req("mensaje", "Cuéntanos brevemente qué necesitas.");
