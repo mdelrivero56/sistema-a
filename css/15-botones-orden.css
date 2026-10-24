@@ -1,0 +1,30 @@
+/* Orden y centrado de botones en todo el sistema.
+   Unifica altura, alineación y reparto de los grupos de botones (formularios, fichas,
+   solicitudes, administración y avisos). No cambia colores ni textos. */
+
+/* Botones: contenido siempre centrado y alturas parejas */
+.btn,.btn2{display:inline-flex;align-items:center;justify-content:center;text-align:center;gap:8px;min-height:42px;line-height:1.2}
+.btn.sm{min-height:36px}
+.btn.ghost{min-height:38px}
+.mbtn{justify-content:center;text-align:center;min-height:38px}
+
+/* Grupos de botones (incluye los que se definen con estilos en línea) */
+:is(div,p,footer,section)[style*="display:flex"]:has(> .btn,> .btn2,> button,> .get){align-items:center!important;row-gap:10px!important}
+.fhead-actions,.manage,.toolbar{align-items:center}
+
+/* Tabletas y celulares: los grupos se reparten parejos y centrados */
+@media (max-width:700px){
+  :is(div,p,footer,section)[style*="display:flex"]:has(> .btn,> .btn2){justify-content:center!important}
+  :is(div,p,footer,section)[style*="display:flex"]:has(> .btn,> .btn2) > :is(.btn,.btn2){flex:1 1 calc(50% - 10px);min-width:130px}
+  :is(div,p,footer,section)[style*="display:flex"]:has(> .btn:only-child,> .btn2:only-child) > :is(.btn,.btn2){flex-basis:100%}
+
+  .fhead-actions{justify-content:center;gap:10px}
+  .fhead-actions .get.big{flex:1 1 auto;justify-content:center}
+  .manage{justify-content:center}
+  .manage .mbtn{flex:1 1 calc(50% - 8px)}
+  .toolbar{justify-content:center;text-align:center}
+
+  .cta-end{flex-direction:column;align-items:stretch;text-align:center;justify-content:center}
+  .cta-end p{margin-inline:auto}
+  .cta-end .btn{width:100%}
+}
