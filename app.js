@@ -10,7 +10,7 @@
    - Ayudas de interfaz
    - Texto enriquecido (párrafos, viñetas, **negritas**, enlaces)
    - Video de muestra (enlace de YouTube/Vimeo/.mp4 o archivo pequeño)
-   - Formato de la descripción: tamaño, color y viñetas (editor visual)
+   - Formato de la descripción: tamaño, color y viñetas
    - Editor de videos (destacados y capturas)
    - Piezas reutilizables
    - Cuentas y sesión (correo + contraseña)
@@ -132,7 +132,7 @@ const capturas = (c, t) => [0, 1, 2].map((v) => mock(c, v, t));
 function sistemaBase(o) {
   return Object.assign({
     id: uid("sis"), nombre: "", subtitulo: "", icono: { glifo: "app", color: "azul", imagen: "" }, portada: "",
-    categorias: [], usos: [], estado: "Disponible", publicado: true, destacado: false, etiqueta: "", tipoSis: "", tipoOtro: "", ligados: [], ligadosNota: "",
+    categorias: [], usos: [], estado: "Disponible", publicado: true, destacado: false, etiqueta: "", tipoSis: "", tipoOtro: "", ligados: [],
     version: "1.0", actualizado: hoyISO(), area: "", contacto: { correo: "", telefono: "" },
     descripcion: "", plataforma: "Web", requisitos: [], pasos: [], enlaces: [], tecnica: [],
     dependencias: [], novedades: [], capturas: [], archivos: [], videos: [], videoDestacado: { url: "", data: "", nombre: "" }, descTam: "16", descColor: "", ejemplo: false
@@ -140,11 +140,62 @@ function sistemaBase(o) {
 }
 
 const CATEGORIAS_BASE = [
-  { "id": "cat-tpwif5p", "nombre": "Eventos y Reuniones", "glifo": "ayuda", "color": "turquesa", "descripcion": "Para planear y realizar eventos, reuniones y sesiones. Casi todos se pueden usar en conjunto." },
-  { "id": "cat-s3wlc2f", "nombre": "Participación y Votaciones", "glifo": "identidad", "color": "naranja", "descripcion": "Votaciones y encuestas que se suman a cualquier evento o reunión." },
-  { "id": "gestion-administrativa", "nombre": "Gestión y Accesos", "glifo": "chart", "color": "verde", "descripcion": "Para centralizar el acceso y la gestión de las herramientas institucionales." },
-  { "id": "cat-suv1w7j", "nombre": "Portales y Trámites", "glifo": "app", "color": "rojo", "descripcion": "Portales informativos y trámites digitales del Gobierno del Estado." },
-  { "id": "cat-1wwxxgp", "nombre": "Ciencia, Tecnología e Innovación", "glifo": "tablet", "color": "grafito", "descripcion": "Difusión de ciencia, tecnología e innovación en Chihuahua." }
+  {
+    "id": "desarrollo",
+    "nombre": "Desarrollo de Software",
+    "glifo": "app",
+    "color": "azul",
+    "descripcion": "Herramientas y soluciones digitales institucionales."
+  },
+  {
+    "id": "reuniones",
+    "nombre": "Reuniones y Eventos",
+    "glifo": "calendario",
+    "color": "celeste",
+    "descripcion": "Para organizar reuniones, agendas y eventos."
+  },
+  {
+    "id": "votaciones-elecciones",
+    "nombre": "Votaciones y Elecciones",
+    "glifo": "votacion",
+    "color": "azul",
+    "descripcion": "Para gestionar procesos de votación y selección."
+  },
+  {
+    "id": "encuestas",
+    "nombre": "Encuestas y Formularios",
+    "glifo": "mensaje",
+    "color": "celeste",
+    "descripcion": "Para recopilar información y respuestas."
+  },
+  {
+    "id": "portales",
+    "nombre": "Portales y Trámites",
+    "glifo": "globo",
+    "color": "morado",
+    "descripcion": "Portales informativos y trámites digitales."
+  },
+  {
+    "id": "etica-denuncias",
+    "nombre": "Ética y Denuncias",
+    "glifo": "candado",
+    "color": "morado",
+    "descripcion": "Para asuntos relacionados con la ética institucional."
+  },
+  {
+    "id": "capacitacion",
+    "nombre": "Capacitación y Aprendizaje",
+    "glifo": "estrella",
+    "color": "morado",
+    "descripcion": "Para cursos, formación y desarrollo de conocimientos."
+  },
+  {
+    "id": "gestion-administrativa",
+    "nombre": "Gestión Administrativa y Sistemas",
+    "glifo": "chart",
+    "color": "azul",
+    "descripcion": "Para herramientas de control y gestión institucional."
+  }
 ];
 /* Textos oficiales de cada sistema: frase corta (máx. 5 palabras), texto destacado y descripción resumida.
    Se usan en el catálogo inicial y en Administración → Datos y publicación → «Actualizar textos de los sistemas». */
@@ -363,24 +414,6 @@ const TEXTOS_SISTEMAS = [
   }
 ];
 
-/* Cómo se relacionan los sistemas: casi todos funcionan en conjunto en un mismo evento, reunión o sesión de una dependencia.
-   «categorias» = dónde aparece, «usos» = etiquetas, «ligados» = con qué sistemas se usa junto. */
-const NOTA_EVENTOS = "Pensado para usarse en conjunto con otros sistemas del catálogo en un mismo evento, reunión o sesión.";
-const AJUSTES_SISTEMAS = {
-  "sis-orden-dia": { categorias: ["cat-tpwif5p"], usos: ["Reuniones", "Sesiones", "Eventos"], ligados: ["sis-gestor-eventos", "sis-votaciones", "sis-encuestas", "sis-gafetes"], ligadosNota: "Casi siempre se usa junto con el Gestor de Eventos, con el que se vincula. También se combina con Votaciones, Encuestas y Gafetes." },
-  "sis-gestor-eventos": { categorias: ["cat-tpwif5p"], usos: ["Eventos", "Reuniones", "Sesiones"], ligados: ["sis-orden-dia", "sis-votaciones", "sis-encuestas", "sis-gafetes"], ligadosNota: "Casi siempre se usa junto con el Orden del Día, con el que se vincula. También se combina con Votaciones, Encuestas y Gafetes." },
-  "sis-gafetes": { categorias: ["cat-tpwif5p"], usos: ["Eventos", "Reuniones", "Identificación"], ligados: ["sis-gestor-eventos", "sis-orden-dia", "sis-votaciones", "sis-encuestas"], ligadosNota: NOTA_EVENTOS },
-  "sis-votaciones": { categorias: ["cat-s3wlc2f", "cat-tpwif5p"], usos: ["Votaciones", "Eventos", "Reuniones", "Sesiones"], ligados: ["sis-orden-dia", "sis-gestor-eventos", "sis-encuestas", "sis-gafetes", "sis-votaciones-etica"], ligadosNota: NOTA_EVENTOS },
-  "sis-encuestas": { categorias: ["cat-s3wlc2f", "cat-tpwif5p"], usos: ["Encuestas", "Eventos", "Reuniones", "Registros"], ligados: ["sis-orden-dia", "sis-gestor-eventos", "sis-votaciones", "sis-gafetes"], ligadosNota: NOTA_EVENTOS },
-  "sis-votaciones-etica": { categorias: ["cat-s3wlc2f"], usos: ["Votaciones", "Sesiones", "Ética"], ligados: ["sis-votaciones"], ligadosNota: "Versión del Sistema de Votaciones para los procesos por etapas del Comité de Ética." },
-  "sis-sigta": { categorias: ["gestion-administrativa"], usos: ["Accesos", "Gestión"], ligados: [], ligadosNota: "" },
-  "sis-portal-chihuahua": { categorias: ["cat-suv1w7j"], usos: ["Información", "Trámites"], tipoSis: "portal", ligados: ["sis-mitch"], ligadosNota: "Los trámites del Portal se consultan en MITCH." },
-  "sis-mitch": { categorias: ["cat-suv1w7j"], usos: ["Trámites", "Información"], tipoSis: "portal", ligados: ["sis-portal-chihuahua"], ligadosNota: "Funciona de la mano del Portal CHIHUAHUA." },
-  "sis-stem": { categorias: ["cat-1wwxxgp"], usos: ["Información", "Ciencia y tecnología"], tipoSis: "web", ligados: [], ligadosNota: "" },
-  "sis-cpd-web": { categorias: ["cat-1wwxxgp"], usos: ["Información", "Innovación"], tipoSis: "web", ligados: [], ligadosNota: "" }
-};
-TEXTOS_SISTEMAS.forEach((t) => { const a = AJUSTES_SISTEMAS[t.id]; if (a) { Object.assign(t, a); t.categoria = a.categorias[0]; } else t.categorias = [t.categoria]; });
-
 function datosEjemplo() {
   const area = "Coordinación de Política Digital";
   const S = (o) => sistemaBase(Object.assign({ area, ejemplo: false, plataforma: "Web", version: "1.0" }, o));
@@ -388,7 +421,7 @@ function datosEjemplo() {
     formato: 2, editado: false, actualizado: hoyISO(),
     config: clone(CONFIG_BASE),
     categorias: clone(CATEGORIAS_BASE),
-    sistemas: TEXTOS_SISTEMAS.map((t) => S({ id: t.id, nombre: t.nombre, subtitulo: t.subtitulo, etiqueta: t.etiqueta, descripcion: t.descripcion, categorias: t.categorias.slice(), icono: { glifo: t.glifo, color: t.color, imagen: "" }, usos: t.usos.slice(), destacado: t.destacado, tipoSis: t.tipoSis || "", ligados: (t.ligados || []).slice(), ligadosNota: t.ligadosNota || "" }))
+    sistemas: TEXTOS_SISTEMAS.map((t) => S({ id: t.id, nombre: t.nombre, subtitulo: t.subtitulo, etiqueta: t.etiqueta, descripcion: t.descripcion, categorias: [t.categoria], icono: { glifo: t.glifo, color: t.color, imagen: "" }, usos: t.usos.slice(), destacado: t.destacado }))
   };
 }
 
@@ -412,7 +445,7 @@ function migrar(c) {
     const r = Object.assign(b, s, { id: s.id || uid("sis") });
     r.icono = Object.assign({ glifo: "app", color: "azul", imagen: "" }, s.icono || {});
     r.contacto = Object.assign({ correo: "", telefono: "" }, s.contacto || {});
-    ["categorias", "usos", "requisitos", "pasos", "enlaces", "tecnica", "dependencias", "novedades", "capturas", "archivos", "videos", "ligados"].forEach((k) => { if (!Array.isArray(r[k])) r[k] = []; });
+    ["categorias", "usos", "requisitos", "pasos", "enlaces", "tecnica", "dependencias", "novedades", "capturas", "archivos", "videos"].forEach((k) => { if (!Array.isArray(r[k])) r[k] = []; });
     r.videoDestacado = Object.assign({ url: "", data: "", nombre: "" }, r.videoDestacado && typeof r.videoDestacado === "object" ? r.videoDestacado : {});
     if (FORMATO_AUTOMATICO && typeof r.descripcion === "string") r.descripcion = formatoAuto(r.descripcion, r.nombre);
     return r;
@@ -634,169 +667,56 @@ function formatoAuto(txt, nombre) {
   r = enNoNeg(r, (s) => s.replace(/\b[A-ZÁÉÍÓÚÑ]{3,}\b/g, (m) => `**${m}**`));
   return r;
 }
-/* ---- Editor visual de la descripción (se escribe y se formatea como en un documento; no aparecen códigos) ----
-   Por dentro se guarda el mismo formato de siempre (**negrita**, [color], [tam], viñetas), así que las fichas
-   y las descripciones ya guardadas siguen funcionando igual. */
-const RTE_FS = { chico: 2, normal: 3, grande: 5, enorme: 7 };                     // comando fontSize → tamaño provisional
-const RTE_KW = { small: 0.85, medium: 1, "x-large": 1.3, "xxx-large": 1.7 };      // tamaño provisional → em definitivo
-const RTE_NOMBRE_TAM = { chico: "Pequeño", normal: "Normal", grande: "Grande", enorme: "Muy grande" };
-const rteEd = () => $("#e-descripcion");
-let rteSel = null;
-
-function rteHex(c) {
-  c = String(c || "").trim().toLowerCase();
-  let m = /^#([0-9a-f]{6})$/.exec(c); if (m) return "#" + m[1];
-  m = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/.exec(c); if (m) return "#" + m[1] + m[1] + m[2] + m[2] + m[3] + m[3];
-  m = /^rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/.exec(c);
-  return m ? "#" + [m[1], m[2], m[3]].map((n) => Math.min(255, +n).toString(16).padStart(2, "0")).join("") : "";
-}
-const rteEm = (v) => { v = String(v || "").trim(); if (RTE_KW[v]) return RTE_KW[v]; const m = /^([\d.]+)(em|%)$/.exec(v); return m ? (m[2] === "%" ? +m[1] / 100 : +m[1]) : 1; };
-function rteTok(z) {
-  let mejor = "", d = Infinity;
-  for (const k of Object.keys(TAM_TOKEN)) { const e = Math.abs(Math.log(z / parseFloat(TAM_TOKEN[k]))); if (e < d) { d = e; mejor = k; } }
-  return mejor === "normal" ? "" : mejor;
-}
-
-/* Los tamaños que crea el navegador se convierten en los tamaños oficiales (relativos al texto que los rodea). */
-function rteNormaliza(ed) {
-  $$("[style]", ed).forEach((el) => {
-    const fs = el.style.fontSize;
-    if (RTE_KW[fs]) {
-      let p = 1; for (let a = el.parentElement; a && a !== ed; a = a.parentElement) p *= rteEm(a.style.fontSize);
-      el.style.fontSize = (Math.round((RTE_KW[fs] / p) * 10000) / 10000) + "em";
-      $$("[style]", el).forEach((d) => { if (d.style.fontSize) d.style.removeProperty("font-size"); });
-    }
-    if (el.style.color) el.classList.add("rc");
-  });
-}
-
-/* Editor → texto guardado */
-function rteCorridas(nodo, ctx, out) {
-  if (nodo.nodeType === 3) { const t = nodo.nodeValue.replace(/ /g, " ").replace(/[\r\n\t]+/g, " "); if (t) out.push({ t, b: ctx.b, c: ctx.c, z: ctx.z }); return; }
-  if (nodo.nodeType !== 1) return;
-  const tg = nodo.tagName;
-  if (tg === "BR") { out.push({ nl: true }); return; }
-  if (tg === "UL" || tg === "OL") return;
-  const st = nodo.style, x = { b: ctx.b, c: ctx.c, z: ctx.z };
-  if (tg === "B" || tg === "STRONG" || /^(bold|[6-9]00)$/.test(st.fontWeight)) x.b = true;
-  const col = rteHex(st.color || (tg === "FONT" ? nodo.getAttribute("color") : "")); if (col) x.c = col;
-  x.z = ctx.z * rteEm(st.fontSize);
-  const bloque = tg === "P" || tg === "DIV";
-  if (bloque) out.push({ nl: true });
-  nodo.childNodes.forEach((h) => rteCorridas(h, x, out));
-  if (bloque) out.push({ nl: true });
-}
-function rteTexto(corridas) {
-  const key = (r) => `${r.b ? 1 : 0}|${r.c || ""}|${rteTok(r.z)}`, rs = [];
-  corridas.forEach((r, i) => {
-    const q = Object.assign({}, r);
-    if (!q.nl && !q.t.trim()) { const a = corridas[i - 1], n = corridas[i + 1]; if (a && n && !a.nl && !n.nl && key(a) === key(n)) { q.b = a.b; q.c = a.c; q.z = a.z; } }   // los espacios heredan el formato vecino
-    const u = rs[rs.length - 1];
-    if (u && !q.nl && !u.nl && key(u) === key(q)) u.t += q.t; else rs.push(q);
-  });
-  return rs.map((r) => {
-    if (r.nl) return "\n";
-    const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(r.t); if (!m[2]) return r.t;
-    let c = m[2]; if (r.b) c = `**${c}**`; if (r.c) c = `[color=${r.c}]${c}[/color]`;
-    const k = rteTok(r.z); if (k) c = `[tam=${k}]${c}[/tam]`;
-    return m[1] + c + m[3];
-  }).join("").replace(/[ ]+\n/g, "\n").replace(/\n[ ]+/g, "\n").replace(/^\n+|\n+$/g, "").replace(/\n{2,}/g, "\n");
-}
-function editorAMarcado(ed) {
-  const bl = []; let pend = [];
-  const cierra = () => { const t = rteTexto(pend); pend = []; if (t.trim()) bl.push({ li: false, t }); };
-  const visita = (raiz) => raiz.childNodes.forEach((c) => {
-    if (c.nodeType === 1 && /^(UL|OL)$/.test(c.tagName)) {
-      cierra();
-      $$("li", c).forEach((li) => { const o = []; li.childNodes.forEach((h) => rteCorridas(h, { b: false, c: "", z: 1 }, o)); const t = rteTexto(o).replace(/\n+/g, " ").trim(); if (t) bl.push({ li: true, t }); });
-    } else if (c.nodeType === 1 && /^(P|DIV|H[1-6]|BLOCKQUOTE)$/.test(c.tagName)) {
-      cierra();
-      if (c.querySelector("ul,ol,p,div")) visita(c); else { const o = []; rteCorridas(c, { b: false, c: "", z: 1 }, o); const t = rteTexto(o); if (t.trim()) bl.push({ li: false, t }); }
-    } else rteCorridas(c, { b: false, c: "", z: 1 }, pend);
-  });
-  visita(ed); cierra();
-  return bl.map((b, i) => (i ? (b.li && bl[i - 1].li ? "\n" : "\n\n") : "") + (b.li ? "- " + b.t : b.t)).join("");
-}
-
-/* Barra de herramientas ↔ editor */
-function rteGuardaSel() {
-  const ed = rteEd(), s = window.getSelection();
-  if (ed && s && s.rangeCount && ed.contains(s.anchorNode) && ed.contains(s.focusNode)) rteSel = s.getRangeAt(0).cloneRange();
-}
-function rteRestaura(ed) {
-  ed.focus({ preventScroll: true });
-  const s = window.getSelection();
-  if (rteSel && ed.contains(rteSel.commonAncestorContainer)) { s.removeAllRanges(); s.addRange(rteSel); }
-  else if (!s.rangeCount || !ed.contains(s.anchorNode)) { const r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); s.removeAllRanges(); s.addRange(r); }
-}
-function rteVolcar(ed) {
-  const dr = draftActual(); if (!dr) return;
-  rteNormaliza(ed);
-  if (!ed.textContent.trim() && !ed.querySelector("li")) ed.innerHTML = "";
-  dr.s.descripcion = editorAMarcado(ed); dr.dirty = true;
-  const sb = $(".savebar .muted"); if (sb) sb.textContent = "Tienes cambios sin guardar.";
-}
-function rteEstado() {
-  const ed = rteEd(), s = window.getSelection(); if (!ed || !s || !s.rangeCount || !ed.contains(s.anchorNode)) return;
-  const q = (c) => { try { return document.queryCommandState(c); } catch (e) { return false; } };
-  const marca = (sel, on) => $$(sel).forEach((b) => b.setAttribute("aria-pressed", on ? "true" : "false"));
-  marca('.rtb [data-f="bold"]', q("bold")); marca('.rtb [data-f="bullets"]', q("insertUnorderedList"));
-  let z = 1; for (let a = s.anchorNode.nodeType === 3 ? s.anchorNode.parentElement : s.anchorNode; a && a !== ed; a = a.parentElement) z *= rteEm(a.style && a.style.fontSize);
-  const sel = $("[data-fmt-size]"); if (sel) sel.value = rteTok(z) || "normal";
-  let col = ""; try { col = rteHex(document.queryCommandValue("foreColor")); } catch (e) {}
-  $$('.rtb .sw[data-c]').forEach((b) => b.setAttribute("aria-pressed", col && b.dataset.c.toLowerCase() === col ? "true" : "false"));
+function envolverLineas(sel, abre, cierra) {
+  return sel.split("\n").map((l) => { if (!l.trim()) return l; const m = /^(\s*(?:(?:[-•*]\s+)|(?:[>›»→▸►]+\s*))?)([\s\S]*)$/.exec(l); return m[1] + abre + m[2] + cierra; }).join("\n");
 }
 function fmtAplicar(f, v) {
-  const dr = draftActual(), ed = rteEd(); if (!dr || !ed) return;
-  rteRestaura(ed);
-  const ec = (c, val, css) => { try { document.execCommand("styleWithCSS", false, !!css); } catch (e) {} return document.execCommand(c, false, val); };
-  if (f === "auto") {
-    ed.innerHTML = rich(formatoAuto(editorAMarcado(ed), dr.s.nombre)); toast("Se resaltaron las palabras importantes.");
-  } else if (f === "bold") ec("bold", null, false);
-  else if (f === "bullets") ec("insertUnorderedList");
-  else if (f === "undo") ec("undo"); else if (f === "redo") ec("redo");
-  else if (f === "tam") { if (!RTE_FS[v]) return; ec("fontSize", String(RTE_FS[v]), true); }
-  else if (f === "color") { const h = rteHex(v); if (!h) return; ec("foreColor", h, true); }
-  else if (f === "clear") ec("removeFormat");
-  rteVolcar(ed); rteGuardaSel(); rteEstado();
-}
-/* Cambia el tamaño o color de TODA la descripción (se ve al instante en el editor). */
-function actualizarPrevDesc() {
-  const dr = draftActual(), ed = rteEd(); if (!dr || !ed) return;
-  ed.setAttribute("style", descEstilo(dr.s));
-}
-/* Mientras se escribe: «- » o «* » al inicio de una línea crea una viñeta. */
-function rteEntrada(e, ed) {
-  if (e && e.inputType === "insertText" && e.data === " ") {
-    const s = window.getSelection(), n = s && s.anchorNode;
-    if (n && n.nodeType === 3 && /^[-*•]\s$/.test(n.nodeValue.replace(/ /g, " ")) && !n.parentElement.closest("li")) {
-      n.nodeValue = ""; document.execCommand("insertUnorderedList");
-    }
+  const ta = $("#e-descripcion"), dr = draftActual(); if (!ta || !dr) return;
+  let a = ta.selectionStart, b = ta.selectionEnd, txt = ta.value;
+  if (f === "auto") { txt = formatoAuto(txt, dr.s.nombre); a = b = txt.length; }
+  else if (f === "bullets") {
+    const ini = txt.lastIndexOf("\n", a - 1) + 1; let fin = txt.indexOf("\n", b); if (fin < 0) fin = txt.length;
+    const bloque = txt.slice(ini, fin).split("\n"), con = (l) => /^\s*(?:[-•*]\s+|[>›»→▸►]+\s*)/.test(l);
+    const todas = bloque.filter((l) => l.trim()).length > 0 && bloque.filter((l) => l.trim()).every(con);
+    const nuevo = bloque.map((l) => !l.trim() ? l : todas ? l.replace(/^(\s*)(?:[-•*]\s+|[>›»→▸►]+\s*)/, "$1") : con(l) ? l : "- " + l.trim()).join("\n");
+    txt = txt.slice(0, ini) + nuevo + txt.slice(fin); a = ini; b = ini + nuevo.length;
+  } else {
+    if (a === b) { toast("Primero selecciona el texto que quieres cambiar."); return; }
+    const sel = txt.slice(a, b); let nuevo = sel;
+    if (f === "bold") nuevo = /^\*\*[\s\S]+\*\*$/.test(sel) ? sel.slice(2, -2) : envolverLineas(sel, "**", "**");
+    else if (f === "tam") { if (!TAM_TOKEN[v]) return; nuevo = envolverLineas(sel.replace(/\[tam=\w+\]|\[\/tam\]/g, ""), `[tam=${v}]`, "[/tam]"); }
+    else if (f === "color") { if (!/^#[0-9a-fA-F]{6}$/.test(v || "")) return; nuevo = envolverLineas(sel.replace(/\[color=#[0-9a-fA-F]{6}\]|\[\/color\]/g, ""), `[color=${v}]`, "[/color]"); }
+    else if (f === "clear") nuevo = sel.replace(/\[tam=\w+\]|\[\/tam\]|\[color=#[0-9a-fA-F]{6}\]|\[\/color\]|\*\*/g, "");
+    txt = txt.slice(0, a) + nuevo + txt.slice(b); b = a + nuevo.length;
   }
-  rteVolcar(ed); rteGuardaSel(); rteEstado();
+  ta.value = txt; dr.s.descripcion = txt; dr.dirty = true;
+  ta.focus(); ta.setSelectionRange(a, b);
+  actualizarPrevDesc();
+  const sb = $(".savebar .muted"); if (sb) sb.textContent = "Tienes cambios sin guardar.";
 }
-function toolbarDescripcion() {
-  const ico = (d) => `<svg class="g" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
-  const tam = Object.keys(RTE_NOMBRE_TAM);
+function actualizarPrevDesc() {
+  const dr = draftActual(), p = $("#desc-prev"); if (!dr || !p) return;
+  p.setAttribute("style", descEstilo(dr.s)); p.innerHTML = dr.s.descripcion.trim() ? rich(dr.s.descripcion) : '<p class="muted">Aquí verás cómo se mostrará la descripción.</p>';
+}
+function toolbarDescripcion(s) {
+  const tam = [["", "Tamaño…"], ["chico", "Pequeño"], ["normal", "Normal"], ["grande", "Grande"], ["enorme", "Muy grande"]];
   return `<div class="rtb" role="toolbar" aria-label="Formato de la descripción">
-    <span class="rtb-g"><button type="button" class="ic" data-act="fmt" data-f="undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer">${ico("M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3")}</button>
-    <button type="button" class="ic" data-act="fmt" data-f="redo" title="Rehacer (Ctrl+Y)" aria-label="Rehacer">${ico("m15 14 5-5-5-5M20 9H10a6 6 0 0 0 0 12h3")}</button></span>
-    <span class="rtb-g"><button type="button" class="ic" data-act="fmt" data-f="bold" aria-pressed="false" title="Negrita (Ctrl+B)" aria-label="Negrita"><b>N</b></button>
-    <button type="button" data-act="fmt" data-f="bullets" aria-pressed="false" title="Lista con viñetas" aria-label="Viñetas">${glifo("lista")}<span>Viñetas</span></button></span>
-    <span class="rtb-g"><label class="rtb-s"><span class="sr">Tamaño del texto</span><select data-fmt-size aria-label="Tamaño del texto seleccionado" title="Tamaño del texto seleccionado">${tam.map((v) => `<option value="${v}" ${v === "normal" ? "selected" : ""}>${RTE_NOMBRE_TAM[v]}</option>`).join("")}</select></label></span>
-    <span class="rtb-g rtb-c" role="group" aria-label="Color del texto seleccionado">${COLORES_TXT.map(([n, h]) => `<button type="button" class="sw" data-act="fmt" data-f="color" data-c="${h}" aria-pressed="false" style="background:${h}" title="${n}" aria-label="Color ${n}"></button>`).join("")}<label class="sw custom" title="Otro color"><span class="sr">Otro color</span><input type="color" data-fmt-color value="#004eaa" aria-label="Otro color"></label></span>
-    <span class="rtb-g"><button type="button" data-act="fmt" data-f="clear" title="Quita negrita, color y tamaño del texto seleccionado">Quitar formato</button>
-    <button type="button" data-act="fmt" data-f="auto" title="Resalta en negrita azul las palabras importantes (nombre del sistema y siglas)">Resaltar palabras clave</button></span></div>`;
+    <button type="button" data-act="fmt" data-f="bold" title="Negrita (selecciona texto)" aria-label="Negrita"><b>N</b></button>
+    <button type="button" data-act="fmt" data-f="bullets" title="Viñetas (lista con puntos)" aria-label="Viñetas">${glifo("lista")}<span>Viñetas</span></button>
+    <label class="rtb-s"><span class="sr">Tamaño del texto seleccionado</span><select data-fmt-size aria-label="Tamaño del texto seleccionado">${tam.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}</select></label>
+    <span class="rtb-c" role="group" aria-label="Color del texto seleccionado">${COLORES_TXT.map(([n, h]) => `<button type="button" class="sw" data-act="fmt" data-f="color" data-c="${h}" style="background:${h}" title="${n}" aria-label="Color ${n}"></button>`).join("")}<label class="sw custom" title="Otro color"><span class="sr">Otro color</span><input type="color" data-fmt-color value="#004eaa" aria-label="Otro color"></label></span>
+    <button type="button" data-act="fmt" data-f="clear" title="Quitar formato del texto seleccionado">Quitar formato</button>
+    <button type="button" data-act="fmt" data-f="auto" title="Formato automático: negrita azul en palabras importantes y viñetas azules en lugar de «>» o guiones">Formato automático</button></div>`;
 }
 function editorDescripcion(s) {
   const px = TAM_BASE.includes(+s.descTam) ? +s.descTam : 16;
-  rteSel = null;
-  return `${toolbarDescripcion()}
-    <div class="field"><span class="sr" id="e-desc-lbl">Descripción</span><div class="prose rte" id="e-descripcion" data-rte contenteditable="true" spellcheck="true" lang="es" role="textbox" aria-multiline="true" aria-labelledby="e-desc-lbl" data-ph="Escribe aquí la descripción del sistema…" style="${descEstilo(s)}">${s.descripcion.trim() ? rich(s.descripcion) : ""}</div></div>
+  return `${toolbarDescripcion(s)}
+    <div class="field"><label class="sr" for="e-descripcion">Descripción</label><textarea id="e-descripcion" data-path="descripcion" style="min-height:220px">${esc(s.descripcion)}</textarea></div>
     <div class="fields" style="margin-top:12px">
       <div class="field"><label for="e-descTam">Tamaño de letra de toda la descripción</label><select class="select" id="e-descTam" data-path="descTam">${TAM_BASE.map((n, i) => `<option value="${n}" ${n === px ? "selected" : ""}>${["Pequeña", "Normal", "Grande", "Muy grande"][i]} (${n} px)</option>`).join("")}</select></div>
       <div class="field"><label for="e-descColor">Color del texto de toda la descripción</label><div class="up"><input type="color" id="e-descColor" data-path="descColor" value="${/^#[0-9a-fA-F]{6}$/.test(s.descColor || "") ? s.descColor : "#172b34"}" aria-label="Color del texto"><button type="button" class="btn ghost sm" data-act="desc-color-reset">Color original</button></div></div>
-    </div>`;
+    </div>
+    <div class="field" style="margin-top:14px"><span class="lbl">Así se verá en la ficha</span><div class="prose rtprev" id="desc-prev" style="${descEstilo(s)}">${s.descripcion.trim() ? rich(s.descripcion) : '<p class="muted">Aquí verás cómo se mostrará la descripción.</p>'}</div></div>`;
 }
 
 /* ---------- Editor de videos (destacados y capturas) ---------- */
@@ -826,36 +746,9 @@ function btnGet(s, cls = "", sinNota = false) {
   const nota = e === "Disponible" || sinNota ? "" : e;
   return `<span class="get-wrap"><button class="get ${cls}" data-act="solicitar" data-id="${esc(s.id)}" ${dis ? "disabled" : ""} aria-label="${label} ${esc(s.nombre)}">${label}</button>${nota ? `<small class="get-note">${esc(nota)}</small>` : ""}</span>`;
 }
-function fila(s, sub, opc) {
+function fila(s, sub) {
   const aviso = !s.publicado ? `<span class="tag">No publicado</span>` : "";
-  const lg = opc && opc.sinConj ? [] : ligadosDe(s);
-  const conj = lg.length ? `<small class="row-conj">${glifo("link")}<span>Va con ${esc(lg[0].nombre)}${lg.length > 1 ? ` +${lg.length - 1}` : ""}</span></small>` : "";
-  return `<div class="row"><a class="row-main" href="#/sistema/${enc(s.id)}">${icono(s, "s64")}<span class="row-t"><b>${esc(s.nombre)}</b><small class="row-meta">${aviso}${tipoTag(s)}<span class="row-sub">${esc(sub ?? s.subtitulo)}</span></small>${conj}</span></a>${btnGet(s)}</div>`;
-}
-/* Sistemas que se usan en conjunto: tarjetas de la ficha y de «Descubrir» */
-const conjCard = (x) => `<a class="conj-card" href="#/sistema/${enc(x.id)}" style="${colorVars(x.icono.color)}">${icono(x, "s40")}<span class="conj-t"><b>${esc(x.nombre)}</b><small>${esc(x.subtitulo)}</small></span>${glifo("chev")}</a>`;
-function bloqueConjunto(s, lig) {
-  if (!lig.length) return "";
-  return `<section class="sec fx-conj"><h2 class="sec-h"><span class="conj-ico">${glifo("link")}</span>Funciona en conjunto con</h2><p class="conj-nota">${esc((s.ligadosNota || "").trim() || "Estos sistemas se complementan y se pueden usar juntos.")}</p><div class="conj-grid">${lig.map(conjCard).join("")}</div></section>`;
-}
-function gruposEnConjunto() {
-  const l = vis(), vistos = new Set(), out = [];
-  l.forEach((s) => {
-    if (vistos.has(s.id)) return;
-    const comp = [], q = [s]; vistos.add(s.id);
-    while (q.length) { const x = q.pop(); comp.push(x); ligadosDe(x).forEach((y) => { if (!vistos.has(y.id) && l.includes(y)) { vistos.add(y.id); q.push(y); } }); }
-    if (comp.length > 1) out.push(comp.sort((a, b) => l.indexOf(a) - l.indexOf(b)));
-  });
-  return out.sort((a, b) => b.length - a.length);
-}
-function seccionConjunto() {
-  const gr = gruposEnConjunto(); if (!gr.length) return "";
-  return `<section class="sec"><h2 class="sec-h">Mejor en conjunto</h2><p class="conj-nota">Sistemas pensados para dependencias del Gobierno del Estado. Muchos se complementan: úsalos juntos en un mismo evento, reunión o sesión.</p><div class="suites">${gr.slice(0, 4).map((comp) => {
-    const cnt = new Map(); comp.forEach((x) => x.categorias.forEach((c) => cnt.set(c, (cnt.get(c) || 0) + 1)));
-    const cid = ([...cnt.entries()].sort((a, b) => b[1] - a[1])[0] || [])[0], k = cid && catById(cid);
-    const nom = comp.slice(0, 4).map((x) => x.nombre).join(" · ") + (comp.length > 4 ? ` · +${comp.length - 4}` : "");
-    return `<a class="suite" href="${k ? "#/categoria/" + enc(k.id) : "#/sistemas"}" style="${colorVars(comp[0].icono.color)}"><span class="eyebrow">Se usan en conjunto</span><strong>${esc(k ? k.nombre : "Sistemas ligados")}</strong><small>${esc(nom)}</small><span class="stack">${comp.slice(0, 5).map((x) => icono(x, "s40")).join("")}</span></a>`;
-  }).join("")}</div></section>`;
+  return `<div class="row"><a class="row-main" href="#/sistema/${enc(s.id)}">${icono(s, "s64")}<span class="row-t"><b>${esc(s.nombre)}</b><small class="row-meta">${aviso}${tipoTag(s)}<span class="row-sub">${esc(sub ?? s.subtitulo)}</span></small></span></a>${btnGet(s)}</div>`;
 }
 function feat(s) {
   const cap = s.capturas[0];
@@ -1949,7 +1842,6 @@ function vHome() {
     ${bannerAviso()}
     ${vHero(feats, cats, cuando)}
     ${ver.length ? `<section class="sec sec-ver"><h2 class="sec-h"><a href="#/sistemas">También te podría interesar ${glifo("chev")}</a></h2><div class="cv-wrap"><button type="button" class="cv-arrow cv-prev" data-act="cv-prev" aria-label="Anterior" hidden>${glifo("back")}</button><div class="cv-grid">${ver.map(cardVer).join("")}</div><button type="button" class="cv-arrow cv-next" data-act="cv-next" aria-label="Siguiente" hidden>${glifo("chev")}</button></div></section>` : ""}
-    ${seccionConjunto()}
     <div class="duo ${lista.length > 3 ? "" : "solo"}"><section class="sec"><h2 class="sec-h"><a href="#/sistemas">Los más utilizados ${glifo("chev")}</a></h2><div class="rows paged">${top.map((s) => fila(s)).join("")}</div></section>
     ${lista.length > 3 ? `<section class="sec"><h2 class="sec-h"><a href="#/sistemas">Nuevos y actualizados ${glifo("chev")}</a></h2><div class="rows paged">${nuevos.map((s) => fila(s, `Versión ${s.version} · ${hace(s.actualizado)}`)).join("")}</div></section>` : ""}</div>
     ${usos.length ? `<section class="sec"><h2 class="sec-h">Para cada necesidad</h2><div class="colls">${usos.map(([u, n]) => {
@@ -2188,7 +2080,6 @@ function vFicha(id) {
   ${s.capturas.length || (s.videos || []).some((v) => videoInfo(v)) ? `<section class="sec fx-prev"><h2 class="sec-h">Vista previa ${editarFicha}<span class="sec-sub" id="gal-count" hidden></span></h2><div class="gal-wrap"><button type="button" class="gal-arrow gal-prev" data-act="gal-prev" aria-label="Captura anterior" hidden>${glifo("back")}</button><div class="gallery bleed" tabindex="0" aria-label="Capturas y videos del sistema">${s.capturas.filter((c) => imgOk(c.src)).map((c, i) => `<button class="shot" data-act="lightbox" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ampliar captura ${i + 1}${c.pie ? ": " + esc(c.pie) : ""}"><img src="${esc(c.src)}" alt="${esc(c.pie || "Captura de " + s.nombre)}" loading="lazy"></button>`).join("")}${(s.videos || []).map((v, i) => videoInfo(v) ? `<button class="shot vshot" data-act="ver-video" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ver video${v.pie ? ": " + esc(v.pie) : ""}">${glifo("play")}<small>${esc(v.pie || "Video de muestra")}</small></button>` : "").join("")}</div><button type="button" class="gal-arrow gal-next" data-act="gal-next" aria-label="Captura siguiente" hidden>${glifo("chev")}</button></div></section>` : ""}
   ${s.plataforma ? `<div class="platrow">${glifo("tablet")}<span>${esc(s.plataforma)}</span>${tipoTag(s)}</div>` : ""}
   ${s.descripcion ? `<section class="sec fx-about"><h2 class="sec-h"><span class="ab-ico">${glifo("info")}</span>Acerca del sistema ${editarFicha}</h2><div class="prose clamp" id="desc" style="${descEstilo(s)}">${rich(s.descripcion)}</div><button class="more" id="mas" data-act="toggle-desc">más</button><div style="clear:both"></div></section>` : ""}
-  ${bloqueConjunto(s, lig)}
   ${s.pasos.length || manualArch || manualLink ? `<section class="sec"><h2 class="sec-h">Manual de uso ${editarFicha}</h2>${s.pasos.length ? `<ol class="steps">${s.pasos.map((p) => `<li><span>${esc(p)}</span></li>`).join("")}</ol>` : ""}${manualArch ? `<div style="margin-top:14px"><button class="btn sec" data-act="ver-archivo" data-id="${esc(s.id)}" data-fid="${esc(manualArch.id)}">${glifo("libro")}Abrir manual completo</button></div>` : manualLink ? `<div style="margin-top:14px"><a class="btn sec" href="${esc(urlOk(manualLink.url))}" target="_blank" rel="noopener noreferrer">${glifo("libro")}Abrir manual completo</a></div>` : ""}</section>` : ""}
   <section class="sec fx-how"><h2 class="sec-h">Cómo solicitarlo</h2><ol class="fx-steps">
     <li><span class="n">1</span><b>Envía tu solicitud</b><small>Llenas el formulario y recibes tu folio.</small></li>
@@ -2210,6 +2101,7 @@ function vFicha(id) {
     </div></section>
   ${s.usos.length ? `<section class="sec"><h2 class="sec-h">Parte de</h2><div class="tagcards">${s.usos.map((u) => `<a class="tagcard" href="#/uso/${enc(u)}"><span class="cdot" style="${colorVars(s.icono.color)}">${glifo("tag")}</span>${esc(u)}</a>`).join("")}</div></section>` : ""}
   </aside></div>
+  ${lig.length ? `<section class="sec"><h2 class="sec-h">Ligado con</h2><p class="muted" style="margin:-4px 0 10px">Sistemas y páginas que forman parte de este mismo conjunto o se conectan con él.</p><div class="rows">${lig.map((x) => fila(x)).join("")}</div></section>` : ""}
   ${rel.length ? `<section class="fx-rel"><div class="fx-rel-h"><h2>También te podría interesar</h2><a href="#/sistemas">Ver todos los sistemas →</a></div><div class="fx-rel-grid">${rel.slice(0, 3).map((x) => `<a class="rcard" href="#/sistema/${enc(x.id)}" style="${colorVars(x.icono.color)}"><span class="rc-top">${icono(x, "s48")}</span><span class="rc-body"><small>${esc(tipoNom(x))}</small><b>${esc(x.nombre)}</b><span class="rc-sub">${esc(motivo(s, x))}</span><em>Ver sistema →</em></span></a>`).join("")}</div></section>` : ""}
   <div class="cta-end"><div><b>¿Te sirve ${esc(s.nombre)}?</b><p>Envía tu solicitud y nos pondremos en contacto con tu dependencia para coordinar una reunión.${correo ? "" : ""}</p></div>${btnGet(s, "big", true)}</div></div>`;
 }
@@ -2910,14 +2802,13 @@ function vEditor(id) {
       ${inp("plataforma", "Plataforma", { ph: "Ej. Web · Tablets · Teléfonos" })}
       ${inp("version", "Versión", { ph: "Ej. 1.0" })}
       ${inp("area", "Área responsable", { ph: "Ej. Coordinación de Política Digital" })}
-      <div class="field full"><span class="lbl">Se usa en conjunto con (opcional)</span><div class="selchips" role="group">${S.cat.sistemas.filter((x) => x.id !== s.id).map((x) => `<button type="button" class="chip txt" data-act="e-lig" data-id="${esc(x.id)}" aria-pressed="${(s.ligados || []).includes(x.id)}">${esc(x.nombre)} · ${esc(tipoNom(x))}</button>`).join("") || '<span class="muted">Aún no hay otros elementos.</span>'}</div><span class="muted" style="font-size:12.5px">Los que marques aparecen en la ficha como «Funciona en conjunto con» (y en la ficha del otro también).</span></div>
-      <div class="field full"><label for="e-ligadosNota">Nota sobre el uso en conjunto (opcional)</label><textarea id="e-ligadosNota" data-path="ligadosNota" rows="2" style="min-height:70px" placeholder="Ej. Casi siempre se usa junto con el Gestor de Eventos.">${esc(s.ligadosNota || "")}</textarea></div>
+      <div class="field full"><span class="lbl">Ligado con (opcional)</span><div class="selchips" role="group">${S.cat.sistemas.filter((x) => x.id !== s.id).map((x) => `<button type="button" class="chip txt" data-act="e-lig" data-id="${esc(x.id)}" aria-pressed="${(s.ligados || []).includes(x.id)}">${esc(x.nombre)} · ${esc(tipoNom(x))}</button>`).join("") || '<span class="muted">Aún no hay otros elementos.</span>'}</div><span class="muted" style="font-size:12.5px">Los que marques aparecen en la ficha como «Ligado con» (y en la ficha del otro también).</span></div>
       <label class="chk full"><input type="checkbox" data-path="publicado" ${s.publicado ? "checked" : ""}><span><b>Publicado</b> — visible para todas las dependencias</span></label>
       <label class="chk full"><input type="checkbox" data-path="destacado" ${s.destacado ? "checked" : ""}><span><b>Destacado</b> — aparece en la tarjeta grande de la portada</span></label>
       ${inp("etiqueta", "Texto sobre el título destacado", { full: true, ph: "Ej. Ya está disponible, Nuevo, Ideal para tu próximo evento" })}
       ${videoDestacadoEditor(s)}
     </div>`)}
-  ${grp("Descripción", "Escribe y da formato como en un documento: selecciona el texto y usa la barra. Los cambios se ven al instante, tal como quedarán en la ficha. Para una lista, escribe «- » al inicio de una línea.", editorDescripcion(s))}
+  ${grp("Descripción", "Selecciona el texto y usa la barra para cambiar tamaño, color, negrita o poner viñetas. Separa párrafos con una línea en blanco.", editorDescripcion(s))}
   ${grp("Capturas de pantalla", "Imágenes y videos del sistema en uso. Se muestran en la galería «Vista previa» de la ficha.", `${s.capturas.length ? `<div class="ed-shots">${s.capturas.map((c, i) => `<div class="ed-shot">${imgOk(c.src) ? `<img src="${esc(c.src)}" alt="Captura ${i + 1}">` : ""}<input type="text" data-path="capturas.${i}.pie" value="${esc(c.pie || "")}" placeholder="Pie de foto (opcional)" aria-label="Pie de la captura ${i + 1}"><div class="acts"><span><button type="button" class="iconbtn" data-act="e-mover" data-path="capturas" data-i="${i}" data-d="-1" ${i === 0 ? "disabled" : ""} aria-label="Mover antes">${glifo("back")}</button><button type="button" class="iconbtn" data-act="e-mover" data-path="capturas" data-i="${i}" data-d="1" ${i === s.capturas.length - 1 ? "disabled" : ""} aria-label="Mover después">${glifo("chev")}</button></span><button type="button" class="iconbtn bad" data-act="e-del" data-path="capturas" data-i="${i}" aria-label="Quitar captura ${i + 1}">${glifo("trash")}</button></div></div>`).join("")}</div>` : ""}
     <div class="dz" data-drop="captura"><div class="up" style="justify-content:center"><input type="file" id="up-captura" accept="image/*" multiple data-up="captura"><label class="btn sec sm" for="up-captura">${glifo("img")}Agregar imágenes</label></div><div style="margin-top:6px">o arrástralas aquí</div></div>${videosEditor(s)}`)}
   ${grp("Manual de uso", "Pasos para usar el sistema. Puedes adjuntar el manual completo en «Documentos».", lista("pasos", (p, i) => `<div class="field"><label class="sr" for="e-pasos.${i}">Paso ${i + 1}</label><input id="e-pasos.${i}" type="text" data-path="pasos.${i}" value="${esc(p)}" placeholder="Paso ${i + 1}" autocomplete="off"></div>`, "Agregar paso"))}
@@ -3417,17 +3308,14 @@ const ACT = {
     S.cat.sistemas = S.cat.sistemas.filter((x) => x.id !== s.id); delete S.drafts[s.id]; guardarCatalogo(); toast("Sistema eliminado"); irA("admin");
   },
   async "aplicar-textos"() {
-    if (!(await confirmar({ titulo: "Actualizar textos de los sistemas", texto: "Se actualizan nombre, frase corta, texto destacado, descripción, categorías, etiquetas y los sistemas con los que se usa en conjunto, en los sistemas que coincidan por nombre; y se agregan los que falten. Íconos, enlaces, capturas, manuales y dependencias no se tocan.", si: "Actualizar" }))) return;
+    if (!(await confirmar({ titulo: "Actualizar textos de los sistemas", texto: "Se actualizan nombre, frase corta, texto destacado y descripción de los sistemas que coincidan por nombre, y se agregan los que falten. Íconos, enlaces, capturas, manuales y dependencias no se tocan.", si: "Actualizar" }))) return;
     let n1 = 0, n2 = 0;
-    const real = {};
-    CATEGORIAS_BASE.forEach((k) => { if (!catById(k.id) && !(S.cat.categoriasEliminadas || []).includes(k.id) && TEXTOS_SISTEMAS.some((t) => t.categorias.includes(k.id))) S.cat.categorias.push(clone(k)); });
-    const cats = (t) => t.categorias.filter((id) => catById(id));
+    CATEGORIAS_BASE.forEach((k) => { if (!catById(k.id) && !(S.cat.categoriasEliminadas || []).includes(k.id) && TEXTOS_SISTEMAS.some((t) => t.categoria === k.id)) S.cat.categorias.push(clone(k)); });
     TEXTOS_SISTEMAS.forEach((t) => {
       const keys = t.alias.map(norm), s = S.cat.sistemas.find((x) => keys.includes(norm(x.nombre)));
-      if (s) { Object.assign(s, { nombre: t.nombre, subtitulo: t.subtitulo, etiqueta: t.etiqueta, descripcion: t.descripcion, ejemplo: false, usos: t.usos.slice(), ligadosNota: t.ligadosNota || "" }); if (cats(t).length) s.categorias = cats(t); if (!s.tipoSis && t.tipoSis) s.tipoSis = t.tipoSis; real[t.id] = s; n1++; }
-      else { const ns = sistemaBase({ id: t.id, nombre: t.nombre, subtitulo: t.subtitulo, etiqueta: t.etiqueta, descripcion: t.descripcion, categorias: cats(t).length ? cats(t) : t.categorias.slice(), icono: { glifo: t.glifo, color: t.color, imagen: "" }, usos: t.usos.slice(), destacado: t.destacado, tipoSis: t.tipoSis || "", ligadosNota: t.ligadosNota || "", area: "Coordinación de Política Digital", plataforma: "Web" }); S.cat.sistemas.push(ns); real[t.id] = ns; n2++; }
+      if (s) { Object.assign(s, { nombre: t.nombre, subtitulo: t.subtitulo, etiqueta: t.etiqueta, descripcion: t.descripcion, ejemplo: false }); if (!s.usos.length) s.usos = t.usos.slice(); if (!s.categorias.length) s.categorias = [t.categoria]; n1++; }
+      else { S.cat.sistemas.push(sistemaBase({ id: t.id, nombre: t.nombre, subtitulo: t.subtitulo, etiqueta: t.etiqueta, descripcion: t.descripcion, categorias: [t.categoria], icono: { glifo: t.glifo, color: t.color, imagen: "" }, usos: t.usos.slice(), destacado: t.destacado, area: "Coordinación de Política Digital", plataforma: "Web" })); n2++; }
     });
-    TEXTOS_SISTEMAS.forEach((t) => { const s = real[t.id]; if (!s) return; const ids = new Set(Array.isArray(s.ligados) ? s.ligados : []); (t.ligados || []).forEach((k) => { if (real[k] && real[k].id !== s.id) ids.add(real[k].id); }); s.ligados = [...ids]; });
     guardarCatalogo(); toast(`Listo: ${n1} actualizados y ${n2} agregados`); render(false);
   },
   async "quitar-ejemplos"() {
@@ -3653,7 +3541,6 @@ document.addEventListener("click", (e) => {
 document.addEventListener("input", (e) => {
   const t = e.target;
   if (t.id === "ban-q") { S.bq = t.value; pintarBandeja(); return; }
-  if (t.dataset.rte !== undefined) { rteEntrada(e, t); return; }
   if (t.dataset.path) {
     const dr = draftActual(); if (!dr) return;
     setPath(dr.s, t.dataset.path, t.type === "checkbox" ? t.checked : t.value); dr.dirty = true;
@@ -3687,7 +3574,7 @@ document.addEventListener("change", (e) => {
   else if (t.dataset.ban) { S[t.dataset.ban] = t.value; pintarBandeja(); }
   else if (/^of-r-/.test(t.id)) { const f = $("#of-f-" + t.id.slice(5)); if (f && t.checked && !f.value) f.value = hoyISO(); }
   else if (t.id === "a-depsel") depAuthCambio(t);
-  else if (t.dataset.fmtSize !== undefined) { if (t.value) fmtAplicar("tam", t.value); }
+  else if (t.dataset.fmtSize !== undefined) { if (t.value) fmtAplicar("tam", t.value); t.value = ""; }
   else if (t.dataset.fmtColor !== undefined) fmtAplicar("color", t.value);
   else if (t.dataset.path === "videoDestacado.url") { const dr = draftActual(); if (dr) { if (t.value.trim()) { dr.s.videoDestacado.data = ""; dr.s.videoDestacado.nombre = ""; } keep(() => render(false)); } }
   else if (t.dataset.usrRol) cambiarRolUsuario(t);
@@ -3728,18 +3615,6 @@ document.addEventListener("submit", (e) => {
   else if (f.id === "form-pass") { e.preventDefault(); cambiarMiClave(); }
 });
 document.addEventListener("mousedown", (e) => { if (e.target.closest && e.target.closest(".rtb button")) e.preventDefault(); });
-document.addEventListener("selectionchange", () => { rteGuardaSel(); rteEstado(); });
-document.addEventListener("focusin", (e) => { if (e.target.dataset && e.target.dataset.rte !== undefined) { try { document.execCommand("defaultParagraphSeparator", false, "p"); } catch (x) {} } });
-document.addEventListener("paste", (e) => {
-  const t = e.target; if (!t.dataset || t.dataset.rte === undefined) return;
-  e.preventDefault();
-  const txt = (e.clipboardData || window.clipboardData).getData("text/plain") || ""; if (!txt.trim()) return;
-  document.execCommand("insertHTML", false, rich(txt));
-});
-document.addEventListener("keydown", (e) => {
-  const t = e.target; if (!t.dataset || t.dataset.rte === undefined) return;
-  if ((e.ctrlKey || e.metaKey) && /^[iu]$/i.test(e.key)) e.preventDefault();   // cursiva y subrayado no existen en el catálogo
-});
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { if ($("#lb")) cerrarLightbox(); else if ($("#modal")) { if (confFin) confFin(false); else cerrarModal(); } }
   else if ($("#lb") && lb) { if (e.key === "ArrowLeft") ACT["lb-prev"](); else if (e.key === "ArrowRight") ACT["lb-next"](); }

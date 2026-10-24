@@ -14,7 +14,7 @@
 
 /* ===== Identidad visual propia ===== */
 :root{--accent:#0f6e8c;--accent-soft:rgba(15,110,140,.12)}
-:where(:root[data-modo="oscuro"]){--accent:#4fb8d4;--accent-soft:rgba(79,184,212,.18)}
+@media (prefers-color-scheme:dark){:root{--accent:#4fb8d4;--accent-soft:rgba(79,184,212,.18)}}
 .btn,.chip,.seg,.seg a,.pill,.tag,.badge{border-radius:9px}
 .card{border-radius:12px}
 .sidebar{background:linear-gradient(180deg,#0e2f3d,#12475a);border-right:0}
@@ -44,7 +44,7 @@
 .chips a[aria-current="page"],.chips .on{background:var(--accent);color:#fff;border-color:var(--accent)}
 .feat-card{box-shadow:0 14px 30px -14px rgba(14,47,61,.55);border:1px solid rgba(255,255,255,.25)}
 .ico{box-shadow:0 3px 8px -2px rgba(14,47,61,.3)}
-:where(:root:not([data-modo="oscuro"])) :is(.how li,.rev,.empty-card,.tagcard,.selchip,.card,.cta-end){background:#fff;border:1px solid #dfe7ec;box-shadow:0 1px 3px rgba(14,47,61,.06)}
+@media (prefers-color-scheme:light){.how li,.rev,.empty-card,.tagcard,.selchip,.card,.cta-end{background:#fff;border:1px solid #dfe7ec;box-shadow:0 1px 3px rgba(14,47,61,.06)}}
 @media (max-width:640px){.pagehead{padding:20px 18px 18px;border-radius:14px}}
 
 /* ===== Paleta estructurada (tokens con nombre) ===== */
@@ -75,7 +75,7 @@ html.acc-dys body{letter-spacing:.04em;word-spacing:.14em;line-height:1.75}
 .dir-p div{display:grid;gap:2px;min-width:0;font-size:14px}.dir-p small{opacity:.75}.dir-p a{color:var(--pal-principal);word-break:break-all}
 .dir-ed{margin-top:22px;padding:14px;border:1px dashed var(--pal-borde);border-radius:12px}.dir-ed summary{cursor:pointer;font-weight:600}
 .dir-ed textarea{width:100%;margin:10px 0;padding:10px;border:1px solid var(--pal-borde);border-radius:10px;font:inherit;font-size:14px}
-:where(:root[data-modo="oscuro"]) :is(.ctc,.dir-p,#acc-pop,#acc-pop button){background:#10222b;color:#e8f4f8;border-color:#27424f}
+@media (prefers-color-scheme:dark){.ctc,.dir-p,#acc-pop,#acc-pop button{background:#10222b;color:#e8f4f8;border-color:#27424f}}
 
 /* ===== Bandeja del superadministrador ===== */
 [aria-label="Filtrar por estado"]{display:flex;flex-wrap:wrap;gap:8px}[aria-label="Filtrar por estado"] button{padding:8px 14px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:inherit}[aria-label="Filtrar por estado"] svg{width:16px;height:16px}
@@ -95,8 +95,7 @@ html.acc-dys body{letter-spacing:.04em;word-spacing:.14em;line-height:1.75}
 .ban-acts{display:flex;gap:8px;flex-wrap:wrap;padding:0 16px 12px}
 .ban-nota{width:calc(100% - 32px);margin:0 16px 10px;min-height:70px;border:1px solid var(--pal-borde);border-radius:10px;padding:10px;font:inherit;font-size:14px}
 .ban-card>.btn{margin:0 16px 16px}
-:where(:root[data-modo="oscuro"]) :is(.ban-kpis div,.ban-card){background:#10222b;border-color:#27424f;color:#e8f4f8}
-:where(:root[data-modo="oscuro"]) .ban-nota{background:#0b1a21;color:#e8f4f8;border-color:#27424f}
+@media (prefers-color-scheme:dark){.ban-kpis div,.ban-card{background:#10222b;border-color:#27424f;color:#e8f4f8}.ban-nota{background:#0b1a21;color:#e8f4f8;border-color:#27424f}}
 
 /* ===== Administración › Categorías ===== */
 .cat-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:14px}
@@ -109,8 +108,7 @@ html.acc-dys body{letter-spacing:.04em;word-spacing:.14em;line-height:1.75}
 .cat-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--pal-borde);padding-top:10px}
 .cat-n{font-size:13px;opacity:.7}
 .cat-del{color:#c0262d;display:inline-flex;align-items:center;gap:6px}.cat-del .g{width:16px;height:16px}
-:where(:root[data-modo="oscuro"]) .cat-card{background:#10222b;border-color:#27424f}
-:where(:root[data-modo="oscuro"]) .cat-foot{border-color:#27424f}
+@media (prefers-color-scheme:dark){.cat-card{background:#10222b;border-color:#27424f}.cat-foot{border-color:#27424f}}
 /* Barra inferior (celular) con el mismo estilo del panel azul petróleo */
 @media (max-width:900px){
   .tabbar{background:linear-gradient(180deg,#12475a,#0e2f3d);border-top:0;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 -8px 24px -10px rgba(14,47,61,.55)}

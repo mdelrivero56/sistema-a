@@ -29,24 +29,8 @@
 .rtb .sw{width:24px;height:24px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.28);padding:0;cursor:pointer;flex:none}
 .rtb .sw.custom{position:relative;background:conic-gradient(red,yellow,lime,aqua,blue,magenta,red);overflow:hidden;display:inline-block}
 .rtb .sw.custom input{position:absolute;inset:-6px;width:36px;height:36px;opacity:0;cursor:pointer}
-/* Editor visual de la descripción */
-.rtb{gap:8px 10px}
-.rtb-g{display:inline-flex;align-items:center;gap:6px;padding-right:10px;border-right:1px solid var(--sep)}
-.rtb-g:last-child{border-right:0;padding-right:0}
-.rtb button.ic{width:34px;padding:0;justify-content:center}
-.rtb button.ic .g{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.rtb button[aria-pressed="true"]:not(.sw){background:var(--azul-suave,#E6F0FB);border-color:var(--azul,#004EAA);color:var(--azul,#004EAA)}
-.rtb .sw[aria-pressed="true"]{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--azul,#004EAA)}
-.rtb button:focus-visible,.rtb select:focus-visible{outline:2px solid var(--azul,#004EAA);outline-offset:2px}
-.rte{min-height:220px;max-width:none;padding:14px 16px;border:1px solid var(--sep-strong);border-radius:0 0 12px 12px;background:var(--bg-input);outline:none;overflow-wrap:anywhere;cursor:text}
-.rte:focus{border-color:var(--azul,#004EAA);box-shadow:0 0 0 3px color-mix(in srgb,var(--azul,#004EAA) 18%,transparent)}
-.rte:empty::before{content:attr(data-ph);color:var(--label-3);pointer-events:none}
-.rte p{min-height:1.2em}
-.rte b{color:var(--azul,#004EAA);font-weight:700}
-.rte .rc b,.rte .rc strong{color:inherit}
-.rte li{min-height:1.2em}
-.rte a{color:inherit;text-decoration:underline;pointer-events:none}
-@media(max-width:560px){.rtb-g{border-right:0;padding-right:0}}
+.rtb+.field textarea{border-radius:0 0 12px 12px}
+.rtprev{padding:14px 16px;border:1px dashed var(--sep-strong);border-radius:12px;background:var(--bg);max-width:none}
 /* Videos de muestra */
 .vplayer{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:14px;overflow:hidden}
 .vplayer iframe,.vplayer video{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
