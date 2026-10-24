@@ -1,0 +1,439 @@
+/* ==========================================================================
+   16 · Diseño limpio  (cargar SIEMPRE al final, después de 15-escritorio-moderno.css)
+
+   1) Barra lateral izquierda: blanca y limpia, con la paleta oficial
+        azul #004EAA (acciones)  ·  lila #9568C6 (acento suave)
+   2) Panel de "Descubrir" (hero): un solo degradado de la paleta, sin texturas,
+      y un sistema de botones estándar (misma altura, mismo radio, mismos estados)
+      igual en laptop y en celular.
+
+   Para volver atrás basta con quitar la línea de este archivo en index.html.
+   ========================================================================== */
+
+:root{
+  --ctl-h:46px;            /* alto estándar de botones, buscador y chips del panel */
+  --ctl-h-sm:38px;         /* alto estándar de chips */
+  --ctl-r:999px;           /* todos los botones son píldora */
+  --hero-ink:#FFFFFF;
+  --hero-grad:linear-gradient(125deg,#003A82 0%,#004EAA 52%,#5B3FA6 128%);
+}
+
+/* ==========================================================================
+   1 · BARRA LATERAL  (laptop / escritorio)
+   ========================================================================== */
+@media (min-width:901px){
+
+  /* Fondo de página liso: sin grano ni puntos para que la barra blanca se vea limpia */
+  html:not([data-modo="oscuro"]),
+  html:not([data-modo="oscuro"]) body{
+    background:#F4F7FC!important;background-attachment:scroll!important}
+  html:not([data-modo="oscuro"]) .app{background:none!important}
+
+  html:not([data-modo="oscuro"]) .app .sidebar{
+    background:#FFFFFF!important;
+    border:1px solid #E3E9F3!important;
+    border-radius:24px!important;
+    box-shadow:0 1px 2px rgba(20,35,63,.04),0 16px 36px -20px rgba(20,35,63,.20)!important;
+    -webkit-backdrop-filter:none;backdrop-filter:none;
+    color:#14233F;
+    padding:20px 14px 14px!important;gap:16px!important}
+
+  /* Marca: logo a la izquierda, nombre y organización al lado */
+  html:not([data-modo="oscuro"]) .app .sidebar .brand{
+    flex-direction:row!important;align-items:center;justify-content:flex-start;text-align:left;gap:12px;
+    width:100%;box-sizing:border-box;padding:2px 6px 14px!important;border-radius:0;border-bottom:1px solid #EEF2F8}
+  html:not([data-modo="oscuro"]) .app .sidebar .brand::after,
+  html:not([data-modo="oscuro"]) .app .sidebar .brand::before{display:none!important}
+  html:not([data-modo="oscuro"]) .app .sidebar .brand .ico{--s:44px;box-shadow:0 6px 14px -6px rgba(0,78,170,.45)!important}
+  html:not([data-modo="oscuro"]) .app .sidebar .brand span{min-width:0;text-align:left}
+  html:not([data-modo="oscuro"]) .app .sidebar .brand b{color:#14233F!important;font-size:17px;font-weight:800;letter-spacing:-.02em}
+  html:not([data-modo="oscuro"]) .app .sidebar .brand small{color:#55657F!important;font-size:12px;line-height:1.3;margin-top:2px}
+
+  /* Buscador */
+  html:not([data-modo="oscuro"]) .app .sidebar .searchbox{
+    height:var(--ctl-h);background:#F6F8FC!important;border:1px solid #E3E9F3!important;border-radius:var(--ctl-r)!important;
+    padding:0 16px;box-shadow:none!important;color:#55657F}
+  html:not([data-modo="oscuro"]) .app .sidebar .searchbox .g{color:#004EAA!important;stroke:#004EAA!important}
+  html:not([data-modo="oscuro"]) .app .sidebar .searchbox input[type=search]{color:#14233F!important}
+  html:not([data-modo="oscuro"]) .app .sidebar .searchbox input[type=search]::placeholder{color:#7A8AA3}
+  html:not([data-modo="oscuro"]) .app .sidebar .searchbox:focus-within{
+    background:#fff!important;border-color:#004EAA!important;box-shadow:0 0 0 4px rgba(0,78,170,.14)!important}
+
+  /* Navegación */
+  html:not([data-modo="oscuro"]) .app .sidebar .sidenav{gap:4px}
+  html:not([data-modo="oscuro"]) .app .sidebar .sidenav h6{
+    margin:20px 14px 6px!important;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#6D45A3!important}
+  html:not([data-modo="oscuro"]) .app .sidebar .sidenav a,
+  html:not([data-modo="oscuro"]) .app .sidebar .sidenav button{
+    min-height:44px;padding:0 14px!important;border-radius:14px!important;
+    background:transparent!important;color:#3B4A63!important;font-size:14.5px;font-weight:600;box-shadow:none;transform:none}
+  html:not([data-modo="oscuro"]) .app .sidebar .sidenav a .g,
+  html:not([data-modo="oscuro"]) .app .sidebar .sidenav button .g{color:#6B7B96!important;stroke:#6B7B96!important}
+  html:not([data-modo="oscuro"]) .app .sidebar .sidenav a:hover,
+  html:not([data-modo="oscuro"]) .app .sidebar .sidenav button:hover{
+    background:#F1F5FB!important;color:#14233F!important;transform:none}
+  html:not([data-modo="oscuro"]) .app .sidebar .sidenav a:hover .g{color:#004EAA!important;stroke:#004EAA!important}
+
+  /* Elemento activo: fondo azul muy suave, texto azul y barra azul→lila a la izquierda */
+  html:not([data-modo="oscuro"]) .app .sidebar .sidenav a[aria-current="page"]{
+    background:#EAF1FB!important;color:#004EAA!important;font-weight:700;box-shadow:none}
+  html:not([data-modo="oscuro"]) .app .sidebar .sidenav a[aria-current="page"] .g{color:#004EAA!important;stroke:#004EAA!important}
+  html:not([data-modo="oscuro"]) .app .sidebar .sidenav a[aria-current="page"]::before{
+    left:-14px!important;top:20%;bottom:20%;width:4px;border-radius:0 4px 4px 0;
+    background:linear-gradient(180deg,#004EAA,#9568C6)!important;box-shadow:none!important}
+
+  /* Categorías: texto un poco más ligero, puntos de color con la paleta */
+  html:not([data-modo="oscuro"]) .app .sidebar .sidenav a.cat{min-height:46px;padding:6px 12px!important;font-weight:500;line-height:1.25}
+  html:not([data-modo="oscuro"]) .app .sidebar .sidenav a.cat .cdot{
+    width:30px!important;height:30px!important;border-radius:10px!important;
+    box-shadow:0 3px 8px -3px rgba(0,50,130,.40)!important}
+  html:not([data-modo="oscuro"]) .app .sidebar .sidenav a.cat .cdot .g{color:#fff!important;stroke:#fff!important}
+
+  /* Pie: línea sólida y suave */
+  html:not([data-modo="oscuro"]) .app .sidebar .side-foot{border-top:1px solid #EEF2F8!important;padding-top:12px}
+  html:not([data-modo="oscuro"]) .app .sidebar .side-foot,
+  html:not([data-modo="oscuro"]) .app .sidebar .side-foot .mode,
+  html:not([data-modo="oscuro"]) .app .sidebar .side-foot .mode *{color:#55657F!important}
+  html:not([data-modo="oscuro"]) .app .sidebar .side-foot button,
+  html:not([data-modo="oscuro"]) .app .sidebar .side-foot a{color:#3B4A63!important}
+  html:not([data-modo="oscuro"]) .app .sidebar .side-foot button:hover,
+  html:not([data-modo="oscuro"]) .app .sidebar .side-foot a:hover{color:#004EAA!important}
+}
+
+/* ==========================================================================
+   2 · PANEL DE DESCUBRIR (hero)  ·  laptop y celular
+   ========================================================================== */
+
+/* Fondo: un solo degradado de la paleta, sin grano, sin retícula, sin anillos */
+section.hero#hero{
+  background:var(--hero-grad)!important;
+  box-shadow:0 24px 48px -28px rgba(0,50,130,.55)!important;
+  border-radius:32px}
+section.hero#hero::before{display:none!important}
+.hero-visual::before{display:none!important}
+.hero-orb{display:none!important}
+/* Un único resplandor suave detrás del teléfono */
+.hero-visual{isolation:isolate}
+.hero-visual::after{content:"";position:absolute;z-index:-1;left:50%;top:50%;width:78%;aspect-ratio:1;transform:translate(-50%,-50%);
+  border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.20),transparent 68%);pointer-events:none}
+
+/* Textos */
+.hero-eyebrow{font-size:13px;font-weight:700}
+.hero-eyebrow>span{background:rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.28)!important;
+  -webkit-backdrop-filter:none;backdrop-filter:none;height:30px;padding:0 12px}
+.hero-title{font-weight:900;letter-spacing:-.035em}
+.hero-sub{font-weight:600}
+.hero-desc{color:rgba(255,255,255,.82)!important}
+.hero-date{font-size:13.5px;font-weight:600;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.86)!important}
+
+/* ---------- Controles del encabezado: buscador, chips y cuenta con la misma altura ---------- */
+.hero-search{height:var(--ctl-h);padding:0 18px;background:rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.30)!important;
+  -webkit-backdrop-filter:none;backdrop-filter:none;font-size:14.5px}
+.hero-search:hover{background:rgba(255,255,255,.22)!important}
+.hchip{height:var(--ctl-h-sm);padding:0 16px 0 5px;gap:8px;font-size:13.5px;font-weight:600;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);color:#fff}
+.hchip:hover{background:rgba(255,255,255,.24)}
+.hchip .cdot{width:28px;height:28px}
+.hero .avatar,.hero .avatar.on{width:var(--ctl-h);height:var(--ctl-h);-webkit-backdrop-filter:none;backdrop-filter:none}
+
+/* ---------- Botones estándar ---------- */
+/* Principal: blanco con texto azul y círculo azul con flecha */
+.hero-actions{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;margin-top:10px}
+.hero-actions .hero-cta,
+.hero .get.hero-get{
+  display:inline-flex;align-items:center;box-sizing:border-box;
+  height:var(--ctl-h);min-height:var(--ctl-h);border-radius:var(--ctl-r)!important;
+  font-size:15px;font-weight:700;line-height:1;white-space:nowrap;
+  transition:transform .18s ease,box-shadow .18s ease,background-color .18s ease,border-color .18s ease}
+.hero-actions .hero-cta{
+  gap:14px;padding:0 5px 0 22px;background:#fff;color:#004EAA!important;
+  box-shadow:0 10px 22px -12px rgba(0,20,60,.65)}
+.hero-actions .hero-cta:hover{transform:translateY(-2px);box-shadow:0 14px 26px -12px rgba(0,20,60,.7);text-decoration:none}
+.hero-actions .hero-cta:active{transform:translateY(0) scale(.98)}
+.hero-cta .cta-dot{width:36px;height:36px;background:#004EAA!important;box-shadow:none!important}
+.hero-cta .cta-dot .g{width:18px;height:18px;color:#fff;stroke:#fff}
+
+/* Secundario: contorno blanco translúcido, mismo alto y mismo radio */
+.hero .get.hero-get{
+  justify-content:center;gap:12px;padding:0 24px;
+  background:rgba(255,255,255,.12)!important;color:#fff!important;border:1.5px solid rgba(255,255,255,.60)!important;
+  box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+.hero .get.hero-get:hover{background:rgba(255,255,255,.24)!important;border-color:#fff!important;transform:translateY(-2px)}
+.hero .get.hero-get:active{transform:translateY(0) scale(.98)}
+.hero .get-wrap{display:inline-flex;flex-direction:column;align-items:flex-start}
+.hero .get-note{margin:6px 0 0 6px;max-width:none;text-align:left;font-size:12px}
+
+/* Flechas anterior / siguiente */
+.hero .btn-round{width:var(--ctl-h);height:var(--ctl-h);background:rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.34)!important;
+  -webkit-backdrop-filter:none;backdrop-filter:none;transition:background-color .18s,transform .18s}
+.hero .btn-round:hover{background:rgba(255,255,255,.28)!important;transform:translateY(-1px)}
+.hero .btn-round:active{transform:scale(.94)}
+
+/* Indicadores de avance: blancos y limpios */
+.hp i{background:rgba(255,255,255,.30)}
+.hp i::after{background:#fff!important}
+section.hero#hero.hrun::after{background:linear-gradient(90deg,rgba(255,255,255,.45),#fff)!important;box-shadow:none!important}
+
+/* Foco visible, igual en todos los controles */
+.hero :is(a,button):focus-visible{outline:3px solid #fff;outline-offset:3px}
+
+/* ---------- Teléfono: sombra más sobria ---------- */
+.phone{box-shadow:0 30px 44px -22px rgba(0,20,60,.65),0 0 0 1px rgba(255,255,255,.12),inset 0 0 0 1.5px rgba(255,255,255,.22)}
+.hero-badge{box-shadow:0 12px 24px -12px rgba(0,20,60,.55)}
+
+/* ==========================================================================
+   Celular y tableta
+   ========================================================================== */
+@media (max-width:900px){
+
+  /* Barra superior (buscador + cuenta + chips): mismas alturas que en laptop */
+  .disc-search{height:var(--ctl-h)!important;border-color:#E3E9F3!important}
+  .disc-row .avatar,.disc-row .avatar.on{width:var(--ctl-h)!important;height:var(--ctl-h)!important}
+  .disc-chips .hchip{height:var(--ctl-h-sm);background:#fff;border:1px solid #E3E9F3;color:#14233F!important}
+  .disc-chips .hchip:hover{background:#EAF1FB}
+
+  section.hero#hero{border-radius:28px;padding:20px 18px 18px;gap:14px}
+
+  /* Botones: apilados, mismo ancho, mismo alto, texto a la izquierda y círculo a la derecha */
+  .hero-actions{flex-direction:column;align-items:stretch;gap:10px;width:100%;margin-top:10px}
+  .hero-actions .hero-cta,
+  .hero-actions .get-wrap,
+  .hero-actions .get.hero-get{width:100%}
+  .hero-actions .hero-cta{justify-content:space-between;padding:0 5px 0 22px}
+  .hero-actions .get-wrap{display:flex;flex-direction:column;align-items:stretch}
+  .hero .get.hero-get{justify-content:space-between;padding:0 5px 0 22px;text-align:left}
+  /* Círculo con flecha en el botón secundario (misma forma que el principal) */
+  .hero-actions .get.hero-get::after{
+    content:"";flex:none;width:36px;height:36px;border-radius:50%;
+    background:rgba(255,255,255,.20) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 6l6 6-6 6'/%3E%3C/svg%3E") center/18px no-repeat}
+  .hero-actions .get-note{margin:4px 0 0 6px}
+  /* Texto a la izquierda, teléfono asomando arriba a la derecha y botones a todo el ancho debajo */
+  .hero-copy{max-width:100%}
+  .hero-stage{min-height:0}
+  .hero-slide{min-height:0}
+  .hero-copy .hero-eyebrow,.hero-copy .hero-title,.hero-copy .hero-sub{padding-right:96px;box-sizing:border-box}
+  .hero-visual{position:absolute!important;top:6px;right:-6px;width:112px;height:158px;overflow:hidden!important;z-index:1;
+    -webkit-mask-image:linear-gradient(180deg,#000 62%,transparent);mask-image:linear-gradient(180deg,#000 62%,transparent)}
+  .hero-visual::after{display:none}
+  .hero-visual .phone{position:absolute;right:6px;top:26px;bottom:auto;width:96px;transform:rotate(6deg)}
+  .hero-slide.on .phone{animation:none}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .hero-actions .hero-cta,.hero .get.hero-get,.hero .btn-round{transition:none}
+  .hero-actions .hero-cta:hover,.hero .get.hero-get:hover,.hero .btn-round:hover{transform:none}
+}
+
+/* ==========================================================================
+   3 · FICHA · "Acerca del sistema"
+   Tarjeta igual que "Cómo solicitarlo": título con icono, texto cómodo de leer,
+   funcionalidades en cuadros parejos y botón "Ver más" centrado.
+   ========================================================================== */
+html:not([data-modo="oscuro"]) .fx .sec.fx-about{
+  position:relative;overflow:hidden;margin-top:18px;padding:24px 26px 22px;
+  background:#fff!important;border:1px solid #E6EAF3!important;border-radius:24px;
+  box-shadow:0 1px 2px rgba(20,35,63,.04),0 14px 30px -22px rgba(20,35,63,.25)!important}
+.fx .sec.fx-about::before{display:block;content:"";position:absolute;left:0;right:0;top:0;height:4px;
+  background:linear-gradient(90deg,#004EAA,#9568C6)}
+.fx .sec.fx-about::after{display:none}
+
+/* Título */
+.fx .sec.fx-about .sec-h{display:flex;align-items:center;gap:12px;margin:0;padding:2px 0 16px;font-size:20px;font-weight:800;letter-spacing:-.02em;color:#14233F}
+.fx .sec.fx-about .ab-ico{display:grid!important;place-items:center;flex:none;width:38px;height:38px;border-radius:12px;background:#EAF1FB!important;color:#004EAA;box-shadow:none!important}
+.fx .sec.fx-about .ab-ico .g{width:20px;height:20px;color:#004EAA!important;stroke:#004EAA!important}
+
+/* Texto: ancho completo, tamaño legible, introducción destacada */
+.fx .sec.fx-about .prose{max-width:none;font-size:inherit;line-height:1.65;color:#55657F;position:relative}
+.fx .sec.fx-about .prose>p:first-child{font-size:1.05em;line-height:1.65;color:#14233F}
+.fx .sec.fx-about .prose strong{color:#004EAA;font-weight:700}
+
+/* Contraído: altura fija con degradado; "Ver más" lo abre completo */
+.fx .sec.fx-about .prose.clamp{display:block;-webkit-line-clamp:unset;max-height:290px;overflow:hidden;transition:max-height .3s ease}
+.fx .sec.fx-about .prose.clamp::after{content:"";position:absolute;left:0;right:0;bottom:0;height:72px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,0),#fff 85%)}
+.fx .sec.fx-about .prose.clamp.open{max-height:none;-webkit-line-clamp:unset}
+.fx .sec.fx-about .prose.clamp.open::after{display:none}
+
+/* Subtítulo de la lista ("Funcionalidades principales") */
+.fx .sec.fx-about .prose p:has(+ul){display:flex;align-items:center;gap:12px;margin-top:22px!important;font-size:12px;font-weight:800;
+  letter-spacing:.09em;text-transform:uppercase;color:#6D45A3!important}
+.fx .sec.fx-about .prose p:has(+ul)>*{color:inherit!important;font-weight:inherit}
+.fx .sec.fx-about .prose p:has(+ul)::after{display:block;content:"";flex:1;height:1px;background:linear-gradient(90deg,#DCCDF0,transparent)}
+
+/* Funcionalidades: cuadros parejos en dos columnas */
+.fx .sec.fx-about .prose ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0 0}
+.fx .sec.fx-about .prose li,
+.fx .sec.fx-about .prose li:nth-child(even){
+  position:relative;display:block;align-content:center;min-height:62px;margin:0;padding:12px 14px 12px 60px;
+  font-size:14.5px;line-height:1.4;color:#14233F;background:#F7F9FD;border:1px solid #E6ECF5;border-radius:16px;box-shadow:none;transform:none;
+  transition:border-color .18s,background-color .18s}
+.fx .sec.fx-about .prose li:hover{border-color:#C9DAF1;background:#F1F6FD;transform:none;box-shadow:none}
+.fx .sec.fx-about .prose li::before,
+.fx .sec.fx-about .prose li:nth-child(even)::before{
+  content:"✓";position:absolute;left:14px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:10px;
+  display:grid;place-items:center;font-size:15px;font-weight:800;color:#fff;box-shadow:none;background:#004EAA}
+.fx .sec.fx-about .prose li:nth-child(even)::before{background:#9568C6}
+
+/* Botón "Ver más / Ver menos": centrado, mismo estilo de botón que el resto */
+.fx .sec.fx-about .more{
+  float:none;display:flex;align-items:center;justify-content:center;gap:8px;
+  height:44px;min-width:150px;margin:14px auto 0;padding:0 24px;border-radius:999px;
+  background:#fff;color:#004EAA;border:1.5px solid #C9DAF1;font-size:14.5px;font-weight:700;
+  transition:background-color .18s,border-color .18s,transform .18s}
+.fx .sec.fx-about .more:hover{background:#EAF1FB;border-color:#004EAA;transform:translateY(-1px)}
+.fx .sec.fx-about .more:active{transform:scale(.98)}
+.fx .sec.fx-about .more[hidden]{display:none}
+.fx .sec.fx-about .more::after{content:"";width:16px;height:16px;background:currentColor;transition:transform .2s;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 10l6 6 6-6'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 10l6 6 6-6'/%3E%3C/svg%3E") center/contain no-repeat}
+.fx .sec.fx-about .more.is-open::after{transform:rotate(180deg)}
+
+@media (max-width:640px){
+  html:not([data-modo="oscuro"]) .fx .sec.fx-about{padding:20px 16px 18px;border-radius:22px}
+  .fx .sec.fx-about .sec-h{font-size:18px;padding-bottom:12px}
+  .fx .sec.fx-about .ab-ico{width:34px;height:34px;border-radius:11px}
+  .fx .sec.fx-about .prose.clamp{max-height:240px}
+  .fx .sec.fx-about .prose ul{grid-template-columns:1fr;gap:8px}
+  .fx .sec.fx-about .prose li,.fx .sec.fx-about .prose li:nth-child(even){min-height:54px;padding:10px 12px 10px 54px;font-size:14px}
+  .fx .sec.fx-about .more{width:100%}
+}
+
+/* ==========================================================================
+   4 · EDITOR DE DESCRIPCIÓN (administración)
+   Una acción principal (Formato automático), tres botones básicos y lo demás
+   escondido en "Más opciones".
+   ========================================================================== */
+.rt-tip{display:flex;gap:10px;align-items:flex-start;margin:0 0 12px;padding:12px 14px;border-radius:14px;background:#EAF1FB;color:#14233F;font-size:14px;line-height:1.5}
+.rt-tip .g{flex:none;width:20px;height:20px;margin-top:1px;color:#004EAA;stroke:#004EAA}
+.rt-tip b{color:#004EAA}
+
+.rtb.rtb-simple{gap:8px;padding:10px;background:#F6F8FC;border-color:#E3E9F3;align-items:center}
+.rtb.rtb-simple button{min-height:42px;padding:0 16px;border-radius:999px;font-size:14.5px;font-weight:700;color:#14233F;background:#fff;border:1.5px solid #E3E9F3;
+  transition:background-color .18s,border-color .18s,transform .18s}
+.rtb.rtb-simple button:hover{background:#EAF1FB;border-color:#C9DAF1}
+.rtb.rtb-simple button:active{transform:scale(.97)}
+.rtb.rtb-simple button .g{width:18px;height:18px;color:#004EAA;stroke:#004EAA}
+.rtb.rtb-simple button b{color:#004EAA;font-size:16px}
+.rtb.rtb-simple .rtb-auto{background:#004EAA;border-color:#004EAA;color:#fff;box-shadow:0 8px 18px -10px rgba(0,78,170,.8)}
+.rtb.rtb-simple .rtb-auto:hover{background:#003F8A;border-color:#003F8A}
+.rtb.rtb-simple .rtb-auto .g{color:#fff;stroke:#fff}
+.rtb-sep{width:1px;align-self:stretch;margin:4px 2px;background:#DDE5F1}
+
+.rt-more{margin-top:12px;border:1px solid #E3E9F3;border-radius:14px;background:#fff}
+.rt-more>summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;padding:0 16px;font-size:14.5px;font-weight:700;color:#004EAA;border-radius:14px}
+.rt-more>summary::-webkit-details-marker{display:none}
+.rt-more>summary::after{content:"";width:16px;height:16px;background:currentColor;transition:transform .2s;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 10l6 6 6-6'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 10l6 6 6-6'/%3E%3C/svg%3E") center/contain no-repeat}
+.rt-more[open]>summary::after{transform:rotate(180deg)}
+.rt-more>summary:hover{background:#F6F8FC}
+.rt-more-b{padding:6px 16px 16px;border-top:1px solid #EEF2F8}
+.rtb-adv{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:6px}
+
+@media (max-width:640px){
+  .rtb.rtb-simple{display:grid;grid-template-columns:.9fr .9fr 1.3fr}
+  .rtb.rtb-simple button:not(.rtb-auto) .g{display:none}
+  .rtb.rtb-simple .rtb-auto{grid-column:1/-1;justify-content:center}
+  .rtb-sep{display:none}
+  .rtb.rtb-simple button{padding:0 8px;justify-content:center;font-size:13.5px}
+  .rtb.rtb-simple button span{white-space:nowrap}
+}
+
+/* ==========================================================================
+   5 · FICHA DEL SISTEMA · encabezado estilo App Store
+   Icono grande a la izquierda, nombre, subtítulo, etiquetas y un botón claro.
+   Sin banner ni texturas; los datos van en una sola franja con divisores.
+   ========================================================================== */
+html:not([data-modo="oscuro"]) .fx .fhead{
+  display:flex;flex-direction:row;align-items:center;gap:28px;
+  margin-top:4px;padding:8px 4px 4px;border:0;border-radius:0;overflow:visible;isolation:auto;
+  background:none;box-shadow:none}
+.fx .fhead::before,.fx .fhead::after{display:none!important}
+
+/* Icono: cuadrado redondeado con sombra suave */
+.fx .fhead .ico.s128{--s:140px;flex:none;box-shadow:0 14px 28px -14px rgba(0,40,110,.45),0 0 0 1px rgba(20,35,63,.06)!important}
+
+/* Texto */
+.fx .fhead .fhead-t{gap:6px;padding-top:0;justify-content:center}
+.fx .fhead h1{font-family:var(--font-display);font-weight:800;font-size:clamp(28px,3vw,38px);line-height:1.1;letter-spacing:-.03em;color:#14233F;text-wrap:balance}
+.fx .fhead .sub{font-size:17px;line-height:1.4;color:#55657F;max-width:46em}
+.fx .fhead .cats{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin-top:2px;font-size:14.5px;font-weight:600}
+.fx .fhead .cats a{color:#004EAA}
+.fx .fhead .cats a:hover{text-decoration:underline}
+
+/* Botones: "Solicitar" tipo App Store (píldora azul) + compartir */
+.fx .fhead-actions{display:flex;align-items:center;gap:12px;margin-top:12px}
+.fx .fhead-actions .get.big{
+  display:inline-flex;align-items:center;justify-content:center;min-width:132px;height:46px;min-height:46px;padding:0 28px;border-radius:999px!important;
+  font-size:15.5px;font-weight:800;letter-spacing:.01em;background:#004EAA!important;color:#fff!important;border:0!important;
+  box-shadow:0 10px 20px -12px rgba(0,78,170,.85);transition:background-color .18s,transform .18s,box-shadow .18s}
+.fx .fhead-actions .get.big:hover{background:#003F8A!important;transform:translateY(-1px);box-shadow:0 14px 24px -12px rgba(0,78,170,.9)}
+.fx .fhead-actions .get.big:active{transform:scale(.97)}
+.fx .fhead-actions .get.big[disabled]{background:#C9D3E3!important;box-shadow:none;transform:none;color:#fff!important}
+.fx .fhead-actions .circ{width:46px;height:46px;flex:none;border-radius:50%;background:#EAF1FB!important;border:0!important;box-shadow:none!important;color:#004EAA;
+  transition:background-color .18s,transform .18s}
+.fx .fhead-actions .circ:hover{background:#DCE8F8!important}
+.fx .fhead-actions .circ:active{transform:scale(.94)}
+
+/* Franja de datos: un solo contenedor con divisores (como la ficha de App Store) */
+html:not([data-modo="oscuro"]) .fx .stats{
+  display:flex;gap:0;margin-top:22px;padding:6px 0;background:#fff;border:1px solid #E6EAF3;border-radius:20px;
+  box-shadow:0 1px 2px rgba(20,35,63,.04);overflow:hidden}
+html:not([data-modo="oscuro"]) .fx .stats .stat{
+  flex:1 1 0;min-width:0;padding:12px 18px;border-radius:0;background:none!important;border:0!important;box-shadow:none!important}
+html:not([data-modo="oscuro"]) .fx .stats .stat+.stat{border-left:1px solid #E6EAF3!important}
+.fx .stats .stat .l{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7A8AA3}
+.fx .stats .stat b{font-size:24px;font-weight:800;color:#3B4A63;letter-spacing:-.02em}
+.fx .stats .stat b .g{color:#004EAA;stroke:#004EAA}
+.fx .stats .stat .s{color:#55657F}
+
+/* Etiqueta de plataforma debajo del encabezado, más discreta */
+.fx .platrow{margin-top:14px}
+
+/* ---------- Celular: icono a la izquierda con el texto al lado, botones debajo ---------- */
+@media (max-width:700px){
+  html:not([data-modo="oscuro"]) .fx .fhead{
+    display:grid;grid-template-columns:92px minmax(0,1fr);column-gap:16px;row-gap:6px;align-items:start;padding:6px 2px 0}
+  .fx .fhead .fhead-t{display:contents}
+  .fx .fhead .ico.s128{--s:92px;grid-column:1;grid-row:1/4;align-self:start}
+  .fx .fhead h1{grid-column:2;font-size:24px;align-self:end;margin:0}
+  .fx .fhead .sub{grid-column:2;font-size:15px;line-height:1.35;margin:0}
+  .fx .fhead .cats{grid-column:2;margin:0;font-size:13.5px;gap:6px 10px}
+  .fx .fhead .fhead-t>:not(h1):not(.sub):not(.cats){grid-column:1/-1}
+  .fx .fhead-actions{width:100%;margin-top:8px;gap:10px}
+  .fx .fhead-actions .get-wrap{flex:1 1 auto}
+  .fx .fhead-actions .get.big{width:100%}
+
+  html:not([data-modo="oscuro"]) .fx .stats{margin-top:16px;border-radius:18px}
+  html:not([data-modo="oscuro"]) .fx .stats .stat{padding:10px 6px}
+  .fx .stats .stat b{font-size:19px}
+  .fx .stats .stat .l{font-size:10.5px;letter-spacing:.03em}
+}
+
+/* ==========================================================================
+   6 · FICHA · portada opcional con borde de media luna difuminado
+   Solo aparece si el sistema tiene portada; sin portada el encabezado no cambia.
+   ========================================================================== */
+.fx.has-cover{position:relative}
+.fx-cover{
+  position:relative;z-index:0;height:clamp(190px,24vw,280px);margin:4px 0 0;overflow:hidden;pointer-events:none;
+  /* media luna: el borde inferior es una curva suave */
+  clip-path:ellipse(78% 100% at 50% 0);
+  border-radius:28px 28px 0 0}
+.fx-cover img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;
+  /* difuminado hacia abajo, hasta fundirse con el fondo */
+  -webkit-mask-image:linear-gradient(180deg,#000 35%,rgba(0,0,0,.55) 68%,transparent 100%);
+  mask-image:linear-gradient(180deg,#000 35%,rgba(0,0,0,.55) 68%,transparent 100%);
+  transform:scale(1.02)}
+/* velo azul muy suave para que la portada combine con la paleta */
+.fx-cover::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,78,170,.10),rgba(149,104,198,.10));mix-blend-mode:multiply}
+
+/* El encabezado sube y se monta sobre la portada */
+html:not([data-modo="oscuro"]) .fx.has-cover .fhead{position:relative;z-index:1;margin-top:clamp(-90px,-7vw,-60px);align-items:flex-end;padding-top:0}
+.fx.has-cover .fhead .ico.s128{box-shadow:0 18px 32px -14px rgba(0,40,110,.5),0 0 0 4px #fff!important}
+
+@media (max-width:700px){
+  .fx-cover{height:170px;border-radius:22px 22px 0 0;clip-path:ellipse(95% 100% at 50% 0)}
+  html:not([data-modo="oscuro"]) .fx.has-cover .fhead{margin-top:-46px;align-items:start}
+  .fx.has-cover .fhead .ico.s128{box-shadow:0 14px 24px -12px rgba(0,40,110,.5),0 0 0 3px #fff!important}
+}

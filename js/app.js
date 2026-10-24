@@ -583,7 +583,7 @@ function rich(t) {
   for (const l of lines) {
     const m = /^\s*(?:[-•*]\s+|[>›»→▸►]+\s*)(.*)$/.exec(l);
     if (m) { fp(); if (!lista) { out += "<ul>"; lista = true; } out += "<li>" + inline(m[1]) + "</li>"; }
-    else if (!l.trim()) { fp(); fl(); }
+    else if (!l.trim()) { fp(); }   /* una línea en blanco entre viñetas no corta la lista */
     else { fl(); par.push(l); }
   }
   fp(); fl(); return out;
@@ -673,7 +673,7 @@ function envolverLineas(sel, abre, cierra) {
 function fmtAplicar(f, v) {
   const ta = $("#e-descripcion"), dr = draftActual(); if (!ta || !dr) return;
   let a = ta.selectionStart, b = ta.selectionEnd, txt = ta.value;
-  if (f === "auto") { txt = formatoAuto(txt, dr.s.nombre); a = b = txt.length; }
+  if (f === "auto") { txt = formatoAuto(txt, dr.s.nombre); a = b = txt.length; toast("Formato automático aplicado."); }
   else if (f === "bullets") {
     const ini = txt.lastIndexOf("\n", a - 1) + 1; let fin = txt.indexOf("\n", b); if (fin < 0) fin = txt.length;
     const bloque = txt.slice(ini, fin).split("\n"), con = (l) => /^\s*(?:[-•*]\s+|[>›»→▸►]+\s*)/.test(l);
@@ -699,23 +699,29 @@ function actualizarPrevDesc() {
   p.setAttribute("style", descEstilo(dr.s)); p.innerHTML = dr.s.descripcion.trim() ? rich(dr.s.descripcion) : '<p class="muted">Aquí verás cómo se mostrará la descripción.</p>';
 }
 function toolbarDescripcion(s) {
-  const tam = [["", "Tamaño…"], ["chico", "Pequeño"], ["normal", "Normal"], ["grande", "Grande"], ["enorme", "Muy grande"]];
-  return `<div class="rtb" role="toolbar" aria-label="Formato de la descripción">
-    <button type="button" data-act="fmt" data-f="bold" title="Negrita (selecciona texto)" aria-label="Negrita"><b>N</b></button>
+  return `<div class="rtb rtb-simple" role="toolbar" aria-label="Formato de la descripción">
+    <button type="button" class="rtb-auto" data-act="fmt" data-f="auto" title="Pone en negrita lo importante y cambia guiones o «>» por viñetas">${glifo("estrella")}Formato automático</button>
+    <span class="rtb-sep" aria-hidden="true"></span>
+    <button type="button" data-act="fmt" data-f="bold" title="Negrita (primero selecciona el texto)" aria-label="Negrita"><b>N</b><span>Negrita</span></button>
     <button type="button" data-act="fmt" data-f="bullets" title="Viñetas (lista con puntos)" aria-label="Viñetas">${glifo("lista")}<span>Viñetas</span></button>
-    <label class="rtb-s"><span class="sr">Tamaño del texto seleccionado</span><select data-fmt-size aria-label="Tamaño del texto seleccionado">${tam.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}</select></label>
-    <span class="rtb-c" role="group" aria-label="Color del texto seleccionado">${COLORES_TXT.map(([n, h]) => `<button type="button" class="sw" data-act="fmt" data-f="color" data-c="${h}" style="background:${h}" title="${n}" aria-label="Color ${n}"></button>`).join("")}<label class="sw custom" title="Otro color"><span class="sr">Otro color</span><input type="color" data-fmt-color value="#004eaa" aria-label="Otro color"></label></span>
-    <button type="button" data-act="fmt" data-f="clear" title="Quitar formato del texto seleccionado">Quitar formato</button>
-    <button type="button" data-act="fmt" data-f="auto" title="Formato automático: negrita azul en palabras importantes y viñetas azules en lugar de «>» o guiones">Formato automático</button></div>`;
+    <button type="button" data-act="fmt" data-f="clear" title="Quitar el formato del texto seleccionado">${glifo("x")}<span>Quitar formato</span></button></div>`;
 }
 function editorDescripcion(s) {
   const px = TAM_BASE.includes(+s.descTam) ? +s.descTam : 16;
-  return `${toolbarDescripcion(s)}
-    <div class="field"><label class="sr" for="e-descripcion">Descripción</label><textarea id="e-descripcion" data-path="descripcion" style="min-height:220px">${esc(s.descripcion)}</textarea></div>
-    <div class="fields" style="margin-top:12px">
-      <div class="field"><label for="e-descTam">Tamaño de letra de toda la descripción</label><select class="select" id="e-descTam" data-path="descTam">${TAM_BASE.map((n, i) => `<option value="${n}" ${n === px ? "selected" : ""}>${["Pequeña", "Normal", "Grande", "Muy grande"][i]} (${n} px)</option>`).join("")}</select></div>
-      <div class="field"><label for="e-descColor">Color del texto de toda la descripción</label><div class="up"><input type="color" id="e-descColor" data-path="descColor" value="${/^#[0-9a-fA-F]{6}$/.test(s.descColor || "") ? s.descColor : "#172b34"}" aria-label="Color del texto"><button type="button" class="btn ghost sm" data-act="desc-color-reset">Color original</button></div></div>
-    </div>
+  const tam = [["", "Tamaño del texto seleccionado…"], ["chico", "Pequeño"], ["normal", "Normal"], ["grande", "Grande"], ["enorme", "Muy grande"]];
+  return `<p class="rt-tip">${glifo("info")}<span><b>Lo más fácil:</b> escribe o pega tu texto y pulsa <b>Formato automático</b>. Cada punto de lista va en su propia línea y una línea que termina en «:» se vuelve título.</span></p>
+    ${toolbarDescripcion(s)}
+    <div class="field"><label class="sr" for="e-descripcion">Descripción</label><textarea id="e-descripcion" data-path="descripcion" style="min-height:220px" placeholder="Escribe o pega aquí la descripción del sistema…">${esc(s.descripcion)}</textarea></div>
+    <details class="rt-more"><summary>Más opciones: tamaño y color</summary>
+      <div class="rt-more-b">
+        <div class="field"><span class="lbl">Solo para el texto seleccionado</span>
+          <div class="rtb-adv"><label class="rtb-s"><span class="sr">Tamaño del texto seleccionado</span><select data-fmt-size aria-label="Tamaño del texto seleccionado">${tam.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}</select></label>
+          <span class="rtb-c" role="group" aria-label="Color del texto seleccionado">${COLORES_TXT.map(([n, h]) => `<button type="button" class="sw" data-act="fmt" data-f="color" data-c="${h}" style="background:${h}" title="${n}" aria-label="Color ${n}"></button>`).join("")}<label class="sw custom" title="Otro color"><span class="sr">Otro color</span><input type="color" data-fmt-color value="#004eaa" aria-label="Otro color"></label></span></div></div>
+        <div class="fields" style="margin-top:12px">
+          <div class="field"><label for="e-descTam">Tamaño de letra de toda la descripción</label><select class="select" id="e-descTam" data-path="descTam">${TAM_BASE.map((n, i) => `<option value="${n}" ${n === px ? "selected" : ""}>${["Pequeña", "Normal", "Grande", "Muy grande"][i]} (${n} px)</option>`).join("")}</select></div>
+          <div class="field"><label for="e-descColor">Color del texto de toda la descripción</label><div class="up"><input type="color" id="e-descColor" data-path="descColor" value="${/^#[0-9a-fA-F]{6}$/.test(s.descColor || "") ? s.descColor : "#172b34"}" aria-label="Color del texto"><button type="button" class="btn ghost sm" data-act="desc-color-reset">Color original</button></div></div>
+        </div>
+      </div></details>
     <div class="field" style="margin-top:14px"><span class="lbl">Así se verá en la ficha</span><div class="prose rtprev" id="desc-prev" style="${descEstilo(s)}">${s.descripcion.trim() ? rich(s.descripcion) : '<p class="muted">Aquí verás cómo se mostrará la descripción.</p>'}</div></div>`;
 }
 
@@ -2060,7 +2066,7 @@ function vFicha(id) {
   const encl = otros.map((l) => `<li><span class="dtype link">${glifo("link")}</span><div class="dt"><b>${esc(l.etiqueta || hostDe(l.url))}</b><small>${esc(hostDe(l.url))}</small></div><div class="acts"><a class="get sm" href="${esc(urlOk(l.url))}" target="_blank" rel="noopener noreferrer">Abrir</a></div></li>`).join("");
 
   return `${navbar({ mid: icono(s, "s34"), right })}
-  <div class="fx"><section class="fhead">${icono(s, "s128")}
+  <div class="fx${imgOk(s.portada) ? " has-cover" : ""}">${imgOk(s.portada) ? `<div class="fx-cover" aria-hidden="true"><img src="${esc(s.portada)}" alt=""></div>` : ""}<section class="fhead">${icono(s, "s128")}
     <div class="fhead-t">
       <h1>${esc(s.nombre)}</h1>
       <p class="sub">${esc(s.subtitulo)}</p>
@@ -2079,7 +2085,7 @@ function vFicha(id) {
   ${videoInfo(s.videoDestacado) ? `<section class="sec vsec"><h2 class="sec-h">Video de muestra<span class="sec-sub">Conoce el sistema en acción</span></h2><div class="vplayer">${videoHtml(videoInfo(s.videoDestacado), s.nombre)}</div></section>` : ""}
   ${s.capturas.length || (s.videos || []).some((v) => videoInfo(v)) ? `<section class="sec fx-prev"><h2 class="sec-h">Vista previa ${editarFicha}<span class="sec-sub" id="gal-count" hidden></span></h2><div class="gal-wrap"><button type="button" class="gal-arrow gal-prev" data-act="gal-prev" aria-label="Captura anterior" hidden>${glifo("back")}</button><div class="gallery bleed" tabindex="0" aria-label="Capturas y videos del sistema">${s.capturas.filter((c) => imgOk(c.src)).map((c, i) => `<button class="shot" data-act="lightbox" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ampliar captura ${i + 1}${c.pie ? ": " + esc(c.pie) : ""}"><img src="${esc(c.src)}" alt="${esc(c.pie || "Captura de " + s.nombre)}" loading="lazy"></button>`).join("")}${(s.videos || []).map((v, i) => videoInfo(v) ? `<button class="shot vshot" data-act="ver-video" data-id="${esc(s.id)}" data-i="${i}" aria-label="Ver video${v.pie ? ": " + esc(v.pie) : ""}">${glifo("play")}<small>${esc(v.pie || "Video de muestra")}</small></button>` : "").join("")}</div><button type="button" class="gal-arrow gal-next" data-act="gal-next" aria-label="Captura siguiente" hidden>${glifo("chev")}</button></div></section>` : ""}
   ${s.plataforma ? `<div class="platrow">${glifo("tablet")}<span>${esc(s.plataforma)}</span>${tipoTag(s)}</div>` : ""}
-  ${s.descripcion ? `<section class="sec fx-about"><h2 class="sec-h"><span class="ab-ico">${glifo("info")}</span>Acerca del sistema ${editarFicha}</h2><div class="prose clamp" id="desc" style="${descEstilo(s)}">${rich(s.descripcion)}</div><button class="more" id="mas" data-act="toggle-desc">más</button><div style="clear:both"></div></section>` : ""}
+  ${s.descripcion ? `<section class="sec fx-about"><h2 class="sec-h"><span class="ab-ico">${glifo("info")}</span>Acerca del sistema ${editarFicha}</h2><div class="prose clamp" id="desc" style="${descEstilo(s)}">${rich(s.descripcion)}</div><button class="more" id="mas" data-act="toggle-desc" aria-expanded="false">Ver más</button><div style="clear:both"></div></section>` : ""}
   ${s.pasos.length || manualArch || manualLink ? `<section class="sec"><h2 class="sec-h">Manual de uso ${editarFicha}</h2>${s.pasos.length ? `<ol class="steps">${s.pasos.map((p) => `<li><span>${esc(p)}</span></li>`).join("")}</ol>` : ""}${manualArch ? `<div style="margin-top:14px"><button class="btn sec" data-act="ver-archivo" data-id="${esc(s.id)}" data-fid="${esc(manualArch.id)}">${glifo("libro")}Abrir manual completo</button></div>` : manualLink ? `<div style="margin-top:14px"><a class="btn sec" href="${esc(urlOk(manualLink.url))}" target="_blank" rel="noopener noreferrer">${glifo("libro")}Abrir manual completo</a></div>` : ""}</section>` : ""}
   <section class="sec fx-how"><h2 class="sec-h">Cómo solicitarlo</h2><ol class="fx-steps">
     <li><span class="n">1</span><b>Envía tu solicitud</b><small>Llenas el formulario y recibes tu folio.</small></li>
@@ -2808,7 +2814,7 @@ function vEditor(id) {
       ${inp("etiqueta", "Texto sobre el título destacado", { full: true, ph: "Ej. Ya está disponible, Nuevo, Ideal para tu próximo evento" })}
       ${videoDestacadoEditor(s)}
     </div>`)}
-  ${grp("Descripción", "Selecciona el texto y usa la barra para cambiar tamaño, color, negrita o poner viñetas. Separa párrafos con una línea en blanco.", editorDescripcion(s))}
+  ${grp("Descripción", "Pega o escribe el texto y pulsa «Formato automático». Para ajustes puntuales usa Negrita o Viñetas.", editorDescripcion(s))}
   ${grp("Capturas de pantalla", "Imágenes y videos del sistema en uso. Se muestran en la galería «Vista previa» de la ficha.", `${s.capturas.length ? `<div class="ed-shots">${s.capturas.map((c, i) => `<div class="ed-shot">${imgOk(c.src) ? `<img src="${esc(c.src)}" alt="Captura ${i + 1}">` : ""}<input type="text" data-path="capturas.${i}.pie" value="${esc(c.pie || "")}" placeholder="Pie de foto (opcional)" aria-label="Pie de la captura ${i + 1}"><div class="acts"><span><button type="button" class="iconbtn" data-act="e-mover" data-path="capturas" data-i="${i}" data-d="-1" ${i === 0 ? "disabled" : ""} aria-label="Mover antes">${glifo("back")}</button><button type="button" class="iconbtn" data-act="e-mover" data-path="capturas" data-i="${i}" data-d="1" ${i === s.capturas.length - 1 ? "disabled" : ""} aria-label="Mover después">${glifo("chev")}</button></span><button type="button" class="iconbtn bad" data-act="e-del" data-path="capturas" data-i="${i}" aria-label="Quitar captura ${i + 1}">${glifo("trash")}</button></div></div>`).join("")}</div>` : ""}
     <div class="dz" data-drop="captura"><div class="up" style="justify-content:center"><input type="file" id="up-captura" accept="image/*" multiple data-up="captura"><label class="btn sec sm" for="up-captura">${glifo("img")}Agregar imágenes</label></div><div style="margin-top:6px">o arrástralas aquí</div></div>${videosEditor(s)}`)}
   ${grp("Manual de uso", "Pasos para usar el sistema. Puedes adjuntar el manual completo en «Documentos».", lista("pasos", (p, i) => `<div class="field"><label class="sr" for="e-pasos.${i}">Paso ${i + 1}</label><input id="e-pasos.${i}" type="text" data-path="pasos.${i}" value="${esc(p)}" placeholder="Paso ${i + 1}" autocomplete="off"></div>`, "Agregar paso"))}
@@ -3168,7 +3174,7 @@ const ACT = {
   compartir(t) { copiar(location.href.split("#")[0] + "#/sistema/" + enc(t.dataset.id), "Enlace copiado"); },
   copiar(t) { copiar(t.dataset.v, "Copiado"); },
   "reenviar-folio"(t) { const s = S.sols.find((x) => x.id === t.dataset.id); if (!s || !SB || s.correoFolio === "enviando") return; s.correoFolio = "enviando"; keep(() => render(false)); enviarCorreoFolio(s); },
-  "toggle-desc"(t) { const d = $("#desc"); if (!d) return; d.classList.toggle("open"); t.textContent = d.classList.contains("open") ? "menos" : "más"; },
+  "toggle-desc"(t) { const d = $("#desc"); if (!d) return; const ab = d.classList.toggle("open"); t.textContent = ab ? "Ver menos" : "Ver más"; t.classList.toggle("is-open", ab); t.setAttribute("aria-expanded", String(ab)); },
   lightbox(t) { const s = byId(t.dataset.id); if (!s) return; const items = s.capturas.filter((c) => imgOk(c.src)); abrirLightbox(items, +t.dataset.i); },
   "cv-next"(t) { const g = $(".cv-grid, .chips", t.closest(".cv-wrap")); if (g) g.scrollBy({ left: g.clientWidth + 20, behavior: "smooth" }); },
   "hero-prev"(t) { const h = t.closest("#hero"); if (h && h._hero) h._hero.ir(-1); },
