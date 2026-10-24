@@ -2052,7 +2052,7 @@ function vFicha(id) {
     iniciarGaleria();
   };
   const right = (S.admin ? `<a class="btn sm sec" href="#/admin/editar/${enc(s.id)}">${glifo("edit")}Editar</a>` : "") + `<button class="circ" data-act="compartir" data-id="${esc(s.id)}" aria-label="Copiar enlace del sistema">${glifo("share")}</button>` + btnGet(s, "sm", true);
-  const editarFicha = S.admin ? `<a class="btn ghost sm" style="margin-left:auto" href="#/admin/editar/${enc(s.id)}">${glifo("edit")}Editar contenido</a>` : "";
+  const editarFicha = S.admin ? `<a class="edit-chip" href="#/admin/editar/${enc(s.id)}" title="Editar el contenido de esta sección">${glifo("edit")}<span>Editar contenido</span></a>` : "";
 
   const tipoHtml = `<span class="tipo-tag t-${tipoDe(s)} big">${glifo(TIPO_ICO[tipoDe(s)])}${esc(tipoNom(s))}</span><small class="vsub">${esc(TIPOS_DESC[tipoDe(s)])}</small>`;
   const sinDato = "No especificado";
@@ -2066,7 +2066,7 @@ function vFicha(id) {
   const encl = otros.map((l) => `<li><span class="dtype link">${glifo("link")}</span><div class="dt"><b>${esc(l.etiqueta || hostDe(l.url))}</b><small>${esc(hostDe(l.url))}</small></div><div class="acts"><a class="get sm" href="${esc(urlOk(l.url))}" target="_blank" rel="noopener noreferrer">Abrir</a></div></li>`).join("");
 
   return `${navbar({ mid: icono(s, "s34"), right })}
-  <div class="fx${imgOk(s.portada) ? " has-cover" : ""}">${imgOk(s.portada) ? `<div class="fx-cover" aria-hidden="true"><img src="${esc(s.portada)}" alt=""></div>` : ""}<section class="fhead">${icono(s, "s128")}
+  <div class="fx has-cover">${imgOk(s.portada) ? `<div class="fx-cover" aria-hidden="true"><img src="${esc(s.portada)}" alt=""></div>` : `<div class="fx-cover fx-cover-def" aria-hidden="true"><span class="fx-cover-art"></span></div>`}<section class="fhead">${icono(s, "s128")}
     <div class="fhead-t">
       <h1>${esc(s.nombre)}</h1>
       <p class="sub">${esc(s.subtitulo)}</p>
@@ -2100,10 +2100,10 @@ function vFicha(id) {
   </div><aside class="fx-side">
   <section class="fx-cta"><h2>Solicita este sistema para tu dependencia</h2><p>Recibirás un folio para elaborar tu oficio y coordinaremos una reunión contigo.</p>${btnGet(s, "big", true)}</section>
   <section class="sec"><h2 class="sec-h">Ficha técnica ${editarFicha}</h2>
-    <div class="kv">${filasTec.map(([k, v, h]) => `<div><span class="k">${esc(k)}</span><span class="v">${h || esc(v)}</span></div>`).join("")}
-      ${prim ? `<div><a class="lr" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">Ir a${tipoDe(s) === "sistema" ? "l sistema" : tipoDe(s) === "portal" ? "l portal" : tipoDe(s) === "web" ? "l sitio web" : "l enlace"} ${glifo("out")}</a></div>` : ""}
-      <div><button class="lr" data-act="contacto" data-id="${esc(s.id)}">Contactar al área responsable ${glifo("correo")}</button></div>
-      <div><button class="lr" data-act="contacto" data-id="${esc(s.id)}" data-problema="1">Reportar un problema ${glifo("warn")}</button></div>
+    <div class="kv">${filasTec.map(([k, v, h]) => `<div class="kv-r"><span class="k">${esc(k)}</span><span class="v${!h && v === sinDato ? " nd" : ""}">${h || esc(v)}</span></div>`).join("")}
+      <div class="kv-acts">${prim ? `<a class="lr" href="${esc(urlOk(prim.url))}" target="_blank" rel="noopener noreferrer">Ir a${tipoDe(s) === "sistema" ? "l sistema" : tipoDe(s) === "portal" ? "l portal" : tipoDe(s) === "web" ? "l sitio web" : "l enlace"} ${glifo("out")}</a>` : ""}
+      <button class="lr" data-act="contacto" data-id="${esc(s.id)}">Contactar al área responsable ${glifo("correo")}</button>
+      <button class="lr" data-act="contacto" data-id="${esc(s.id)}" data-problema="1">Reportar un problema ${glifo("warn")}</button></div>
     </div></section>
   ${s.usos.length ? `<section class="sec"><h2 class="sec-h">Parte de</h2><div class="tagcards">${s.usos.map((u) => `<a class="tagcard" href="#/uso/${enc(u)}"><span class="cdot" style="${colorVars(s.icono.color)}">${glifo("tag")}</span>${esc(u)}</a>`).join("")}</div></section>` : ""}
   </aside></div>
