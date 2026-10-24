@@ -1807,8 +1807,8 @@ function iniciarHero() {
   h._hero = { ir: (d) => ir(i + d), go: (k) => ir(k) };
   if (!quieto) {
     const pausa = (v) => { pausado = v; if (v) parar(); else arrancar(); };
-    h.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") pausa(true); });
-    h.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") pausa(false); });
+    /* El panel avanza solo también en computadora: ya no se pausa al pasar el cursor (igual que en celular).
+       Solo se pausa si alguien navega con teclado dentro del panel. */
     h.addEventListener("focusin", (e) => { if (e.target.matches && e.target.matches(":focus-visible")) pausa(true); });
     h.addEventListener("focusout", () => pausa(false));
     arrancar();
