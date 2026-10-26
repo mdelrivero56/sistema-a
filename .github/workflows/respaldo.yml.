@@ -1,0 +1,27 @@
+# Respaldo automatico del catalogo publicado (cada lunes y a mano desde la pestana Actions).
+# Guarda una copia fechada en la carpeta backups/ usando solo la clave publica (la misma de js/config.js).
+name: Respaldo del catalogo
+on:
+  schedule: [{ cron: "0 12 * * 1" }]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Descargar catalogo
+        run: |
+          URL=$(grep -oP 'SUPABASE_URL = "\K[^"]+' js/config.js)
+          KEY=$(grep -oP 'SUPABASE_KEY = "\K[^"]+' js/config.js)
+          mkdir -p backups
+          curl -fsS "$URL/rest/v1/catalogo?id=eq.1&select=data" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+            | python3 -c "import sys,json; r=json.load(sys.stdin); assert r and r[0].get('data'), 'respuesta vacia'; json.dump(r[0]['data'], open('backups/catalogo-$(date +%F).json','w'), ensure_ascii=False, indent=1)"
+          ls -la backups | tail -3
+      - name: Conservar solo los ultimos 12
+        run: ls -1t backups/catalogo-*.json | tail -n +13 | xargs -r rm --
+      - name: Guardar en el repositorio
+        run: |
+          git config user.name "respaldo-automatico"; git config user.email "actions@users.noreply.github.com"
+          git add backups; git diff --cached --quiet || git commit -m "Respaldo del catalogo $(date +%F)"; git push
