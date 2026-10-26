@@ -1,0 +1,21 @@
+/* Efecto de scroll del apartado Sistemas (inspirado en el detalle de apps de streaming):
+   el encabezado se aleja con suavidad y las filas suben escalonadas al aparecer.
+   Solo transform/opacity. Se desactiva con "reducir movimiento". */
+@media (prefers-reduced-motion:no-preference){
+  /* Encabezado que se retira al bajar (lo controla --sx-p, de 0 a 1, desde js/scroll-fx.js) */
+  body.sx-activo .pagehead{
+    transform-origin:left top;
+    transform:translate3d(0,calc(var(--sx-p,0) * -14px),0) scale(calc(1 - var(--sx-p,0) * .035));
+    opacity:calc(1 - var(--sx-p,0) * .6);
+    will-change:transform,opacity;
+  }
+  /* Filas: estado inicial oculto solo si el script las marcó (si el JS falla, se ven normales) */
+  .rows .row.sx{
+    opacity:0;
+    transform:translate3d(0,22px,0) scale(.975);
+    transition:opacity .55s cubic-bezier(.22,.7,.2,1),transform .6s cubic-bezier(.22,.7,.2,1);
+    transition-delay:var(--sx-d,0ms);
+    will-change:opacity,transform;
+  }
+  .rows .row.sx.sx-in{opacity:1;transform:none}
+}

@@ -1,0 +1,1 @@
+Carpeta de respaldos automaticos del catalogo (ver .github/workflows/respaldo.yml).
