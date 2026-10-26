@@ -1,0 +1,329 @@
+/* ==========================================================================
+   21 · MODO OSCURO SUAVE  +  FICHA DE SISTEMA ESTANDARIZADA EN CELULAR
+   --------------------------------------------------------------------------
+   Se carga al final, así que manda sobre las hojas anteriores. Para volver al
+   comportamiento anterior basta con quitar su línea <link> de index.html.
+
+   A · Modo oscuro más suave: menos brillo (texto, botones, resplandores y paneles)
+       sin tocar el color de las imágenes ni de las capturas.
+   B · Correcciones: textos que quedaban oscuros sobre fondo oscuro en la ficha
+       (título, descripción, cifras, negritas, números de paso, textos con color).
+   C · Ficha del sistema: encabezado, portada, datos y tarjetas con la MISMA
+       estructura en celular, en claro y en oscuro, para cualquier sistema
+       (nombres largos, con o sin portada, con o sin imágenes).
+   ========================================================================== */
+
+/* ==========================================================================
+   A · MODO OSCURO SUAVE
+   ========================================================================== */
+:root[data-modo="oscuro"]{
+  /* fondos un poco menos azul saturado y sin "pozos" negros */
+  --bg:#0C1320!important; --bg-soft:#101A2B!important; --bg-card:#111B2D!important; --bg-input:#0E1726!important;
+  /* texto: blanco roto en vez de blanco brillante (contrastes ≥ 5.5:1) */
+  --label:#E1E7F1!important; --label-2:#A5B1C7!important; --label-3:#8895AD!important;
+  --sep:rgba(148,170,215,.14)!important; --sep-strong:rgba(148,170,215,.26)!important;
+  --glass:rgba(12,19,32,.92)!important; --sidebar:#0C1320!important;
+  --shadow:0 1px 0 rgba(255,255,255,.03) inset,0 12px 30px -14px rgba(0,0,0,.65)!important;
+  --d-surface:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.008) 60%),#111B2D;
+  --d-surface-2:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015) 60%),#16223A;
+  --d-line:rgba(148,170,215,.14);
+  --d-line-2:rgba(148,170,215,.27);
+  --d-sombra:0 1px 0 rgba(255,255,255,.04) inset,0 12px 28px -16px rgba(0,0,0,.7);
+  --d-brillo:color-mix(in srgb,var(--azul) 26%,transparent);
+  --d-brillo-2:color-mix(in srgb,var(--azul) 16%,transparent);
+  --d-ink:#0A1226;
+  --ok:#62C48F!important; --warn:#DDB060!important; --bad:#F29A92!important;
+  --bad-soft:rgba(242,154,146,.14); --warn-soft:rgba(221,176,96,.14); --ok-soft:rgba(98,196,143,.14);
+  /* texto de acento ya con contraste suficiente */
+  --d-acc-txt:color-mix(in srgb,var(--azul) 82%,#fff);
+  --d-lila-txt:#C3A9E3;
+}
+
+/* Fondo de página: luces más tenues */
+html[data-modo="oscuro"],
+html[data-modo="oscuro"] body{
+  background:
+    radial-gradient(900px 520px at 6% -8%,color-mix(in srgb,var(--azul) 12%,transparent),transparent 62%),
+    radial-gradient(760px 480px at 100% 4%,rgba(149,104,198,.10),transparent 60%),
+    radial-gradient(700px 520px at 50% 118%,color-mix(in srgb,var(--azul) 7%,transparent),transparent 65%),
+    #0C1320!important;
+  background-attachment:fixed!important}
+html[data-modo="oscuro"]{scrollbar-color:#27364F #0C1320}
+html[data-modo="oscuro"] .app .sidebar,
+html[data-modo="oscuro"] .sidebar{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008) 40%),#0E1624!important}
+
+/* Barra inferior del celular: más sólida para que el contenido no "se transparente" debajo */
+html[data-modo="oscuro"] .tabbar{background:color-mix(in srgb,#0C1320 95%,transparent)!important}
+
+/* Botón principal: relleno liso, sin brillo blanco superior */
+html[data-modo="oscuro"] .btn,
+html[data-modo="oscuro"] .get.big,
+html[data-modo="oscuro"] .hmain .get,
+html[data-modo="oscuro"] .fhead-actions .get.big{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--azul) 96%,#fff),color-mix(in srgb,var(--azul) 88%,#000))!important;
+  border:1px solid color-mix(in srgb,var(--azul) 80%,#fff)!important;
+  box-shadow:0 8px 20px -10px var(--d-brillo)!important}
+html[data-modo="oscuro"] .btn:hover,
+html[data-modo="oscuro"] .get.big:hover,
+html[data-modo="oscuro"] .hmain .get:hover{
+  filter:brightness(1.05)!important;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--azul) 92%,#fff),color-mix(in srgb,var(--azul) 84%,#000))!important;
+  box-shadow:0 10px 24px -10px var(--d-brillo)!important}
+/* Secundario y fantasma: texto de acento legible */
+html[data-modo="oscuro"] .btn.sec,
+html[data-modo="oscuro"] .btn.sec.big,
+html[data-modo="oscuro"] .acciones .btn.sec,
+html[data-modo="oscuro"] .cat-foot .btn.sec,
+html[data-modo="oscuro"] .cat-tools .btn,
+html[data-modo="oscuro"] .btn2,
+html[data-modo="oscuro"] .authcard .auth-visor,
+html[data-modo="oscuro"] .btn.sec.auth-alt{
+  background:color-mix(in srgb,var(--azul) 11%,rgba(255,255,255,.015))!important;color:var(--d-acc-txt)!important;
+  border-color:color-mix(in srgb,var(--azul) 36%,transparent)!important}
+html[data-modo="oscuro"] .btn.sec:hover,
+html[data-modo="oscuro"] .acciones .btn.sec:hover,
+html[data-modo="oscuro"] .cat-foot .btn.sec:hover,
+html[data-modo="oscuro"] .cat-tools .btn:hover,
+html[data-modo="oscuro"] .btn2:hover,
+html[data-modo="oscuro"] .authcard .auth-visor:hover,
+html[data-modo="oscuro"] .btn.sec.auth-alt:hover{color:var(--label)!important}
+html[data-modo="oscuro"] .btn.danger,html[data-modo="oscuro"] .btn.sm.danger,html[data-modo="oscuro"] .cat-del,
+html[data-modo="oscuro"] .cat-foot .btn.ghost.cat-del,html[data-modo="oscuro"] .iconbtn.bad{
+  background:var(--bad-soft)!important;color:var(--bad)!important;border-color:color-mix(in srgb,var(--bad) 40%,transparent)!important}
+
+/* "Obtener / Solicitar" en listas y tarjetas */
+html[data-modo="oscuro"] .cv-bar .get,html[data-modo="oscuro"] .row .get,
+html[data-modo="oscuro"] .get.sm,html[data-modo="oscuro"] .get:not(.big):not(.hero-get):not(.glass){
+  color:var(--d-acc-txt)!important}
+html[data-modo="oscuro"] .cv-bar .get:hover,html[data-modo="oscuro"] .row .get:hover{color:var(--d-ink)!important}
+
+/* Chips, etiquetas y tags con texto de acento legible */
+html[data-modo="oscuro"] .chip[aria-pressed="true"],html[data-modo="oscuro"] .chip.on,
+html[data-modo="oscuro"] .tagcard,html[data-modo="oscuro"] .fx .tagcard,html[data-modo="oscuro"] .tag-pill,
+html[data-modo="oscuro"] .tipo-tag.t-sistema,html[data-modo="oscuro"] .pill,
+html[data-modo="oscuro"] .badge.acc,html[data-modo="oscuro"] .fc-count{color:var(--d-acc-txt)!important}
+html[data-modo="oscuro"] .tipo-tag.t-portal{color:var(--d-lila-txt)!important}
+html[data-modo="oscuro"] .searchbox .g,html[data-modo="oscuro"] .bigsearch .g{color:var(--d-acc-txt)!important;stroke:var(--d-acc-txt)!important}
+html[data-modo="oscuro"] a:not(.btn):not(.get):not(.chip):not(.hero-cta):not(.hero-login):not(.hero-search){color:var(--d-acc-txt)}
+html[data-modo="oscuro"] .sidebar a,html[data-modo="oscuro"] .tabbar a,html[data-modo="oscuro"] .feat-txt,html[data-modo="oscuro"] .feat-art,
+html[data-modo="oscuro"] .coll,html[data-modo="oscuro"] .rcard,html[data-modo="oscuro"] .cv-card a{color:inherit}
+html[data-modo="oscuro"] .tabbar a[aria-current="page"]{color:var(--d-acc-txt)!important}
+html[data-modo="oscuro"] .rcard .rc-body b,html[data-modo="oscuro"] .row-t b,html[data-modo="oscuro"] .cv-card b{color:var(--label)}
+html[data-modo="oscuro"] .rcard .rc-body em{color:var(--d-acc-txt)}
+
+/* Panel superior (hero) y tarjetas destacadas: misma paleta, menos brillo */
+html[data-modo="oscuro"] section.hero#hero{
+  background:
+    radial-gradient(700px 380px at 90% -6%,rgba(149,104,198,.38),transparent 62%),
+    radial-gradient(620px 380px at -4% 112%,color-mix(in srgb,var(--azul) 28%,transparent),transparent 62%),
+    linear-gradient(125deg,#060F26 0%,#0A2250 55%,#2E2579 125%)!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.10) inset,0 30px 60px -34px color-mix(in srgb,var(--azul) 45%,#000)!important}
+html[data-modo="oscuro"] .hero-actions .hero-cta,
+html[data-modo="oscuro"] .hero-login{background:#E4EAF5!important;color:#0A2A5E!important;box-shadow:0 10px 24px -12px rgba(0,0,0,.7)!important}
+html[data-modo="oscuro"] .fx-cta .get,html[data-modo="oscuro"] .fx .cta-end .get{background:#E4EAF5!important;color:#0A2A5E!important;box-shadow:0 8px 22px -12px rgba(0,0,0,.6)!important}
+html[data-modo="oscuro"] .dx .feat{box-shadow:0 20px 40px -26px var(--c2,var(--azul)),0 0 0 1px rgba(255,255,255,.03)!important}
+html[data-modo="oscuro"] .dx .feat:hover{box-shadow:0 24px 46px -24px var(--c2,var(--azul))!important}
+html[data-modo="oscuro"] .feat-txt strong,html[data-modo="oscuro"] .feat-txt .sub{color:#F1F4FA!important}
+html[data-modo="oscuro"] .fx-cta,html[data-modo="oscuro"] .fx .cta-end,html[data-modo="oscuro"] .cta-end{
+  background:linear-gradient(125deg,#0A2250,#2A2573)!important;color:#F1F4FA}
+html[data-modo="oscuro"] .fx-cta h2,html[data-modo="oscuro"] .fx-cta p,html[data-modo="oscuro"] .cta-end b,html[data-modo="oscuro"] .cta-end p{color:#EDF1F8!important}
+
+/* Barra lateral: opción activa más sobria */
+html[data-modo="oscuro"] .app .sidebar .sidenav a[aria-current="page"],
+html[data-modo="oscuro"] .app .sidebar .sidenav a.active{
+  background:linear-gradient(115deg,color-mix(in srgb,var(--azul) 92%,#000),color-mix(in srgb,var(--azul) 55%,#7F58B0))!important;
+  box-shadow:0 0 0 1px rgba(255,255,255,.10) inset,0 8px 20px -12px var(--azul)!important}
+
+/* Anillo de enfoque y selección más discretos */
+html[data-modo="oscuro"] ::selection{background:color-mix(in srgb,var(--azul) 38%,transparent);color:#fff}
+html[data-modo="oscuro"] :focus-visible{outline:2px solid var(--d-acc-txt)!important;box-shadow:0 0 0 5px var(--d-brillo-2)}
+
+/* ==========================================================================
+   B · CORRECCIONES DE CONTRASTE EN MODO OSCURO (colores de modo claro heredados)
+   ========================================================================== */
+/* Encabezado de ficha, datos y textos corridos */
+html[data-modo="oscuro"] .fx .fhead h1,
+html[data-modo="oscuro"] .fx .sec.fx-about .sec-h,
+html[data-modo="oscuro"] .large-title,
+html[data-modo="oscuro"] .sec-h{color:var(--label)!important}
+html[data-modo="oscuro"] .fx .fhead .sub,
+html[data-modo="oscuro"] .lede,
+html[data-modo="oscuro"] .pagehead .lede{color:var(--label-2)!important}
+html[data-modo="oscuro"] .fx .fhead .cats a{color:var(--d-acc-txt)}
+html[data-modo="oscuro"] .fx .stats .stat .l{color:var(--label-3)}
+html[data-modo="oscuro"] .fx .stats .stat b{color:var(--label)}
+html[data-modo="oscuro"] .fx .stats .stat b .g{color:var(--d-acc-txt);stroke:var(--d-acc-txt)}
+html[data-modo="oscuro"] .fx .stats .stat .s{color:var(--label-2)}
+html[data-modo="oscuro"] .fx .platrow,html[data-modo="oscuro"] .fx .platrow span{color:var(--label-2)}
+html[data-modo="oscuro"] .fx .platrow .g{color:var(--label-3);stroke:var(--label-3)}
+
+/* Acerca del sistema (descripción) */
+html[data-modo="oscuro"] .fx .sec.fx-about .prose{color:var(--label-2)}
+html[data-modo="oscuro"] .fx .sec.fx-about .prose>p:first-child{color:var(--label)}
+html[data-modo="oscuro"] .fx .sec.fx-about .prose strong{color:var(--d-acc-txt)}
+html[data-modo="oscuro"] .fx .sec.fx-about .prose p:has(+ul){color:var(--d-lila-txt)!important}
+html[data-modo="oscuro"] .fx .sec.fx-about .prose p:has(+ul)::after{background:linear-gradient(90deg,rgba(195,169,227,.35),transparent)}
+html[data-modo="oscuro"] .fx .sec.fx-about .prose.clamp::after{background:linear-gradient(180deg,rgba(17,27,45,0),#111B2D 85%)}
+html[data-modo="oscuro"] .fx .sec.fx-about{position:relative;overflow:hidden;margin-top:18px;padding:24px 26px 22px;border-radius:24px;background:var(--d-surface)!important;border:1px solid var(--d-line)!important;box-shadow:var(--d-sombra)!important}
+html[data-modo="oscuro"] .fx .sec.fx-about .prose li:nth-child(n),
+html[data-modo="oscuro"] .fx .sec.fx-about .prose li{color:var(--label)!important}
+html[data-modo="oscuro"] .fx .sec.fx-about .prose li::before{background:#2F6FC4!important;color:#fff}
+html[data-modo="oscuro"] .fx .sec.fx-about .prose li:nth-child(even)::before{background:#7E55B5!important}
+html[data-modo="oscuro"] .fx .sec.fx-about .more{background:rgba(255,255,255,.03)!important;color:var(--d-acc-txt)!important;border:1.5px solid color-mix(in srgb,var(--azul) 40%,transparent)!important}
+html[data-modo="oscuro"] .fx .sec.fx-about .more:hover{background:color-mix(in srgb,var(--azul) 16%,transparent)!important;border-color:var(--azul)!important}
+html[data-modo="oscuro"] .fx .sec.fx-about .ab-ico .g{color:var(--d-acc-txt)!important;stroke:var(--d-acc-txt)!important}
+html[data-modo="oscuro"] .fx .sec.fx-about::before{background:linear-gradient(90deg,color-mix(in srgb,var(--azul) 85%,#000),#7E55B5)}
+
+/* Texto con color elegido en el editor: se traduce a tonos legibles en oscuro */
+html[data-modo="oscuro"] .prose .rc[style*="#172b34" i],
+html[data-modo="oscuro"] .prose .rc[style*="#14233f" i],
+html[data-modo="oscuro"] .prose .rc[style*="#000000" i]{color:var(--label)!important}
+html[data-modo="oscuro"] .prose .rc[style*="#004eaa" i]{color:var(--d-acc-txt)!important}
+html[data-modo="oscuro"] .prose .rc[style*="#6b46a8" i],
+html[data-modo="oscuro"] .prose .rc[style*="#6d45a3" i]{color:var(--d-lila-txt)!important}
+html[data-modo="oscuro"] .prose .rc[style*="#c62828" i]{color:#F2A29B!important}
+html[data-modo="oscuro"] .prose .rc[style*="#2e7d32" i]{color:#7FCB98!important}
+html[data-modo="oscuro"] .prose .rc[style*="#d9650b" i]{color:#EDA467!important}
+html[data-modo="oscuro"] .prose .rc[style*="#637680" i]{color:var(--label-2)!important}
+html[data-modo="oscuro"] .prose .rc strong{color:inherit!important}
+
+/* Números de paso (1, 2, 3): siempre tinta oscura sobre el color, nunca blanco sobre claro */
+html[data-modo="oscuro"] .fx-steps li .n,html[data-modo="oscuro"] .how li .n,html[data-modo="oscuro"] .steps li::before{color:var(--d-ink)!important}
+/* Campo obligatorio */
+html[data-modo="oscuro"] .req{color:var(--bad)!important}
+html[data-modo="oscuro"] .auth-foot,html[data-modo="oscuro"] .auth-foot a{color:var(--label-2)}
+html[data-modo="oscuro"] .row-t .row-sub,html[data-modo="oscuro"] .row-meta,html[data-modo="oscuro"] .row-sub{color:var(--label-2)}
+
+/* Imagen de portada: sin filtros fuertes; solo un velo mínimo al final para fundirse con el fondo */
+html[data-modo="oscuro"] .fx-cover img{filter:none}
+html[data-modo="oscuro"] .fx-cover::after{background:linear-gradient(180deg,rgba(12,19,32,0),rgba(12,19,32,.10));mix-blend-mode:normal}
+html[data-modo="oscuro"] .fx-cover-def::after{background:linear-gradient(180deg,rgba(8,16,36,.08),rgba(8,16,36,.24))}
+html[data-modo="oscuro"] .fx-cover-art{filter:saturate(.85) brightness(.86)}
+
+/* Pantalla de acceso: fondo, marca y divisores en tonos oscuros (antes quedaban claros) */
+html[data-modo="oscuro"] .authwrap{
+  background:radial-gradient(820px 460px at 8% -4%,color-mix(in srgb,var(--azul) 14%,transparent),transparent 62%),
+    radial-gradient(760px 440px at 100% 104%,rgba(149,104,198,.12),transparent 62%),#0C1320!important}
+html[data-modo="oscuro"] .auth-brand{border-bottom:1px solid var(--d-line)!important}
+html[data-modo="oscuro"] .auth-brand b{color:var(--label)!important}
+html[data-modo="oscuro"] .auth-brand small{color:var(--label-2)!important}
+html[data-modo="oscuro"] .authcard .auth-divider{background:linear-gradient(90deg,transparent,var(--d-line-2) 15%,var(--d-line-2) 85%,transparent)!important}
+html[data-modo="oscuro"] .authcard .auth-note,html[data-modo="oscuro"] .authcard .auth-switch,html[data-modo="oscuro"] .auth-or{color:var(--label-2)!important}
+html[data-modo="oscuro"] .auth-or::before,html[data-modo="oscuro"] .auth-or::after{background:var(--d-line)!important}
+html[data-modo="oscuro"] .auth-foot{color:var(--label-2)!important}
+html[data-modo="oscuro"] .authcard::before{background:linear-gradient(90deg,color-mix(in srgb,var(--azul) 85%,#000),#7E55B5)!important}
+
+/* ==========================================================================
+   C · FICHA DEL SISTEMA · estructura común (claro y oscuro)
+   El modo claro ya la define en la hoja 16; aquí se aplica igual al oscuro y se
+   refuerza para que cualquier sistema (nombre largo, sin portada…) se vea igual.
+   ========================================================================== */
+html[data-modo="oscuro"] .fx .fhead{
+  display:flex!important;flex-direction:row;align-items:center;gap:28px;position:relative;z-index:1;
+  margin-top:4px;padding:8px 4px 4px!important;border:0!important;border-radius:0!important;overflow:visible;isolation:auto;
+  background:none!important;box-shadow:none!important}
+html[data-modo="oscuro"] .fx .fhead-actions .get.big{min-width:132px;height:46px;min-height:46px;padding:0 28px;border-radius:999px!important}
+html[data-modo="oscuro"] .fx .fhead-actions .circ{width:46px;height:46px;flex:none;border-radius:50%}
+html[data-modo="oscuro"] .fx .fhead-actions .get.big[disabled]{background:#2B3850!important;color:#8895AD!important;border-color:transparent!important}
+/* Icono: anillo del color del fondo (en claro es blanco) */
+html[data-modo="oscuro"] .fx.has-cover .fhead .ico.s128,
+html[data-modo="oscuro"] .fx .fhead .ico.s128{box-shadow:0 14px 28px -14px rgba(0,0,0,.7),0 0 0 4px #0C1320!important}
+
+/* Franja de datos */
+html[data-modo="oscuro"] .fx .stats{
+  display:flex;gap:0;margin-top:22px;padding:6px 0;background:var(--d-surface)!important;border:1px solid var(--d-line);border-radius:20px;
+  box-shadow:var(--d-sombra);overflow:hidden}
+html[data-modo="oscuro"] .fx .stats .stat{
+  flex:1 1 0;min-width:0;padding:12px 18px;border-radius:0;background:none!important;border:0!important;box-shadow:none!important}
+html[data-modo="oscuro"] .fx .stats .stat+.stat{border-left:1px solid var(--d-line)!important}
+
+/* Encabezado superpuesto a la portada */
+html[data-modo="oscuro"] .fx.has-cover .fhead{margin-top:clamp(-90px,-7vw,-60px);align-items:flex-end;padding-top:0!important}
+
+/* Valores largos nunca rompen la franja de datos */
+.fx .stats .stat b{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fx .stats .stat b:has(.g){display:flex;justify-content:center;overflow:visible}
+.fx .stats .stat .s{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.fx .fhead h1{overflow-wrap:anywhere;hyphens:auto}
+
+/* ---------- Celular: MISMA estructura para todos los sistemas ---------- */
+@media (max-width:700px){
+  /* Portada: altura fija y curva suave */
+  .fx-cover{height:150px;border-radius:22px 22px 0 0;clip-path:ellipse(95% 100% at 50% 0)}
+
+  /* Encabezado en cuadrícula: icono | (nombre, subtítulo, etiquetas); botones debajo */
+  html .fx .fhead,
+  html[data-modo="oscuro"] .fx .fhead{
+    display:grid!important;grid-template-columns:88px minmax(0,1fr);column-gap:14px;row-gap:6px;align-items:start;
+    padding:6px 2px 0!important;margin-top:-44px}
+  html .fx .fhead .fhead-t{display:contents}
+  html .fx .fhead .ico.s128{--s:88px;grid-column:1;grid-row:1/4;align-self:start;box-shadow:0 12px 22px -12px rgba(0,30,90,.5),0 0 0 3px #fff!important}
+  html[data-modo="oscuro"] .fx .fhead .ico.s128{box-shadow:0 12px 22px -12px rgba(0,0,0,.7),0 0 0 3px #0C1320!important}
+  html .fx .fhead h1{grid-column:2;margin:0;align-self:end;font-size:23px;line-height:1.15;
+    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden}
+  html .fx .fhead .sub{grid-column:2;margin:0;font-size:14.5px;line-height:1.35;
+    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden}
+  html .fx .fhead .cats{grid-column:2;margin:0;font-size:13px;gap:6px 10px}
+  html .fx .fhead .fhead-t>:not(h1):not(.sub):not(.cats){grid-column:1/-1}
+  html .fx .fhead-actions{grid-column:1/-1;width:100%;margin-top:8px;gap:10px;flex-wrap:nowrap}
+  html .fx .fhead-actions .get-wrap{flex:1 1 auto;min-width:0}
+  html .fx .fhead-actions .get.big{width:100%}
+
+  /* Datos en tres columnas parejas */
+  html .fx .stats,
+  html[data-modo="oscuro"] .fx .stats{margin-top:16px;border-radius:18px}
+  html .fx .stats .stat,
+  html[data-modo="oscuro"] .fx .stats .stat{padding:10px 6px;text-align:center}
+  .fx .stats .stat b{font-size:18px}
+  .fx .stats .stat .l{font-size:10px;letter-spacing:.03em}
+  .fx .stats .stat .s{font-size:12px;line-height:1.25}
+
+  /* Tarjetas de la ficha: mismo ancho, radio y separación */
+  .fx .sec{border-radius:22px}
+  html[data-modo="oscuro"] .fx .sec.fx-about{padding:20px 16px 18px;border-radius:22px}
+  .fx .fx-body,.fx .fx-main,.fx .fx-side{min-width:0}
+
+  /* Etiquetas largas (categorías, "Parte de") se ajustan en vez de salirse */
+  .fx .tagcards{display:flex;flex-wrap:wrap;gap:8px}
+  .fx .tagcard{max-width:100%;white-space:normal;text-align:left;line-height:1.25}
+  .fx .kv .v,.fx .kv .k{min-width:0}
+  .fx .kv>.kv-acts .lr{white-space:normal}
+
+  /* El contenido nunca queda debajo de la barra inferior */
+  .app main,main{padding-bottom:max(96px,calc(84px + env(safe-area-inset-bottom)))}
+}
+
+/* Pantallas muy angostas (≤ 360 px) */
+@media (max-width:360px){
+  html .fx .fhead,html[data-modo="oscuro"] .fx .fhead{grid-template-columns:72px minmax(0,1fr);column-gap:12px}
+  html .fx .fhead .ico.s128{--s:72px}
+  html .fx .fhead h1{font-size:21px}
+}
+
+/* ==========================================================================
+   D · CORRECCIONES DE LA AUDITORÍA
+   ========================================================================== */
+
+/* D1 · Escritorio: la barra superior y las filas deslizables ("bleed") salían del área de contenido.
+   Usaban margen negativo = --gutter (40px), pero en escritorio <main> tiene 8px a la izquierda y
+   entre 16 y 36px a la derecha. Resultado: la barra se metía 32px bajo el menú lateral y se pasaba
+   de la pantalla por la derecha. Se alinean con el relleno real de <main>. */
+@media (min-width:901px){
+  :root{--main-pl:8px;--main-pr:clamp(16px,2.4vw,36px)}
+  .navbar{margin-left:calc(-1*var(--main-pl));margin-right:calc(-1*var(--main-pr));padding-left:var(--main-pl);padding-right:var(--main-pr)}
+  .bleed{margin-left:calc(-1*var(--main-pl));margin-right:calc(-1*var(--main-pr));padding-left:var(--main-pl);padding-right:var(--main-pr);scroll-padding-inline:var(--main-pl)}
+  .gallery.bleed,.fx .gal-wrap .gallery.bleed,.gal-wrap .gallery.bleed{margin-inline:0}
+  .ch-wrap .cv-next{right:0!important}
+  .ch-wrap .cv-prev{left:0!important}
+  .cv-wrap .cv-next{right:calc(-1*var(--main-pr) + 4px)}
+  .cv-wrap .cv-prev{left:-4px}
+}
+
+/* D2 · Zonas táctiles de al menos 44×44 px sin cambiar el aspecto (se amplía el área invisible) */
+@media (pointer:coarse){
+  .get.sm,.btn.sm,.chip,.hchip,.tagcard,.nlink,.row .get,.more,.foot a,.auth-links button,.fx-rel-h a,.rcard em{position:relative}
+  .get.sm::after,.btn.sm::after,.chip::after,.hchip::after,.nlink::after,.row .get::after,.foot a::after,.auth-links button::after,.fx-rel-h a::after{
+    content:"";position:absolute;left:-4px;right:-4px;top:50%;height:max(100%,44px);transform:translateY(-50%)}
+  .foot a,.fx-rel-h a,.auth-links button{display:inline-block;padding-block:8px}
+  .hp{min-width:28px}
+}

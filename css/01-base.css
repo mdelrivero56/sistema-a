@@ -402,7 +402,7 @@ input::placeholder,textarea::placeholder{color:var(--label-3)}
 .chk.bad{border:2px solid #d92a2a;border-radius:12px;padding:10px 12px}
 .field .err{color:#c0262d;font-size:13px}
 .err{color:var(--bad);font-size:13px;min-height:0}
-.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.campo-trampa{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .chk{display:flex;gap:10px;align-items:flex-start;font-size:15px;cursor:pointer}
 .chk input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--accent);flex:none}
 .selchips{display:flex;gap:10px;flex-wrap:wrap}

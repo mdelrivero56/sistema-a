@@ -635,7 +635,10 @@ function aplicarFormato(h) {
   return h;
 }
 const descEstilo = (s) => {
-  const px = TAM_BASE.includes(+s.descTam) ? +s.descTam : 16, c = /^#[0-9a-fA-F]{6}$/.test(s.descColor || "") ? s.descColor : "";
+  const px = TAM_BASE.includes(+s.descTam) ? +s.descTam : 16;
+  let c = /^#[0-9a-fA-F]{6}$/.test(s.descColor || "") ? s.descColor : "";
+  /* En modo oscuro, un color de texto demasiado oscuro dejaría la descripción ilegible: se usa el color normal del tema. */
+  if (c && document.documentElement.dataset.modo === "oscuro" && contraste(c, "#111B2D") < 3) c = "";
   return `font-size:${px}px;${c ? `color:${c};` : ""}`;
 };
 const MARCA_VINETA = /^\s*(?:[-•*–—▪◦●·]\s+|[>›»→▸►]+\s*)(.*)$/;
@@ -692,7 +695,7 @@ function fmtAplicar(f, v) {
   ta.value = txt; dr.s.descripcion = txt; dr.dirty = true;
   ta.focus(); ta.setSelectionRange(a, b);
   actualizarPrevDesc();
-  const sb = $(".savebar .muted"); if (sb) sb.textContent = "Tienes cambios sin guardar.";
+  const sb = $(".savebar .muted"); if (sb) { sb.textContent = "Tienes cambios sin guardar."; sb.parentElement.classList.add("dirty"); }
 }
 function actualizarPrevDesc() {
   const dr = draftActual(), p = $("#desc-prev"); if (!dr || !p) return;
@@ -772,7 +775,7 @@ function navbar({ mid = "", right = "", back = true } = {}) {
 function cabecera(titulo, sub = "", cuando = "") {
   return `<header class="pagehead"><div>${cuando ? `<div class="when">${esc(cuando)}</div>` : ""}<h1 class="large-title">${esc(titulo)}</h1>${sub ? `<p class="lede">${esc(sub)}</p>` : ""}</div>${S.admin ? `<a class="avatar on" href="#/admin" aria-label="Administración">${glifo("edit")}</a>` : S.user ? `<button class="avatar" data-act="mi-cuenta" aria-label="Mi cuenta">${esc(iniciales(S.user.nombre))}</button>` : ""}</header>`;
 }
-function vacio(titulo, texto, extra = "") { return `<div class="empty">${glifo("search")}<b>${esc(titulo)}</b><p>${esc(texto)}</p>${extra}</div>`; }
+function vacio(titulo, texto, extra = "") { return `<div class="empty">${glifo("search")}<b role="heading" aria-level="2">${esc(titulo)}</b><p>${esc(texto)}</p>${extra}</div>`; }
 const LOGO_MARCAS = {
   nodos: { n: "Nodos", d: '<g transform="translate(0 4.5)"><circle cx="32" cy="32" r="19" fill="none" stroke="#fff" stroke-width="1.6" opacity=".28"/><g stroke="#fff" stroke-width="2.8" stroke-linecap="round" opacity=".85"><path d="M32 32V13M32 32L48.5 41.5M32 32L15.5 41.5"/></g><circle cx="32" cy="32" r="9" fill="#fff"/><circle cx="32" cy="32" r="3.6" fill="#004EAA" opacity=".9"/><circle cx="32" cy="13" r="5" fill="#fff" opacity=".95"/><circle cx="15.5" cy="41.5" r="5" fill="#fff" opacity=".95"/><circle cx="48.5" cy="41.5" r="5.4" fill="#f2b632"/></g>' },
   facetas: { n: "Facetas", d: '<g transform="translate(32 32) rotate(45) scale(1.16) translate(-32 -32)"><rect x="18.5" y="18.5" width="12" height="12" rx="3.6" fill="#fff"/><rect x="33.5" y="18.5" width="12" height="12" rx="3.6" fill="#fff" opacity=".7"/><rect x="18.5" y="33.5" width="12" height="12" rx="3.6" fill="#fff" opacity=".5"/><rect x="33.5" y="33.5" width="12" height="12" rx="3.6" fill="#fff" opacity=".3"/></g>' },
@@ -791,8 +794,9 @@ function logoSvg(c) {
   const marca = m === "inicial" ? `<text x="32" y="43.5" text-anchor="middle" font-size="32" font-weight="700" fill="#fff" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif">${ini}</text>` : LOGO_MARCAS[m].d;
   return `<svg class="logo-svg" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${col[0]}"/><stop offset="1" stop-color="${col[1]}"/></linearGradient><radialGradient id="${id}h" cx=".25" cy=".15" r=".95"><stop offset="0" stop-color="#fff" stop-opacity=".34"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="64" height="64" rx="${f[1]}" fill="url(#${id})"/><rect width="64" height="64" rx="${f[1]}" fill="url(#${id}h)"/><rect x=".5" y=".5" width="63" height="63" rx="${f[1] - .5}" fill="none" stroke="#fff" stroke-opacity=".22"/>${marca}</svg>`;
 }
-const logoInner = (c) => imgOk(c.logo) ? `<img src="${esc(c.logo)}" alt="">` : logoSvg(c);
-const logoHtml = (c) => `<span class="ico s40${imgOk(c.logo) ? "" : " lg"}" style="${colorVars("azul")}">${logoInner(c)}</span>`;
+const LOGO_OFICIAL = "img/logo-gobhub.png";   // logotipo oficial (se usa si no se sube uno propio)
+const logoInner = (c) => `<img src="${imgOk(c.logo) ? esc(c.logo) : LOGO_OFICIAL}" alt="" width="256" height="256" decoding="async">`;
+const logoHtml = (c) => `<span class="ico s40" style="${colorVars("azul")}">${logoInner(c)}</span>`;
 
 const TIPOS = { sistema: "Sistema", portal: "Portal", web: "Sitio web", otro: "Otro" };
 const TIPOS_DESC = { sistema: "Aplicación institucional: requiere solicitar acceso.", portal: "Punto de acceso a información, trámites o servicios en internet.", web: "Página informativa en internet: se consulta abriendo el enlace.", otro: "Otro tipo de recurso digital." };
@@ -1397,7 +1401,7 @@ function vAuth() {
       ${visitante}
       <div class="auth-links"><button type="button" data-act="auth-ir" data-v="recuperar">¿Olvidaste tu contraseña?</button><button type="button" data-act="auth-ir" data-v="registro">Registrarse</button></div>${ayudaRoles}`;
   }
-  return `<div class="authwrap"><div class="authcard"><div class="auth-brand"><span class="auth-logo${imgOk(c.logo) ? "" : " lg"}">${logo}</span><div><b>${esc(c.nombre)}</b><small>${esc(c.organizacion)}</small></div></div>${forzar ? "" : v === "super" || v === "codigo" ? authTabs("super") : !["registro", "recuperar", "enviado"].includes(v) ? authTabs("usuario") : ""}<h1>${t}</h1><p class="lede">${sub}</p>${body}</div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
+  return `<div class="authwrap"><div class="authcard"><div class="auth-brand"><span class="auth-logo">${logo}</span><div><b>${esc(c.nombre)}</b><small>${esc(c.organizacion)}</small></div></div>${forzar ? "" : v === "super" || v === "codigo" ? authTabs("super") : !["registro", "recuperar", "enviado"].includes(v) ? authTabs("usuario") : ""}<h1>${t}</h1><p class="lede">${sub}</p>${body}</div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
 }
 
 /* ---- Mi cuenta ---- */
@@ -1577,6 +1581,9 @@ async function cambiarRolUsuario(t) {
   if (SB_ON) { const r = await sbPerfilUpd(u.id, { rol: nuevo }); if (!r.ok) { toast(r.msg); return vuelve(); } u.rol = nuevo; toast(`Ahora es ${ROLES[nuevo].toLowerCase()}`); return vuelve(); }
   u.rol = nuevo; guardarCatalogo(); toast(`Ahora es ${ROLES[nuevo].toLowerCase()}`); vuelve();
 }
+const luminancia = (hex) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; const [r, g, b] = [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)); return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+const contraste = (a, b) => { const x = luminancia(a), y = luminancia(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+function contrasteMin(hex, fondo, min) { let h = hex; for (let i = 0; i < 12 && contraste(h, fondo) < min; i++) h = mezclar(h, "#ffffff", 0.05); return h; }
 const mezclar = (hex, con, p) => { const a = [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)), b = [1, 3, 5].map((k) => parseInt(con.slice(k, k + 2), 16)); return "#" + a.map((v, k) => Math.round(v * (1 - p) + b[k] * p).toString(16).padStart(2, "0")).join(""); };
 function aplicarApariencia(c) {
   c = c || cfg();
@@ -1592,7 +1599,9 @@ function aplicarApariencia(c) {
   const col = COLORES[c.acento];
   if (col || oscuro) {
     /* Siempre dentro de la paleta: azul #004EAA y lila #9568C6 (y sus tonos). En modo oscuro se usa el tono claro de cada color. */
-    const hex = oscuro ? (col || COLORES.azul)[0] : col[1], fondo = "#0E1626";
+    const fondo = "#111B2D";
+    /* En oscuro el acento se aclara solo lo necesario para que el texto tenga contraste suficiente (≥ 4.6:1) sobre las tarjetas, sin pasarse de brillo. */
+    const hex = oscuro ? contrasteMin((col || COLORES.azul)[0], fondo, 4.6) : col[1];
     st.setProperty("--azul", hex);
     st.setProperty("--azul-hover", oscuro ? mezclar(hex, "#ffffff", 0.18) : mezclar(hex, "#000000", 0.2));
     st.setProperty("--azul-suave", oscuro ? mezclar(hex, fondo, 0.84) : mezclar(hex, "#ffffff", 0.91));
@@ -1665,7 +1674,9 @@ function render(nav) {
   rutaPrev = [a || "", b || ""];
   centrarPestanas();
   if (!nav && Date.now() - (window.__tapT || 0) < 600) softBlink();
-  document.title = (S.qa ? "[PRUEBAS] " : "") + (a === "sistema" && byId(b) ? byId(b).nombre + " · " : "") + cfg().nombre;
+  const TITULOS = { sistemas: "Sistemas", categorias: "Categorías", buscar: "Buscar", solicitar: "Solicitar sistema", gracias: "Solicitud registrada", solicitudes: S.super ? "Solicitudes" : "Mis solicitudes", avisos: "Avisos", ayuda: "Cómo solicitar", contacto: "Contacto y directorio", admin: "Administración" };
+  const parte = a === "sistema" ? (byId(b) ? byId(b).nombre : "Página no encontrada") : a === "categoria" ? (catById(b) ? catById(b).nombre : "Página no encontrada") : a === "uso" ? (b || "") : TITULOS[a] || "";
+  document.title = (S.qa ? "[PRUEBAS] " : "") + (parte ? parte + " · " : "") + cfg().nombre;
 }
 
 function renderChrome(a) {
@@ -1688,7 +1699,7 @@ function renderChrome(a) {
     + (S.admin ? `<a class="sidenav-a" href="#/admin" ${cur("admin")} style="display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:9px;color:var(--label);font-size:15px;${act === "admin" ? "background:var(--sel);font-weight:600" : ""}"><span style="color:var(--accent);display:flex">${glifo("ajustes")}</span>Administración</a>` : "")
     + (S.user ? `<button class="sidenav-a" data-act="mi-cuenta" style="display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:9px;color:var(--label-2);font-size:14.5px"><span style="display:flex">${glifo("user")}</span>Mi cuenta</button>` : "");
   const tabs = [["", "hoy", "Descubrir"], ["sistemas", "capas", "Sistemas"], ["categorias", "grid", "Categorías"], ["solicitudes", "send", "Solicitudes"], ["buscar", "search", "Buscar"]];
-  $("#tabbar").innerHTML = `<a class="rail-brand${imgOk(c.logo) ? "" : " lg"}" href="#/" aria-label="Inicio · ${esc(c.nombre)}">${logoInner(c)}</a>`
+  $("#tabbar").innerHTML = `<a class="rail-brand" href="#/" aria-label="Inicio · ${esc(c.nombre)}">${logoInner(c)}</a>`
     + tabs.map(([k, g, t]) => `<a href="#/${k}" ${act === k ? 'aria-current="page"' : ""}>${glifo(g)}<span>${t}</span></a>`).join("")
     + (S.user ? `<button class="rail-admin ${S.admin ? "on" : ""}" data-act="mi-cuenta" aria-label="Mi cuenta">${glifo("user")}<span>Cuenta</span></button>` : "");
   actualizarCampana();
@@ -1763,7 +1774,7 @@ function heroSlide(s, i) {
   return `<article class="hero-slide${i === 0 ? " on" : ""}" data-i="${i}" style="${colorVars(s.icono.color)}" ${i === 0 ? "" : 'aria-hidden="true"'} aria-roledescription="diapositiva" aria-label="${i + 1} de {N}">
     <div class="hero-copy">
       <p class="hero-eyebrow"><span class="t-${tipoDe(s)}">${etqChip(s)}</span>${k ? `<em>${esc(k.nombre)}</em>` : ""}</p>
-      <h1 class="hero-title">${esc(s.nombre)}</h1>
+      <h2 class="hero-title">${esc(s.nombre)}</h2>
       ${s.subtitulo ? `<p class="hero-sub">${esc(s.subtitulo)}</p>` : ""}
       ${desc ? `<p class="hero-desc">${esc(desc)}</p>` : ""}
       <div class="hero-actions"><a class="hero-cta" href="#/sistema/${enc(s.id)}" ${i === 0 ? "" : 'tabindex="-1"'}>Conocer el sistema <span class="cta-dot">${glifo("chev")}</span></a>${btnGet(s, "hero-get")}</div>
@@ -1780,7 +1791,7 @@ function vHero(feats, cats, cuando) {
   const cuenta = S.admin ? `<a class="avatar on" href="#/admin" aria-label="Administración">${glifo("edit")}</a>` : S.user ? `<button class="avatar" data-act="mi-cuenta" aria-label="Mi cuenta">${esc(iniciales(S.user.nombre))}</button>` : "";
   const chipsHtml = (cl) => cats.length ? `<div class="${cl}" role="list" aria-label="Categorías">${cats.map((k) => `<a role="listitem" class="hchip" href="#/categoria/${enc(k.id)}" style="${colorVars(k.color)}"><span class="cdot${catCls(k)}">${catInner(k)}</span>${esc(k.nombre)}</a>`).join("")}</div>` : "";
   const barraMovil = `<div class="disc-bar-m"><div class="disc-row"><a class="disc-search" href="#/buscar">${glifo("search")}<span>Buscar sistemas</span></a>${cuenta}</div>${chipsHtml("disc-chips")}</div>`;
-  return `${barraMovil}<section class="hero" id="hero" aria-roledescription="carrusel" aria-label="Sistemas destacados">
+  return `<h1 class="sr">${esc(cfg().nombre)} · Catálogo de sistemas digitales</h1>${barraMovil}<section class="hero" id="hero" aria-roledescription="carrusel" aria-label="Sistemas destacados">
     ${chipsHtml("hero-chips")}
     <div class="hero-top"><a class="hero-search" href="#/buscar">${glifo("search")}<span>Buscar sistemas</span></a><span class="hero-date">${esc(cuando)}</span>${cuenta}</div>
     <div class="hero-stage" aria-live="off">${feats.map((s, i) => heroSlide(s, i).replace("{N}", n)).join("")}</div>
@@ -1804,7 +1815,9 @@ function iniciarHero() {
   };
   let pausado = false;
   const ir = (k) => {
+    const ant = slides.findIndex((x) => x.classList.contains("on"));
     i = (k + slides.length) % slides.length;
+    if (ant >= 0 && ant !== i) { const sa = slides[ant]; sa.classList.add("out"); setTimeout(() => sa.classList.remove("out"), 600); }
     slides.forEach((s, j) => { const on = j === i; s.classList.toggle("on", on); if (on) s.removeAttribute("aria-hidden"); else s.setAttribute("aria-hidden", "true"); const a = $(".hero-cta", s); if (a) a.tabIndex = on ? 0 : -1; });
     bars.forEach((b, j) => { b.classList.toggle("on", j === i); b.classList.remove("run"); });
     h.classList.remove("hrun");
@@ -1964,8 +1977,10 @@ function puntajeToken(t, idx) {
   for (const f of idx) {
     let v = 0;
     if (f.pal.includes(rt)) v = 1;
-    else if (rt.length >= 2 && (f.pal.some((w) => w.startsWith(rt)) || (rt.length >= 3 && f.txt.includes(t)))) v = 0.75;
-    else if (sin && sin.some((w) => f.pal.includes(raiz(w)) || f.pal.some((x) => x.startsWith(raiz(w))))) v = 0.55;
+    /* Coincidencia por inicio de palabra; dentro de una palabra solo si el término es largo (así «stem» ya no coincide con «si-stem-a»). */
+    else if (rt.length >= 2 && (f.pal.some((w) => w.startsWith(rt)) || (rt.length >= 6 && f.txt.includes(t)))) v = 0.75;
+    /* Los sinónimos solo cuentan en nombre, resumen, categorías y datos clave; no en descripciones largas. */
+    else if (sin && f.peso >= 3 && sin.some((w) => f.pal.includes(raiz(w)) || f.pal.some((x) => x.startsWith(raiz(w))))) v = 0.55;
     else if (rt.length >= 4) { const m = rt.length >= 8 ? 2 : 1; if (f.pal.some((w) => w.length >= 3 && distMax(rt, w, m) <= m)) v = 0.45; }
     mejor = Math.max(mejor, v * f.peso);
   }
@@ -1981,7 +1996,9 @@ function buscar(q) {
     if (tk.length > 1 && idx[0].txt.includes(frase)) p += 8;
     return { s, n, p };
   }).filter((o) => o.n > 0);
-  const completos = filas.filter((o) => o.n === tk.length).sort((a, b) => b.p - a.p);
+  let completos = filas.filter((o) => o.n === tk.length).sort((a, b) => b.p - a.p);
+  /* Se descartan los resultados muy por debajo del mejor (coincidencias casuales en textos largos). */
+  if (completos.length > 1) { const mejor = completos[0].p; if (mejor >= 5) completos = completos.filter((o) => o.p >= mejor * 0.3); }
   const parciales = tk.length > 1 ? filas.filter((o) => o.n < tk.length).sort((a, b) => b.n - a.n || b.p - a.p) : [];
   return [...completos, ...parciales].map((o) => o.s);
 }
@@ -2005,7 +2022,7 @@ function vBuscar() {
 function pintarBusqueda() { const r = $("#res"); if (r) r.innerHTML = htmlBusqueda(); }
 
 function vNoEncontrado() {
-  return `${navbar()}${vacio("No encontramos esta página", "Es posible que el sistema ya no esté publicado o que el enlace sea incorrecto.", `<a class="btn" href="#/sistemas">Ver todos los sistemas</a>`)}`;
+  return `${navbar()}<h1 class="sr">Página no encontrada</h1>${vacio("No encontramos esta página", "Es posible que el sistema ya no esté publicado o que el enlace sea incorrecto.", `<a class="btn" href="#/sistemas">Ver todos los sistemas</a>`)}`;
 }
 
 /* ---------- Ficha del sistema ---------- */
@@ -2023,7 +2040,9 @@ function dataToBlob(d) {
   const m = /^data:([^;,]*)(;base64)?,([\s\S]*)$/.exec(d || ""); if (!m) return null;
   const bin = m[2] ? atob(m[3]) : decodeURIComponent(m[3]);
   const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
-  return new Blob([u], { type: m[1] || "application/octet-stream" });
+  /* Seguridad: nunca abrir como documento activo (HTML/SVG/XML/JS) en el mismo origen: se fuerza descarga neutra. */
+  const tipo = (m[1] || "").toLowerCase(); const peligroso = !tipo || /html|xml|javascript|ecmascript|svg|x-sh|wasm/.test(tipo);
+  return new Blob([u], { type: peligroso ? "application/octet-stream" : tipo });
 }
 const hostDe = (u) => { try { return new URL(u).host.replace(/^www\./, ""); } catch (e) { return u; } };
 
@@ -2073,7 +2092,7 @@ function vFicha(id) {
       <div class="cats">${tipoTag(s)}${cats.map((c) => `<a href="#/categoria/${enc(c.id)}">${esc(c.nombre)}</a>`).join("")}</div>
       ${!s.publicado ? `<div><span class="badge warn">No publicado · solo lo ves tú</span></div>` : ""}
       <div class="fhead-actions" id="mainget">${btnGet(s, "big")}<button class="circ" data-act="compartir" data-id="${esc(s.id)}" aria-label="Copiar enlace del sistema" style="color:var(--accent)">${glifo("share")}</button></div>
-      ${S.admin ? `<div class="manage" role="group" aria-label="Gestionar este sistema"><button type="button" class="mbtn" data-act="gestionar" data-modo="info" data-id="${esc(s.id)}">${glifo("edit")}Editar información</button><button type="button" class="mbtn" data-act="gestionar" data-modo="imagen" data-id="${esc(s.id)}">${glifo("img")}Cambiar imagen</button><button type="button" class="mbtn" data-act="ren-sis" data-id="${esc(s.id)}">${glifo("edit")}Cambiar nombre</button><button type="button" class="mbtn" data-act="del-sistema" data-id="${esc(s.id)}">${glifo("trash")}Eliminar</button></div>${prim ? "" : `<div class="note warn" style="margin-top:12px">${glifo("warn")}<div>Este sistema aún no tiene enlace para «Abrir sistema». <a href="#/admin/editar/${enc(s.id)}">Agregar el enlace</a></div></div>`}` : ""}
+      ${S.admin ? `<div class="manage" role="group" aria-label="Gestionar este sistema"><span class="manage-t">${glifo("unlock")}Administrar</span><button type="button" class="mbtn mb-main" data-act="gestionar" data-modo="info" data-id="${esc(s.id)}">${glifo("edit")}Editar información</button><button type="button" class="mbtn" data-act="gestionar" data-modo="imagen" data-id="${esc(s.id)}">${glifo("img")}Cambiar imagen</button><button type="button" class="mbtn" data-act="ren-sis" data-id="${esc(s.id)}">${glifo("edit")}Cambiar nombre</button><button type="button" class="mbtn mb-del" data-act="del-sistema" data-id="${esc(s.id)}">${glifo("trash")}Eliminar</button></div>${prim ? "" : `<div class="note warn" style="margin-top:12px">${glifo("warn")}<div>Este sistema aún no tiene enlace para «Abrir sistema». <a href="#/admin/editar/${enc(s.id)}">Agregar el enlace</a></div></div>`}` : ""}
     </div></section>
   <section class="stats" aria-label="Datos del sistema">
     <div class="stat"><span class="l">${plural(n, "Dependencia", "Dependencias")}</span><b>${n}</b><span class="s">${n ? plural(n, "lo utiliza", "lo utilizan") : "aún sin registro"}</span></div>
@@ -2208,7 +2227,7 @@ function vSolicitar(id) {
           <div class="field full ${e.mensaje ? "bad" : ""}"><label for="f-mensaje">¿Qué necesitas? <span class="req" aria-hidden="true">*</span></label><textarea id="f-mensaje" data-form="mensaje" placeholder="Describe brevemente el evento, la reunión o el proceso donde lo usarías.">${esc(v.mensaje || "")}</textarea>${e.mensaje ? `<span class="err" role="alert">${esc(e.mensaje)}</span>` : ""}</div>
         </div></section>
       ${sug.length ? `<section class="grp"><h2>Te podría interesar también</h2><p class="hint">Sistemas relacionados con lo que elegiste. Agrégalos si los necesitas.</p><div class="card"><ul class="sugg">${sug.map(({ x, s }) => `<li>${icono(x, "s40")}<div class="t"><b>${esc(x.nombre)}</b><small>${esc(motivo(s, x))}</small></div><button type="button" class="get sm" data-act="add-sel" data-id="${esc(x.id)}">Agregar</button></li>`).join("")}</ul></div></section>` : ""}
-      <div class="hp" aria-hidden="true"><label for="f-web">No llenar este campo</label><input id="f-web" type="text" tabindex="-1" autocomplete="off" data-form="web"></div>
+      <div class="campo-trampa" aria-hidden="true"><label for="f-web">No llenar este campo</label><input id="f-web" type="text" tabindex="-1" autocomplete="off" data-form="web"></div>
       <button class="get big" type="submit" id="btn-enviar" style="padding:14px 34px;font-size:17px">Enviar solicitud</button>
     </div>
     <aside class="sticky-side">
@@ -2633,9 +2652,15 @@ function vAdminBase(sub, id) {
   if (tab === "qa") return cab + vAdminQA();
   if (tab === "config") return cab + vAdminConfig(id);
   const l = S.cat.sistemas;
-  return cab + `<div class="admbar" style="margin-top:0"><span class="muted">${l.length} ${plural(l.length, "sistema", "sistemas")} · ${l.filter((s) => s.publicado).length} publicados</span><a class="btn" href="#/admin/editar/nuevo">${glifo("plus")}Agregar sistema</a></div>
-    ${l.length ? `<div class="list-card">${l.map((s, i) => `<div class="arow">${icono(s, "s40")}<div class="t"><b>${esc(s.nombre || "Sin nombre")}</b><small><span class="badge ${s.estado === "Disponible" ? "ok" : s.estado === "Requiere validación" ? "warn" : ""}">${esc(s.estado)}</span>${s.publicado ? '<span class="badge acc">Publicado</span>' : '<span class="badge warn">Oculto</span>'}${s.destacado ? '<span class="badge">Destacado</span>' : ""}${s.ejemplo ? '<span class="badge">Ejemplo</span>' : ""}</small></div>
-      <div class="acts"><div class="acts-main"><a class="btn sm" href="#/admin/editar/${enc(s.id)}">${glifo("edit")}Editar</a><button class="btn sm sec" data-act="ren-sis" data-id="${esc(s.id)}">Renombrar</button><button class="btn sm ghost" data-act="toggle-pub" data-id="${esc(s.id)}">${s.publicado ? "Ocultar" : "Publicar"}</button></div><div class="acts-icons"><a class="iconbtn" href="#/sistema/${enc(s.id)}" aria-label="Ver ${esc(s.nombre)}">${glifo("eye")}</a><button class="iconbtn" data-act="mover" data-id="${esc(s.id)}" data-d="-1" ${i === 0 ? "disabled" : ""} aria-label="Subir">${glifo("up")}</button><button class="iconbtn" data-act="mover" data-id="${esc(s.id)}" data-d="1" ${i === l.length - 1 ? "disabled" : ""} aria-label="Bajar">${glifo("down")}</button><button class="iconbtn" data-act="duplicar" data-id="${esc(s.id)}" aria-label="Duplicar ${esc(s.nombre)}">${glifo("copy")}</button><button class="iconbtn bad" data-act="del-sistema" data-id="${esc(s.id)}" aria-label="Eliminar ${esc(s.nombre)}">${glifo("trash")}</button></div></div></div>`).join("")}</div>` : vacio("Aún no hay sistemas", "Agrega el primero para que aparezca en el catálogo.", `<a class="btn" href="#/admin/editar/nuevo">${glifo("plus")}Agregar sistema</a>`)}`;
+  const nPub = l.filter((s) => s.publicado).length;
+  return cab + `<div class="admbar" style="margin-top:0"><span class="ac-count"><b>${l.length}</b> ${plural(l.length, "sistema", "sistemas")}<i class="on">${nPub} ${plural(nPub, "publicado", "publicados")}</i>${l.length - nPub ? `<i class="off">${l.length - nPub} ${plural(l.length - nPub, "oculto", "ocultos")}</i>` : ""}</span><a class="btn" href="#/admin/editar/nuevo">${glifo("plus")}Agregar sistema</a></div>
+    ${l.length ? `<div class="ac-list">${l.map((s, i) => {
+      const cn = s.categorias.map((c) => (catById(c) || {}).nombre).filter(Boolean).join(", ") || "Sin categoría", id = esc(s.id), nm = esc(s.nombre);
+      return `<article class="acard${s.publicado ? "" : " is-off"}"><span class="ac-n" aria-hidden="true" title="Posición en el catálogo">${i + 1}</span>${icono(s, "s48")}
+      <div class="ac-t"><b>${esc(s.nombre || "Sin nombre")}</b><span class="ac-sub">${esc(tipoNom(s))} · ${esc(cn)}</span>
+        <div class="ac-badges"><span class="badge ${s.publicado ? "ok" : "warn"}">${s.publicado ? "Publicado" : "Oculto"}</span><span class="badge ${s.estado === "Disponible" ? "acc" : s.estado === "Requiere validación" ? "warn" : ""}">${esc(s.estado)}</span>${s.destacado ? '<span class="badge acc">Destacado</span>' : ""}${s.ejemplo ? '<span class="badge">Ejemplo</span>' : ""}</div></div>
+      <div class="ac-acts"><div class="ac-main"><a class="btn sm" href="#/admin/editar/${enc(s.id)}">${glifo("edit")}Editar</a><a class="btn sm sec" href="#/sistema/${enc(s.id)}">${glifo("eye")}Ver</a><button class="btn sm ghost ${s.publicado ? "is-hide" : "is-pub"}" data-act="toggle-pub" data-id="${id}">${glifo(s.publicado ? "eye" : "ok")}${s.publicado ? "Ocultar" : "Publicar"}</button></div>
+        <div class="ac-tools" role="group" aria-label="Más acciones de ${nm}"><button class="iconbtn" data-act="mover" data-id="${id}" data-d="-1" ${i === 0 ? "disabled" : ""} aria-label="Subir" title="Subir">${glifo("up")}</button><button class="iconbtn" data-act="mover" data-id="${id}" data-d="1" ${i === l.length - 1 ? "disabled" : ""} aria-label="Bajar" title="Bajar">${glifo("down")}</button><button class="iconbtn" data-act="ren-sis" data-id="${id}" aria-label="Renombrar ${nm}" title="Renombrar">${glifo("edit")}</button><button class="iconbtn" data-act="duplicar" data-id="${id}" aria-label="Duplicar ${nm}" title="Duplicar">${glifo("copy")}</button><button class="iconbtn bad" data-act="del-sistema" data-id="${id}" aria-label="Eliminar ${nm}" title="Eliminar">${glifo("trash")}</button></div></div></article>`; }).join("")}</div>` : vacio("Aún no hay sistemas", "Agrega el primero para que aparezca en el catálogo.", `<a class="btn" href="#/admin/editar/nuevo">${glifo("plus")}Agregar sistema</a>`)}`;
 }
 
 function vAdminCategorias() {
@@ -2701,13 +2726,10 @@ function vAdminConfig(sec) {
       ${f("nombre", "Nombre del catálogo")}${f("organizacion", "Organización o área responsable")}
       ${f("telefono", "Teléfono de contacto", { ph: "Opcional" })}${f("horario", "Horario de atención", { ph: "Lunes a viernes, 9:00 a 17:00" })}
       <div class="field full"><span class="lbl">Logotipo</span><div class="logo-ed">
-        <div class="logo-prev" aria-label="Vista previa del logotipo">${imgOk(c.logo) ? `<span class="ico s96" style="${colorVars("azul")};--s:96px"><img src="${esc(c.logo)}" alt=""></span>` : logoSvg(c)}</div>
+        <div class="logo-prev" aria-label="Vista previa del logotipo"><span class="ico s96" style="${colorVars("azul")};--s:96px">${logoInner(c)}</span></div>
         <div>
-          <div class="logo-grp"><span class="muted" style="font-size:13px">Símbolo</span><div class="logo-opts" role="group" aria-label="Símbolo">${Object.keys(LOGO_MARCAS).map((k) => `<button type="button" data-act="logo-marca" data-v="${k}" aria-pressed="${!imgOk(c.logo) && (c.logoMarca || "facetas") === k}" aria-label="${LOGO_MARCAS[k].n}" title="${LOGO_MARCAS[k].n}">${logoSvg(Object.assign({}, c, { logoMarca: k }))}</button>`).join("")}</div></div>
-          <div class="logo-grp"><span class="muted" style="font-size:13px">Color</span><div class="swatches" role="group" aria-label="Color del logotipo">${COLORES_UI.map((k) => `<button type="button" data-act="logo-color" data-c="${k}" style="${colorVars(k)}" aria-pressed="${!imgOk(c.logo) && colorUI(c.logoColor || "azul") === k}" aria-label="${k}"></button>`).join("")}</div></div>
-          <div class="logo-grp"><span class="muted" style="font-size:13px">Forma</span><div class="logo-opts" role="group" aria-label="Forma">${Object.keys(LOGO_FORMAS).map((k) => `<button type="button" class="txt" data-act="logo-forma" data-v="${k}" aria-pressed="${!imgOk(c.logo) && (c.logoForma || "squircle") === k}">${LOGO_FORMAS[k][0]}</button>`).join("")}</div></div>
-          <div class="up" style="margin-top:6px"><input type="file" id="up-logo" accept="image/*" data-up="logo"><label class="btn sec sm" for="up-logo">${glifo("upload")}Añadir mi propio logotipo</label>${imgOk(c.logo) ? `<button class="btn ghost sm" data-act="quitar-logo">Volver al diseño</button>` : ""}</div>
-          <p class="cfg-note">Elige símbolo, color y forma, o sube tu propia imagen. Presiona «Guardar configuración» para aplicarlo.</p>
+          <div class="up" style="margin-top:6px"><input type="file" id="up-logo" accept="image/*" data-up="logo"><label class="btn sec sm" for="up-logo">${glifo("upload")}Subir otro logotipo</label>${imgOk(c.logo) ? `<button class="btn ghost sm" data-act="quitar-logo">Volver al logotipo oficial</button>` : ""}</div>
+          <p class="cfg-note">Se usa el logotipo oficial de GobHub. Si lo prefieres, sube tu propia imagen cuadrada (PNG) y presiona «Guardar configuración».</p>
         </div></div></div>
     </div></div></section>` + savebar;
   } else if (sec === "solicitudes") {
@@ -2778,14 +2800,27 @@ function vEditor(id) {
   const mini = (path, i, n) => `<div class="line" style="justify-content:flex-end;gap:2px"><button type="button" class="iconbtn" data-act="e-mover" data-path="${path}" data-i="${i}" data-d="-1" ${i === 0 ? "disabled" : ""} aria-label="Subir">${glifo("up")}</button><button type="button" class="iconbtn" data-act="e-mover" data-path="${path}" data-i="${i}" data-d="1" ${i === n - 1 ? "disabled" : ""} aria-label="Bajar">${glifo("down")}</button><button type="button" class="iconbtn bad" data-act="e-del" data-path="${path}" data-i="${i}" aria-label="Quitar">${glifo("trash")}</button></div>`;
   const lista = (path, render, add) => `${s[path].map((it, i) => `<div class="ed-item">${render(it, i)}${mini(path, i, s[path].length)}</div>`).join("")}<button type="button" class="btn sec sm" data-act="e-add" data-path="${path}">${glifo("plus")}${add}</button>`;
   const field = (p, label, val, o = {}) => `<div class="field ${o.cls || ""}"><label for="e-${p}">${label}</label><input id="e-${p}" type="${o.tipo || "text"}" data-path="${p}" value="${esc(val ?? "")}" placeholder="${esc(o.ph || "")}" autocomplete="off"></div>`;
-  const grp = (t, h, body) => `<section class="grp"><h2>${t}</h2>${h ? `<p class="hint">${h}</p>` : ""}<div class="card">${body}</div></section>`;
+  const SEC_ED = [["Identidad", "Identidad"], ["Clasificación y estado", "Clasificación"], ["Descripción", "Descripción"], ["Capturas de pantalla", "Capturas"], ["Manual de uso", "Manual"], ["Requisitos", "Requisitos"], ["Ficha técnica", "Ficha técnica"], ["Dependencias que lo usan", "Dependencias"], ["Novedades por versión", "Novedades"], ["Enlaces", "Enlaces"], ["Responsable y contacto", "Contacto"]];
+  const CNT_ED = { "Capturas de pantalla": s.capturas.length, "Manual de uso": s.pasos.length, "Requisitos": s.requisitos.length, "Ficha técnica": s.tecnica.length, "Dependencias que lo usan": s.dependencias.length, "Novedades por versión": s.novedades.length, "Enlaces": s.enlaces.length };
+  const grp = (t, h, body) => { const n = Math.max(0, SEC_ED.findIndex((x) => x[0] === t)), c = CNT_ED[t]; return `<section class="grp" id="ed-s${n}" data-ed="${n}"><header class="grp-h"><span class="grp-n" aria-hidden="true">${n + 1}</span><div class="grp-t"><h2>${t}</h2>${h ? `<p class="hint">${h}</p>` : ""}</div>${c === undefined ? "" : `<span class="grp-c${c ? "" : " vacio"}">${c ? c + " " + plural(c, "elemento", "elementos") : "Vacío"}</span>`}</header><div class="card">${body}</div></section>`; };
+  post = () => {
+    const nav = document.querySelector(".ed-nav"), bs = nav ? [...nav.querySelectorAll("button")] : [], secs = [...document.querySelectorAll(".grp[data-ed]")];
+    if (!bs.length || !("IntersectionObserver" in window)) return;
+    io = new IntersectionObserver((es) => es.forEach((e) => {
+      if (!e.isIntersecting) return;
+      const i = +e.target.dataset.ed;
+      bs.forEach((b, k) => { if (k === i) { b.setAttribute("aria-current", "true"); nav.scrollTo({ left: b.offsetLeft - nav.clientWidth / 2 + b.clientWidth / 2, behavior: "smooth" }); } else b.removeAttribute("aria-current"); });
+    }), { rootMargin: "-28% 0px -62% 0px" });
+    secs.forEach((x) => io.observe(x));
+  };
   const optSel = (arr, cur) => arr.map((o) => `<option ${o === cur ? "selected" : ""}>${esc(o)}</option>`).join("");
   const sinUsar = USOS_SUGERIDOS.filter((u) => !s.usos.includes(u));
 
-  return `${navbar({ right: `<span class="badge ${dr.nuevo ? "acc" : ""}">${dr.nuevo ? "Nuevo sistema" : "Editando"}</span>` })}
+  return `${navbar({ right: `<span class="badge ${dr.nuevo ? "acc" : ""}">${dr.nuevo ? "Nuevo sistema" : "Editando"}</span>${dr.nuevo ? "" : `<a class="btn sm sec" href="#/sistema/${enc(s.id)}">${glifo("eye")}Ver ficha</a>`}` })}
   <header class="pagehead" style="padding-top:8px"><div><h1 class="large-title">${dr.nuevo ? "Nuevo sistema" : esc(s.nombre || "Editar sistema")}</h1><p class="lede">Lo que escribas aquí se muestra en la ficha del sistema.</p></div></header>
   ${dr.aviso ? `<div class="note info" style="margin-top:14px">${glifo("info")}<div>Recuperamos cambios que no habías guardado. <button class="btn ghost sm" data-act="e-descartar">Descartarlos</button></div></div>` : ""}
-  <div style="margin-top:22px">
+  <nav class="ed-nav" aria-label="Secciones del editor">${SEC_ED.map(([t, c], i) => `<button type="button" data-act="e-ir" data-to="ed-s${i}"><i>${i + 1}</i>${c}</button>`).join("")}</nav>
+  <div class="ed-wrap">
   ${grp("Identidad", "El nombre y el icono son lo primero que ven las dependencias.", `<div class="fields">
       ${inp("nombre", "Nombre del sistema", { req: true, full: true, ph: "Ej. Sistema de Votación" })}
       ${inp("subtitulo", "Frase corta", { full: true, ph: "Ej. Cuenta quién votó en tus reuniones y eventos", hint: "Aparece bajo el nombre del sistema en el catálogo." })}
@@ -2794,14 +2829,16 @@ function vEditor(id) {
           <div style="display:grid;gap:8px"><div class="up"><input type="file" id="up-icono" accept="image/*" data-up="icono"><label class="btn sec sm" for="up-icono">${glifo("upload")}Subir imagen</label>${imgOk(s.icono.imagen) ? `<button type="button" class="btn ghost sm" data-act="e-quitar-icono">Quitar imagen</button>` : ""}</div><span class="muted" style="font-size:12.5px">O elige un símbolo y un color. Mejor una imagen cuadrada.</span></div></div>
         <div class="glyphs" role="group" aria-label="Símbolo">${GLIFOS.map((g) => `<button type="button" data-act="e-glifo" data-g="${g}" aria-pressed="${s.icono.glifo === g}" aria-label="${g}">${glifo(g)}</button>`).join("")}</div>
         <div class="swatches" style="margin-top:12px" role="group" aria-label="Color">${COLORES_UI.map((c) => `<button type="button" data-act="e-color" data-c="${c}" style="${colorVars(c)}" aria-pressed="${colorUI(s.icono.color) === c}" aria-label="${c}"></button>`).join("")}</div></div>
-      <div class="field full"><span class="lbl">Imagen de portada (opcional)</span><div class="up">${imgOk(s.portada) ? `<img src="${esc(s.portada)}" alt="" style="width:160px;border-radius:12px;aspect-ratio:16/11;object-fit:cover">` : ""}<input type="file" id="up-portada" accept="image/*" data-up="portada"><label class="btn sec sm" for="up-portada">${glifo("upload")}Subir portada</label>${imgOk(s.portada) ? `<button type="button" class="btn ghost sm" data-act="e-quitar-portada">Quitar</button>` : ""}<span class="muted" style="font-size:12.5px">Se usa en la tarjeta grande de la portada.</span></div></div>
+      <div class="field full"><span class="lbl">Imagen de portada (opcional)</span><div class="up">${imgOk(s.portada) ? `<img src="${esc(s.portada)}" alt="" style="width:160px;border-radius:12px;aspect-ratio:16/11;object-fit:cover">` : ""}<input type="file" id="up-portada" accept="image/*" data-up="portada"><label class="btn sec sm" for="up-portada">${glifo("upload")}Subir portada</label>${imgOk(s.portada) ? `<button type="button" class="btn ghost sm" data-act="e-quitar-portada">Quitar</button>` : ""}<span class="muted" style="font-size:12.5px">Se usa en la tarjeta grande de Descubrir y en la cabecera de la ficha. Si no subes una, se muestra la portada estándar.</span></div></div>
     </div>`)}
-  ${grp("Clasificación y estado", "", `<div class="fields">
+  ${grp("Clasificación y estado", "Dónde aparece el sistema, cómo se describe y si está visible.", `<div class="fields">
+      <div class="sub-h full"><b>Clasificación</b><span>Categorías y etiquetas para encontrarlo.</span></div>
       <div class="field full"><span class="lbl">Categorías</span><div class="selchips" role="group">${S.cat.categorias.map((k) => `<button type="button" class="chip txt" data-act="e-cat" data-id="${esc(k.id)}" aria-pressed="${s.categorias.includes(k.id)}">${esc(k.nombre)}</button>`).join("") || '<span class="muted">Crea categorías en Administración → Categorías.</span>'}</div></div>
       <div class="field full"><span class="lbl">Ideal para (etiquetas)</span>
         <div class="tagedit">${s.usos.map((u) => `<span class="chip txt">${esc(u)}<button type="button" data-act="tag-del" data-t="${esc(u)}" aria-label="Quitar ${esc(u)}">${glifo("x")}</button></span>`).join("")}</div>
         <div style="display:flex;gap:8px;margin-top:8px"><input id="tag-in" type="text" placeholder="Ej. Eventos, Reuniones, Trámites" aria-label="Nueva etiqueta" autocomplete="off"><button type="button" class="btn sec sm" data-act="tag-add">${glifo("plus")}Agregar</button></div>
         ${sinUsar.length ? `<div class="selchips" style="margin-top:8px">${sinUsar.slice(0, 8).map((u) => `<button type="button" class="chip txt" data-act="tag-add" data-t="${esc(u)}" style="font-size:13px;padding:5px 12px">+ ${esc(u)}</button>`).join("")}</div>` : ""}</div>
+      <div class="sub-h full"><b>Datos del sistema</b><span>Lo que se muestra en la ficha técnica.</span></div>
       <div class="field"><label for="e-tipoSis">Tipo</label><select class="select" id="e-tipoSis" data-path="tipoSis"><option value="" ${!s.tipoSis ? "selected" : ""}>Automático (${esc(TIPOS[tipoDe(Object.assign({}, s, { tipoSis: "" }))])})</option>${Object.entries(TIPOS).map(([k, v]) => `<option value="${k}" ${s.tipoSis === k ? "selected" : ""}>${v}</option>`).join("")}</select><span class="muted" style="font-size:12.5px">Sistema, Portal, Sitio web u Otro: es lo que el visitante ve en la ficha.</span></div>
       ${inp("tipoOtro", "Si elegiste «Otro», especifica el tipo (opcional)", { ph: "Ej. Aplicación móvil" })}
       <div class="field"><label for="e-estado">Disponibilidad</label><select class="select" id="e-estado" data-path="estado">${optSel(ESTADOS, s.estado)}</select></div>
@@ -2809,6 +2846,7 @@ function vEditor(id) {
       ${inp("version", "Versión", { ph: "Ej. 1.0" })}
       ${inp("area", "Área responsable", { ph: "Ej. Coordinación de Política Digital" })}
       <div class="field full"><span class="lbl">Ligado con (opcional)</span><div class="selchips" role="group">${S.cat.sistemas.filter((x) => x.id !== s.id).map((x) => `<button type="button" class="chip txt" data-act="e-lig" data-id="${esc(x.id)}" aria-pressed="${(s.ligados || []).includes(x.id)}">${esc(x.nombre)} · ${esc(tipoNom(x))}</button>`).join("") || '<span class="muted">Aún no hay otros elementos.</span>'}</div><span class="muted" style="font-size:12.5px">Los que marques aparecen en la ficha como «Ligado con» (y en la ficha del otro también).</span></div>
+      <div class="sub-h full"><b>Publicación</b><span>Controla quién lo ve y dónde se destaca.</span></div>
       <label class="chk full"><input type="checkbox" data-path="publicado" ${s.publicado ? "checked" : ""}><span><b>Publicado</b> — visible para todas las dependencias</span></label>
       <label class="chk full"><input type="checkbox" data-path="destacado" ${s.destacado ? "checked" : ""}><span><b>Destacado</b> — aparece en la tarjeta grande de la portada</span></label>
       ${inp("etiqueta", "Texto sobre el título destacado", { full: true, ph: "Ej. Ya está disponible, Nuevo, Ideal para tu próximo evento" })}
@@ -2824,9 +2862,9 @@ function vEditor(id) {
   ${grp("Novedades por versión", "La primera de la lista es la versión más reciente.", lista("novedades", (n, i) => `<div class="grid2">${field(`novedades.${i}.version`, "Versión", n.version, { ph: "Ej. 2.1" })}${field(`novedades.${i}.fecha`, "Fecha", n.fecha, { tipo: "date" })}</div><div class="field"><label for="e-novedades.${i}.notas">Qué cambió</label><textarea id="e-novedades.${i}.notas" data-path="novedades.${i}.notas" style="min-height:80px" placeholder="- Nueva función&#10;- Mejora de velocidad">${esc(n.notas || "")}</textarea></div>`, "Agregar versión"))}
   ${grp("Enlaces", "El enlace de tipo «Sistema» crea el botón «Abrir sistema».", lista("enlaces", (l, i) => `<div class="grid2">${field(`enlaces.${i}.etiqueta`, "Nombre", l.etiqueta, { ph: "Ej. Manual en línea" })}<div class="field"><label for="e-enlaces.${i}.tipo">Tipo</label><select class="select" id="e-enlaces.${i}.tipo" data-path="enlaces.${i}.tipo">${[["sistema", "Sistema"], ["manual", "Manual"], ["video", "Video"], ["otro", "Otro"]].map(([v, t]) => `<option value="${v}" ${l.tipo === v ? "selected" : ""}>${t}</option>`).join("")}</select></div></div>${field(`enlaces.${i}.url`, "Dirección (URL)", l.url, { tipo: "url", ph: "https://" })}`, "Agregar enlace"))}
   ${grp("Responsable y contacto", "Se muestra en «Contactar al área responsable».", `<div class="fields">${inp("contacto.correo", "Correo de contacto", { tipo: "email", ph: "sistemas@tudependencia.gob.mx" })}${inp("contacto.telefono", "Teléfono", { tipo: "tel" })}</div>`)}
-  ${!dr.nuevo ? `<section class="grp"><h2>Zona de riesgo</h2><div class="card"><button type="button" class="btn danger" data-act="del-sistema" data-id="${esc(s.id)}">${glifo("trash")}Eliminar este sistema</button></div></section>` : ""}
+  ${!dr.nuevo ? `<section class="grp grp-risk"><header class="grp-h"><span class="grp-n" aria-hidden="true">!</span><div class="grp-t"><h2>Zona de riesgo</h2><p class="hint">Acciones que no se pueden deshacer.</p></div></header><div class="card"><button type="button" class="btn danger" data-act="del-sistema" data-id="${esc(s.id)}">${glifo("trash")}Eliminar este sistema</button></div></section>` : ""}
   </div>
-  <div class="savebar"><span class="muted" style="font-size:14px">${dr.dirty ? "Tienes cambios sin guardar." : "Sin cambios."}</span><span style="display:flex;gap:8px"><button type="button" class="btn sec" data-act="e-cancelar">Cancelar</button><button type="button" class="btn" data-act="e-guardar">Guardar</button></span></div>`;
+  <div class="savebar${dr.dirty ? " dirty" : ""}"><span class="muted" style="font-size:14px">${dr.dirty ? "Tienes cambios sin guardar." : "Sin cambios."}</span><span style="display:flex;gap:8px"><button type="button" class="btn sec" data-act="e-cancelar">Cancelar</button><button type="button" class="btn" data-act="e-guardar">Guardar</button></span></div>`;
 }
 
 /* ---------- Carga de imágenes y archivos ---------- */
@@ -3383,6 +3421,7 @@ const ACT = {
   "e-glifo"(t) { const dr = draftActual(); if (!dr) return; dr.s.icono.glifo = t.dataset.g; dr.s.icono.imagen = ""; dr.dirty = true; keep(() => render(false)); },
   "e-color"(t) { const dr = draftActual(); if (!dr) return; dr.s.icono.color = t.dataset.c; dr.dirty = true; keep(() => render(false)); },
   "e-quitar-icono"() { const dr = draftActual(); if (!dr) return; dr.s.icono.imagen = ""; dr.dirty = true; keep(() => render(false)); },
+  "e-ir"(t) { const el = document.getElementById(t.dataset.to); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); },
   "e-quitar-portada"() { const dr = draftActual(); if (!dr) return; dr.s.portada = ""; dr.dirty = true; keep(() => render(false)); },
   "e-lig"(t) { const dr = draftActual(); if (!dr) return; if (!Array.isArray(dr.s.ligados)) dr.s.ligados = []; const a = dr.s.ligados, i = a.indexOf(t.dataset.id); if (i >= 0) a.splice(i, 1); else a.push(t.dataset.id); dr.dirty = true; keep(() => render(false)); },
   "e-cat"(t) { const dr = draftActual(); if (!dr) return; const a = dr.s.categorias, i = a.indexOf(t.dataset.id); if (i >= 0) a.splice(i, 1); else a.push(t.dataset.id); dr.dirty = true; keep(() => render(false)); },
@@ -3551,7 +3590,7 @@ document.addEventListener("input", (e) => {
     const dr = draftActual(); if (!dr) return;
     setPath(dr.s, t.dataset.path, t.type === "checkbox" ? t.checked : t.value); dr.dirty = true;
     if (t.dataset.path === "descripcion" || t.dataset.path === "descTam" || t.dataset.path === "descColor") actualizarPrevDesc();
-    const sb = $(".savebar .muted"); if (sb) sb.textContent = "Tienes cambios sin guardar.";
+    const sb = $(".savebar .muted"); if (sb) { sb.textContent = "Tienes cambios sin guardar."; sb.parentElement.classList.add("dirty"); }
     return;
   }
   if (t.dataset.form) {
@@ -3870,7 +3909,7 @@ const sbEnCola = () => { clearTimeout(sbPend); sbPend = setTimeout(sbPublicar, 1
 function vAuthSB() {
   const c = cfg(), logo = logoInner(c), reg = false, err = `<div class="err" id="a-err" role="alert"></div>`;
   const fld = (id, label, o = {}) => `<div class="field"><label for="${id}">${label}${o.req ? reqMark : ""}</label>${o.pw ? `<div class="pwrow"><input id="${id}" type="password" autocomplete="${o.auto || "current-password"}" ${o.req ? 'aria-required="true"' : ""}><button type="button" class="showpw" data-act="ver-pass" aria-label="Mostrar u ocultar contraseña">Mostrar</button></div>` : `<input id="${id}" type="${o.tipo || "text"}" autocomplete="${o.auto || "off"}" placeholder="${esc(o.ph || "")}" ${o.extra || ""} ${o.req ? 'aria-required="true"' : ""}>`}${o.hint ? `<span class="muted" style="font-size:12.5px">${o.hint}</span>` : ""}</div>`;
-  const cab = `<div class="auth-brand"><span class="auth-logo${imgOk(c.logo) ? "" : " lg"}">${logo}</span><div><b>${esc(c.nombre)}</b><small>${esc(c.organizacion)}</small></div></div>`;
+  const cab = `<div class="auth-brand"><span class="auth-logo">${logo}</span><div><b>${esc(c.nombre)}</b><small>${esc(c.organizacion)}</small></div></div>`;
   const vis = `<button class="btn sec big auth-alt" type="button" data-act="entrar-visitante">${glifo("eye")}Entrar como visualizador</button>`;
   const gBtn = (t, sep = "o con tu correo") => `<button type="button" class="btn-google" id="a-google-btn" data-act="google-login" data-txt="${esc(t)}"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12 c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24 c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657 C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36 c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571 c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path></svg><span>${esc(t)}</span></button><div class="auth-or" role="separator"><span>${esc(sep)}</span></div>`;
   const marco = (h1, lede, body, tb = "") => `<div class="authwrap"><div class="authcard">${cab}${tb}<h1>${h1}</h1><p class="lede">${lede}</p>${body}</div><p class="auth-foot">${esc(c.organizacion)}</p></div>`;
