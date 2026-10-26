@@ -1,0 +1,540 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="30 30 960 800" width="1920" height="1600">
+<defs>
+ <linearGradient id="fb" gradientUnits="userSpaceOnUse" x1="130" y1="90" x2="520" y2="520"><stop offset="0" stop-color="#4a86ec"/><stop offset="1" stop-color="#1f56c4"/></linearGradient>
+ <linearGradient id="fbs" gradientUnits="userSpaceOnUse" x1="130" y1="90" x2="520" y2="520"><stop offset="0" stop-color="#1b4aa8"/><stop offset="1" stop-color="#0f3382"/></linearGradient>
+ <linearGradient id="fp" gradientUnits="userSpaceOnUse" x1="540" y1="90" x2="860" y2="520"><stop offset="0" stop-color="#b98be4"/><stop offset="1" stop-color="#8e58c8"/></linearGradient>
+ <linearGradient id="fps" gradientUnits="userSpaceOnUse" x1="540" y1="90" x2="860" y2="520"><stop offset="0" stop-color="#6e45a6"/><stop offset="1" stop-color="#53308a"/></linearGradient>
+ <!-- degradado azul a morado a lo largo de la curva -->
+ <linearGradient id="fm" gradientUnits="userSpaceOnUse" x1="500" y1="0" x2="700" y2="0"><stop offset="0" stop-color="#2f66d6"/><stop offset="1" stop-color="#a77be0"/></linearGradient>
+ <linearGradient id="fms" gradientUnits="userSpaceOnUse" x1="500" y1="0" x2="700" y2="0"><stop offset="0" stop-color="#143c92"/><stop offset="1" stop-color="#6a42a2"/></linearGradient>
+ <filter id="cepillado" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+  <feTurbulence type="fractalNoise" baseFrequency="0.003 0.55" numOctaves="2" seed="7" result="n"/>
+  <feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0.9 0 0 0 -0.38" result="claro"/>
+  <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -0.9 0 0 0 0.45" result="oscuro"/>
+  <feComposite in="claro" in2="SourceAlpha" operator="in" result="c"/>
+  <feComposite in="oscuro" in2="SourceAlpha" operator="in" result="o"/>
+  <feColorMatrix in="o" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 .35 0" result="o2"/>
+  <feColorMatrix in="c" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 .45 0" result="c2"/>
+  <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="o2"/><feMergeNode in="c2"/></feMerge>
+ </filter>
+ <filter id="bisel" filterUnits="userSpaceOnUse" x="0" y="0" width="1000" height="860" color-interpolation-filters="sRGB">
+  <feGaussianBlur in="SourceAlpha" stdDeviation="3.2" result="b"/>
+  <feSpecularLighting in="b" surfaceScale="4" specularConstant="0.9" specularExponent="18" lighting-color="#ffffff" result="sp"><feDistantLight azimuth="225" elevation="48"/></feSpecularLighting>
+  <feComposite in="sp" in2="SourceAlpha" operator="in" result="spc"/>
+  <feDiffuseLighting in="b" surfaceScale="4" diffuseConstant="1" lighting-color="#ffffff" result="df"><feDistantLight azimuth="225" elevation="62"/></feDiffuseLighting>
+  <feComposite in="df" in2="SourceAlpha" operator="in" result="dfc"/>
+  <feBlend in="SourceGraphic" in2="dfc" mode="multiply" result="sh"/>
+  <feComposite in="sh" in2="spc" operator="arithmetic" k1="0" k2="1" k3="0.45" k4="0" result="out"/>
+  <feComposite in="out" in2="SourceAlpha" operator="in"/>
+ </filter>
+ <filter id="sombra" x="-20%" y="-20%" width="140%" height="150%">
+  <feDropShadow dx="10" dy="22" stdDeviation="14" flood-color="#1a2a6c" flood-opacity=".34"/>
+ </filter>
+ <filter id="sombraTxt" x="-20%" y="-30%" width="140%" height="190%">
+  <feDropShadow dx="6" dy="14" stdDeviation="8" flood-color="#1a2a6c" flood-opacity=".30"/>
+ </filter>
+ <path id="g" d="M462.4 196.6 A168 168 0 1 0 330 468 C470 468 520 300 640 300 H800" fill="none" stroke-width="90"/>
+ <rect id="barra" x="336" y="255" width="216" height="90"/>
+ <rect id="tizq" x="540" y="86" width="100" height="428"/>
+ <rect id="tder" x="792" y="86" width="100" height="428"/>
+ <path id="gob" d="M188.12617449664435 725.6107382550335C225.0442953020135 725.6107382550335 251.52483221476515 706.4429530201343 251.52483221476515 674.3892617449665V658.6040268456376H189.76912751677858V679.4630872483222H218.56912751677856C218.1825503355705 692.510067114094 207.45503355704705 700.6442953020135 188.4161073825504 700.6442953020135C166.67114093959736 700.6442953020135 153.9140939597316 687.1946308724832 153.9140939597316 663.8389261744967C153.9140939597316 640.6442953020135 167.34765100671146 627.3557046979865 188.31946308724838 627.3557046979865C202.52617449664433 627.3557046979865 212.19060402684568 633.2348993288591 215.47651006711413 643.1409395973154H249.97852348993294C246.40268456375844 619.2214765100671 220.7919463087249 602.3892617449665 187.7395973154363 602.3892617449665C149.37181208053698 602.3892617449665 119.02550335570476 625.0201342281879 119.02550335570476 664.2416107382551C119.02550335570476 702.1744966442953 146.95570469798662 725.6107382550335 188.12617449664435 725.6107382550335ZM317.30201342281885 725.6912751677852C351.0308724832215 725.6912751677852 371.51946308724837 707.006711409396 371.51946308724837 679.3020134228188C371.51946308724837 651.51677852349 351.0308724832215 632.8322147651006 317.30201342281885 632.8322147651006C283.47651006711413 632.8322147651006 262.9879194630873 651.51677852349 262.9879194630873 679.3020134228188C262.9879194630873 707.006711409396 283.47651006711413 725.6912751677852 317.30201342281885 725.6912751677852ZM317.30201342281885 704.1879194630873C304.35167785234904 704.1879194630873 297.3932885906041 694.1208053691275 297.3932885906041 679.1409395973154C297.3932885906041 664.0805369127517 304.35167785234904 654.3355704697987 317.30201342281885 654.3355704697987C330.2523489932886 654.3355704697987 337.21073825503356 664.0805369127517 337.21073825503356 679.1409395973154C337.21073825503356 694.1208053691275 330.2523489932886 704.1879194630873 317.30201342281885 704.1879194630873ZM450.53691275167785 725.2885906040268C474.5046979865772 725.2885906040268 493.8335570469799 709.5838926174497 493.8335570469799 679.0604026845638C493.8335570469799 647.489932885906 473.44161073825506 632.8322147651006 450.73020134228193 632.8322147651006C433.5275167785235 632.8322147651006 424.24966442953024 641.2885906040268 420.1906040268457 649.4228187919463H419.41744966442957V604.0H385.68859060402684V724.0H419.0308724832215V709.4228187919463H420.1906040268457C424.44295302013427 717.5570469798657 434.0107382550336 725.2885906040268 450.53691275167785 725.2885906040268ZM439.0362416107383 703.3825503355705C426.1825503355705 703.3825503355705 418.64429530201346 693.7986577181208 418.64429530201346 679.0604026845638C418.64429530201346 664.1610738255033 426.1825503355705 654.8187919463087 439.0362416107383 654.8187919463087C452.08322147651006 654.8187919463087 459.1382550335571 664.4026845637584 459.1382550335571 679.0604026845638C459.1382550335571 693.7181208053692 451.9865771812081 703.3825503355705 439.0362416107383 703.3825503355705Z"/>
+ <path id="hub" d="M508.0026845637584 724.0H542.1181208053691V674.3087248322148H599.6214765100672V724.0H633.6402684563759V604.0H599.6214765100672V651.1140939597316H542.1181208053691V604.0H508.0026845637584ZM689.5597315436241 725.1275167785235C706.9557046979864 725.1275167785235 717.586577181208 717.0738255033557 723.3852348993288 704.510067114094L723.8684563758388 724.0H755.5677852348992V633.9597315436242H721.8389261744966V685.3422818791946C721.8389261744966 695.8120805369127 714.3973154362416 702.0134228187919 703.379865771812 702.0134228187919C692.3624161073825 702.0134228187919 685.7906040268456 695.9731543624162 685.7906040268456 685.8255033557047V633.9597315436242H652.0617449664429V691.3020134228188C652.0617449664429 711.6778523489933 666.848322147651 725.1275167785235 689.5597315436241 725.1275167785235ZM838.6442953020133 725.2885906040268C862.6120805369127 725.2885906040268 881.9409395973154 709.5838926174497 881.9409395973154 679.0604026845638C881.9409395973154 647.489932885906 861.5489932885905 632.8322147651006 838.8375838926174 632.8322147651006C821.634899328859 632.8322147651006 812.3570469798657 641.2885906040268 808.2979865771812 649.4228187919463H807.5248322147651V604.0H773.7959731543624V724.0H807.138255033557V709.4228187919463H808.2979865771812C812.5503355704698 717.5570469798657 822.118120805369 725.2885906040268 838.6442953020133 725.2885906040268ZM827.1436241610738 703.3825503355705C814.289932885906 703.3825503355705 806.751677852349 693.7986577181208 806.751677852349 679.0604026845638C806.751677852349 664.1610738255033 814.289932885906 654.8187919463087 827.1436241610738 654.8187919463087C840.1906040268456 654.8187919463087 847.2456375838925 664.4026845637584 847.2456375838925 679.0604026845638C847.2456375838925 693.7181208053692 840.0939597315436 703.3825503355705 827.1436241610738 703.3825503355705Z"/>
+ <clipPath id="recorteBarra"><rect x="0" y="0" width="544" height="900"/></clipPath>
+</defs>
+<g id="marca" filter="url(#sombra)">
+ <!-- barra interior de la G (queda detrás de la H) -->
+ <g clip-path="url(#recorteBarra)">
+  <use href="#barra" transform="translate(19.20,24.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(19.00,23.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(18.80,23.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(18.60,23.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(18.40,23.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(18.20,22.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(18.00,22.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(17.80,22.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(17.60,22.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(17.40,21.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(17.20,21.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(17.00,21.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(16.80,21.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(16.60,20.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(16.40,20.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(16.20,20.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(16.00,20.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(15.80,19.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(15.60,19.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(15.40,19.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(15.20,19.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(15.00,18.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(14.80,18.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(14.60,18.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(14.40,18.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(14.20,17.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(14.00,17.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(13.80,17.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(13.60,17.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(13.40,16.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(13.20,16.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(13.00,16.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(12.80,16.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(12.60,15.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(12.40,15.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(12.20,15.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(12.00,15.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(11.80,14.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(11.60,14.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(11.40,14.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(11.20,14.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(11.00,13.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(10.80,13.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(10.60,13.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(10.40,13.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(10.20,12.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(10.00,12.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(9.80,12.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(9.60,12.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(9.40,11.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(9.20,11.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(9.00,11.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(8.80,11.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(8.60,10.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(8.40,10.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(8.20,10.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(8.00,10.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(7.80,9.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(7.60,9.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(7.40,9.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(7.20,9.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(7.00,8.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(6.80,8.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(6.60,8.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(6.40,8.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(6.20,7.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(6.00,7.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(5.80,7.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(5.60,7.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(5.40,6.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(5.20,6.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(5.00,6.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(4.80,6.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(4.60,5.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(4.40,5.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(4.20,5.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(4.00,5.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(3.80,4.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(3.60,4.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(3.40,4.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(3.20,4.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(3.00,3.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(2.80,3.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(2.60,3.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(2.40,3.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(2.20,2.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(2.00,2.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(1.80,2.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(1.60,2.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(1.40,1.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(1.20,1.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(1.00,1.25)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(0.80,1.00)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(0.60,0.75)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(0.40,0.50)" fill="url(#fbs)" />
+<use href="#barra" transform="translate(0.20,0.25)" fill="url(#fbs)" />
+  <use href="#barra" filter="url(#bisel)" fill="url(#fb)"/>
+ </g>
+ <!-- palo izquierdo de la H -->
+ <g>
+  <use href="#tizq" transform="translate(19.20,24.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(19.00,23.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(18.80,23.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(18.60,23.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(18.40,23.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(18.20,22.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(18.00,22.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(17.80,22.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(17.60,22.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(17.40,21.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(17.20,21.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(17.00,21.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(16.80,21.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(16.60,20.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(16.40,20.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(16.20,20.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(16.00,20.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(15.80,19.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(15.60,19.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(15.40,19.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(15.20,19.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(15.00,18.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(14.80,18.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(14.60,18.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(14.40,18.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(14.20,17.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(14.00,17.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(13.80,17.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(13.60,17.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(13.40,16.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(13.20,16.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(13.00,16.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(12.80,16.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(12.60,15.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(12.40,15.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(12.20,15.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(12.00,15.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(11.80,14.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(11.60,14.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(11.40,14.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(11.20,14.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(11.00,13.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(10.80,13.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(10.60,13.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(10.40,13.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(10.20,12.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(10.00,12.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(9.80,12.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(9.60,12.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(9.40,11.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(9.20,11.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(9.00,11.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(8.80,11.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(8.60,10.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(8.40,10.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(8.20,10.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(8.00,10.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(7.80,9.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(7.60,9.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(7.40,9.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(7.20,9.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(7.00,8.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(6.80,8.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(6.60,8.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(6.40,8.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(6.20,7.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(6.00,7.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(5.80,7.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(5.60,7.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(5.40,6.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(5.20,6.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(5.00,6.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(4.80,6.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(4.60,5.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(4.40,5.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(4.20,5.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(4.00,5.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(3.80,4.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(3.60,4.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(3.40,4.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(3.20,4.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(3.00,3.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(2.80,3.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(2.60,3.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(2.40,3.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(2.20,2.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(2.00,2.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(1.80,2.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(1.60,2.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(1.40,1.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(1.20,1.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(1.00,1.25)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(0.80,1.00)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(0.60,0.75)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(0.40,0.50)" fill="url(#fps)" />
+<use href="#tizq" transform="translate(0.20,0.25)" fill="url(#fps)" />
+  <use href="#tizq" filter="url(#bisel)" fill="url(#fp)"/>
+ </g>
+ <!-- G + curva que se vuelve travesaño de la H (delante del palo izquierdo) -->
+ <g>
+  <use href="#g" transform="translate(19.20,24.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(19.00,23.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(18.80,23.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(18.60,23.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(18.40,23.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(18.20,22.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(18.00,22.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(17.80,22.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(17.60,22.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(17.40,21.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(17.20,21.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(17.00,21.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(16.80,21.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(16.60,20.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(16.40,20.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(16.20,20.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(16.00,20.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(15.80,19.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(15.60,19.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(15.40,19.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(15.20,19.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(15.00,18.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(14.80,18.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(14.60,18.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(14.40,18.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(14.20,17.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(14.00,17.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(13.80,17.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(13.60,17.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(13.40,16.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(13.20,16.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(13.00,16.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(12.80,16.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(12.60,15.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(12.40,15.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(12.20,15.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(12.00,15.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(11.80,14.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(11.60,14.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(11.40,14.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(11.20,14.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(11.00,13.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(10.80,13.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(10.60,13.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(10.40,13.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(10.20,12.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(10.00,12.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(9.80,12.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(9.60,12.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(9.40,11.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(9.20,11.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(9.00,11.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(8.80,11.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(8.60,10.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(8.40,10.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(8.20,10.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(8.00,10.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(7.80,9.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(7.60,9.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(7.40,9.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(7.20,9.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(7.00,8.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(6.80,8.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(6.60,8.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(6.40,8.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(6.20,7.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(6.00,7.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(5.80,7.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(5.60,7.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(5.40,6.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(5.20,6.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(5.00,6.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(4.80,6.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(4.60,5.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(4.40,5.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(4.20,5.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(4.00,5.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(3.80,4.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(3.60,4.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(3.40,4.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(3.20,4.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(3.00,3.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(2.80,3.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(2.60,3.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(2.40,3.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(2.20,2.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(2.00,2.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(1.80,2.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(1.60,2.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(1.40,1.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(1.20,1.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(1.00,1.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(0.80,1.00)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(0.60,0.75)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(0.40,0.50)" stroke="url(#fms)" fill="none" stroke-width="90" />
+<use href="#g" transform="translate(0.20,0.25)" stroke="url(#fms)" fill="none" stroke-width="90" />
+  <use href="#g" filter="url(#bisel)" stroke="url(#fm)" fill="none" stroke-width="90"/>
+ </g>
+ <!-- palo derecho de la H (delante del final del travesaño) -->
+ <g>
+  <use href="#tder" transform="translate(19.20,24.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(19.00,23.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(18.80,23.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(18.60,23.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(18.40,23.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(18.20,22.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(18.00,22.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(17.80,22.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(17.60,22.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(17.40,21.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(17.20,21.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(17.00,21.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(16.80,21.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(16.60,20.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(16.40,20.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(16.20,20.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(16.00,20.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(15.80,19.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(15.60,19.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(15.40,19.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(15.20,19.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(15.00,18.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(14.80,18.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(14.60,18.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(14.40,18.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(14.20,17.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(14.00,17.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(13.80,17.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(13.60,17.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(13.40,16.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(13.20,16.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(13.00,16.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(12.80,16.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(12.60,15.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(12.40,15.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(12.20,15.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(12.00,15.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(11.80,14.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(11.60,14.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(11.40,14.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(11.20,14.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(11.00,13.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(10.80,13.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(10.60,13.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(10.40,13.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(10.20,12.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(10.00,12.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(9.80,12.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(9.60,12.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(9.40,11.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(9.20,11.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(9.00,11.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(8.80,11.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(8.60,10.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(8.40,10.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(8.20,10.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(8.00,10.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(7.80,9.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(7.60,9.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(7.40,9.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(7.20,9.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(7.00,8.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(6.80,8.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(6.60,8.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(6.40,8.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(6.20,7.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(6.00,7.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(5.80,7.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(5.60,7.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(5.40,6.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(5.20,6.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(5.00,6.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(4.80,6.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(4.60,5.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(4.40,5.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(4.20,5.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(4.00,5.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(3.80,4.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(3.60,4.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(3.40,4.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(3.20,4.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(3.00,3.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(2.80,3.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(2.60,3.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(2.40,3.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(2.20,2.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(2.00,2.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(1.80,2.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(1.60,2.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(1.40,1.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(1.20,1.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(1.00,1.25)" fill="url(#fps)" />
+<use href="#tder" transform="translate(0.80,1.00)" fill="url(#fps)" />
+<use href="#tder" transform="translate(0.60,0.75)" fill="url(#fps)" />
+<use href="#tder" transform="translate(0.40,0.50)" fill="url(#fps)" />
+<use href="#tder" transform="translate(0.20,0.25)" fill="url(#fps)" />
+  <use href="#tder" filter="url(#bisel)" fill="url(#fp)"/>
+ </g>
+</g>
+<g id="texto" filter="url(#sombraTxt)">
+ <g stroke-linejoin="round">
+  <use href="#gob" transform="translate(8.80,11.00)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(8.60,10.75)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(8.40,10.50)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(8.20,10.25)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(8.00,10.00)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(7.80,9.75)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(7.60,9.50)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(7.40,9.25)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(7.20,9.00)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(7.00,8.75)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(6.80,8.50)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(6.60,8.25)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(6.40,8.00)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(6.20,7.75)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(6.00,7.50)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(5.80,7.25)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(5.60,7.00)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(5.40,6.75)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(5.20,6.50)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(5.00,6.25)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(4.80,6.00)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(4.60,5.75)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(4.40,5.50)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(4.20,5.25)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(4.00,5.00)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(3.80,4.75)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(3.60,4.50)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(3.40,4.25)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(3.20,4.00)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(3.00,3.75)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(2.80,3.50)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(2.60,3.25)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(2.40,3.00)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(2.20,2.75)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(2.00,2.50)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(1.80,2.25)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(1.60,2.00)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(1.40,1.75)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(1.20,1.50)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(1.00,1.25)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(0.80,1.00)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(0.60,0.75)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(0.40,0.50)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+<use href="#gob" transform="translate(0.20,0.25)" fill="url(#fps)" stroke="url(#fps)" stroke-width="1" />
+  <use href="#hub" transform="translate(8.80,11.00)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(8.60,10.75)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(8.40,10.50)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(8.20,10.25)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(8.00,10.00)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(7.80,9.75)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(7.60,9.50)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(7.40,9.25)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(7.20,9.00)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(7.00,8.75)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(6.80,8.50)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(6.60,8.25)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(6.40,8.00)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(6.20,7.75)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(6.00,7.50)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(5.80,7.25)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(5.60,7.00)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(5.40,6.75)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(5.20,6.50)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(5.00,6.25)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(4.80,6.00)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(4.60,5.75)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(4.40,5.50)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(4.20,5.25)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(4.00,5.00)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(3.80,4.75)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(3.60,4.50)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(3.40,4.25)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(3.20,4.00)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(3.00,3.75)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(2.80,3.50)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(2.60,3.25)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(2.40,3.00)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(2.20,2.75)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(2.00,2.50)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(1.80,2.25)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(1.60,2.00)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(1.40,1.75)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(1.20,1.50)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(1.00,1.25)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(0.80,1.00)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(0.60,0.75)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(0.40,0.50)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+<use href="#hub" transform="translate(0.20,0.25)" fill="url(#fbs)" stroke="url(#fbs)" stroke-width="1" />
+ </g>
+ <use href="#gob" filter="url(#bisel)" fill="url(#fp)" stroke="url(#fp)" stroke-width="1" stroke-linejoin="round"/>
+ <use href="#hub" filter="url(#bisel)" fill="url(#fb)" stroke="url(#fb)" stroke-width="1" stroke-linejoin="round"/>
+</g>
+</svg>

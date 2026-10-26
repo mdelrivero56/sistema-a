@@ -1,0 +1,56 @@
+/* =====================================================================
+   23 · Logotipo GobHub flotante con luz LED (sin fondo)
+   - Pantalla de acceso: logotipo completo que "flota" con sombra en el suelo.
+   - Barra lateral / riel: monograma GH con un flotado muy sutil.
+   Para quitar este efecto, borra este archivo y ejecuta ./construir.sh
+   (o vuelve a unir los CSS con: cat css/[0-9][0-9]-*.css > css/estilos.css).
+   ===================================================================== */
+@keyframes gh-flota{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+/* luz LED que recorre las letras, de izquierda a derecha */
+@keyframes gh-led{0%{background-position:-90% 50%,-90% 50%,50% 50%;opacity:0}12%{opacity:1}88%{opacity:1}100%{background-position:190% 50%,190% 50%,50% 50%;opacity:0}}
+@keyframes gh-flota-mini{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
+@keyframes gh-suelo{0%,100%{transform:translate(-50%,0) scaleX(1);opacity:.6}50%{transform:translate(-50%,3px) scaleX(.9);opacity:.45}}
+
+/* ---------- Acceso / registro: logotipo completo ---------- */
+html:root:root:root:root:root .auth-brand{padding-bottom:18px}
+html:root:root:root:root:root .auth-logo{
+  width:min(190px,62%)!important;height:auto!important;aspect-ratio:800/656;
+  border-radius:0!important;overflow:visible!important;
+  background:url(../img/logo-gobhub-completo.png) center/contain no-repeat!important;
+  box-shadow:none!important;
+  filter:drop-shadow(0 8px 10px rgba(0,78,170,.20));
+  animation:gh-flota 4.4s ease-in-out infinite;
+  will-change:transform;position:relative;
+}
+html:root:root:root:root:root .auth-logo img{visibility:hidden}
+/* LED bajo las letras: base tenue + destello azul-morado que viaja por todo el rotulo */
+html:root:root:root:root:root .auth-logo::before{
+  content:"";position:absolute;left:9%;width:82%;top:86%;height:16px;border-radius:50%;pointer-events:none;
+  background:
+    linear-gradient(90deg,transparent,rgba(255,255,255,.95) 50%,transparent) -90% 50%/26% 2px no-repeat,
+    radial-gradient(ellipse at center,rgba(96,165,255,.75) 0%,rgba(150,110,255,.38) 45%,rgba(150,110,255,0) 72%) -90% 50%/38% 100% no-repeat,
+    linear-gradient(90deg,rgba(80,140,255,0),rgba(110,140,255,.20) 30%,rgba(170,120,240,.20) 70%,rgba(170,120,240,0)) 50% 50%/100% 3px no-repeat;
+  animation:gh-led 3.6s ease-in-out infinite;
+}
+/* sombra proyectada en el suelo: se queda quieta y se encoge cuando el logotipo sube */
+html:root:root:root:root:root .auth-logo::after{
+  display:block!important;content:"";position:absolute;left:50%;bottom:-12px;width:56%;height:9px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(0,40,110,.34) 0%,rgba(0,40,110,0) 70%);
+  animation:gh-suelo 4.4s ease-in-out infinite;
+}
+html[data-modo="oscuro"]:root:root:root:root:root .auth-logo{filter:drop-shadow(0 10px 18px rgba(120,140,255,.28))}
+html[data-modo="oscuro"]:root:root:root:root:root .auth-logo::after{background:radial-gradient(ellipse at center,rgba(0,0,0,.6) 0%,rgba(0,0,0,0) 70%)}
+
+/* ---------- Barra lateral y riel: monograma ---------- */
+html:root:root:root:root:root .brand .ico,html:root:root:root:root:root .rail-brand{overflow:visible!important}
+html:root:root:root:root:root .brand .ico img,html:root:root:root:root:root .rail-brand img{
+  filter:drop-shadow(0 4px 5px rgba(0,78,170,.28))!important;
+  animation:gh-flota-mini 4.8s ease-in-out infinite;will-change:transform;
+}
+html[data-modo="oscuro"]:root:root:root:root:root .brand .ico img,html[data-modo="oscuro"]:root:root:root:root:root .rail-brand img{filter:drop-shadow(0 4px 7px rgba(120,140,255,.35))!important}
+
+/* Accesibilidad: sin movimiento si el usuario lo prefiere */
+@media (prefers-reduced-motion:reduce){
+  html:root:root:root:root:root .auth-logo,html:root:root:root:root:root .auth-logo::after,html:root:root:root:root:root .auth-logo::before,
+  html:root:root:root:root:root .brand .ico img,html:root:root:root:root:root .rail-brand img{animation:none!important}
+}
