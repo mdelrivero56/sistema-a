@@ -14,3 +14,175 @@
 
 /* ===== AQUÍ EMPIEZAN TUS CORRECCIONES ===== */
 
+
+/* ===== PANEL IZQUIERDO FLOTANTE (escritorio) =====
+   Tarjeta separada de los bordes, esquinas redondeadas y sombra en capas
+   para dar profundidad. Claro y oscuro. */
+@media (min-width:1101px){
+  html:root:root:root:root:root:root:root:root,
+  html:root:root:root:root:root:root:root:root body,
+  html:root:root:root:root:root:root:root:root .app{background:#F3F5F9!important}
+  html:root:root:root:root:root:root:root:root[data-modo="oscuro"],
+  html:root:root:root:root:root:root:root:root[data-modo="oscuro"] body,
+  html:root:root:root:root:root:root:root:root[data-modo="oscuro"] .app{background:#080A0F!important}
+
+  html:root:root:root:root:root:root:root:root .app .sidebar{
+    position:sticky!important;top:16px!important;
+    height:calc(100vh - 32px)!important;
+    margin:16px 0 16px 16px!important;
+    padding:22px 14px 14px!important;
+    background:#fff!important;
+    border:1px solid rgba(16,24,40,.06)!important;
+    border-radius:24px!important;
+    box-shadow:
+      0 1px 2px rgba(16,24,40,.04),
+      0 6px 16px -4px rgba(16,24,40,.08),
+      0 24px 48px -12px rgba(16,24,40,.16),
+      inset 0 1px 0 rgba(255,255,255,.9)!important;
+    overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
+    scrollbar-color:rgba(16,24,40,.18) transparent;
+  }
+  html:root:root:root:root:root:root:root:root[data-modo="oscuro"] .app .sidebar{
+    background:linear-gradient(180deg,#141922 0%,#0F131B 100%)!important;
+    border:1px solid rgba(255,255,255,.07)!important;
+    box-shadow:
+      0 1px 2px rgba(0,0,0,.5),
+      0 10px 24px -6px rgba(0,0,0,.55),
+      0 30px 60px -14px rgba(0,0,0,.7),
+      inset 0 1px 0 rgba(255,255,255,.07)!important;
+    scrollbar-color:rgba(255,255,255,.18) transparent;
+  }
+
+  /* Detalles internos más pulidos */
+  html:root:root:root:root:root:root:root:root .app .sidebar .brand{border-bottom:1px solid rgba(16,24,40,.07)!important}
+  html:root:root:root:root:root:root:root:root[data-modo="oscuro"] .app .sidebar .brand{border-bottom-color:rgba(255,255,255,.08)!important}
+  html:root:root:root:root:root:root:root:root .app .sidebar .searchbox{box-shadow:inset 0 1px 2px rgba(16,24,40,.06)!important;border-radius:12px!important}
+  html:root:root:root:root:root:root:root:root .app .sidebar .sidenav a{border-radius:12px!important;transition:background .18s,color .18s,transform .18s!important}
+  html:root:root:root:root:root:root:root:root .app .sidebar .sidenav a:hover{transform:translateX(2px)}
+  html:root:root:root:root:root:root:root:root .app .sidebar .sidenav a[aria-current="page"]{
+    box-shadow:0 4px 12px -4px rgba(0,78,170,.35)!important}
+  html:root:root:root:root:root:root:root:root .app .sidebar .side-foot{border-top:1px solid rgba(16,24,40,.07)!important}
+  html:root:root:root:root:root:root:root:root[data-modo="oscuro"] .app .sidebar .side-foot{border-top-color:rgba(255,255,255,.08)!important}
+}
+
+/* ===== PANEL: marca, buscador con atajo, categorías, botón activo y modo plegado ===== */
+.side-toggle{display:none}
+@media (min-width:1101px){
+  :root{--P:1}
+  html:root:root:root:root:root:root:root:root .app{transition:grid-template-columns .3s cubic-bezier(.2,.8,.2,1)}
+  html:root:root:root:root:root:root:root:root .app .sidebar{overflow-x:hidden;z-index:20}
+
+  /* Marca: logo mayor y divisor que ocupa todo el ancho */
+  html:root:root:root:root:root:root:root:root .app .sidebar .brand{
+    width:100%!important;box-sizing:border-box;gap:12px!important;padding:4px 40px 18px 4px!important;margin:0 0 4px!important;
+    border-bottom:0!important;position:relative;
+    background:linear-gradient(90deg,rgba(16,24,40,.02),rgba(16,24,40,.12) 50%,rgba(16,24,40,.02)) bottom/100% 1px no-repeat!important}
+  html:root:root:root:root:root:root:root:root[data-modo="oscuro"] .app .sidebar .brand{
+    background:linear-gradient(90deg,rgba(255,255,255,.02),rgba(255,255,255,.14) 50%,rgba(255,255,255,.02)) bottom/100% 1px no-repeat!important}
+  html:root:root:root:root:root:root:root:root .app .sidebar .brand .ico{width:44px!important;height:44px!important;--s:44px;flex:none}
+  html:root:root:root:root:root:root:root:root .app .sidebar .brand b{font-size:17px!important;letter-spacing:-.025em}
+  html:root:root:root:root:root:root:root:root .app .sidebar .brand small{font-size:11.5px!important;line-height:1.25;margin-top:1px}
+
+  /* Buscador con atajo */
+  html:root:root:root:root:root:root:root:root .app .sidebar .searchbox{position:relative;transition:box-shadow .2s,background .2s,border-color .2s}
+  html:root:root:root:root:root:root:root:root .app .sidebar .searchbox:focus-within{
+    border-color:var(--azul,#004EAA)!important;background:var(--bg,#fff)!important;
+    box-shadow:0 0 0 3px rgba(0,78,170,.16)!important}
+  .kbd-hint{margin-left:auto;flex:none;font:600 11px/1 var(--font,system-ui);letter-spacing:.02em;
+    padding:4px 7px;border-radius:7px;color:var(--label-3,#8a93a3);background:rgba(16,24,40,.05);
+    border:1px solid rgba(16,24,40,.09);box-shadow:0 1px 0 rgba(16,24,40,.06);pointer-events:none;transition:opacity .15s}
+  html[data-modo="oscuro"] .kbd-hint{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);box-shadow:0 1px 0 rgba(0,0,0,.4)}
+  .searchbox:focus-within .kbd-hint,.searchbox:has(input:not(:placeholder-shown)) .kbd-hint{opacity:0}
+
+  /* Etiquetas en una línea con puntos suspensivos */
+  html:root:root:root:root:root:root:root:root .app .sidebar .sidenav a{display:flex;align-items:center;gap:12px;min-width:0}
+  html:root:root:root:root:root:root:root:root .app .sidebar .sidenav a .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  html:root:root:root:root:root:root:root:root .app .sidebar .sidenav a .g,
+  html:root:root:root:root:root:root:root:root .app .sidebar .sidenav a .cdot{flex:none}
+
+  /* Botón activo: barra de acento */
+  html:root:root:root:root:root:root:root:root .app .sidebar .sidenav a{position:relative}
+  html:root:root:root:root:root:root:root:root .app .sidebar .sidenav a[aria-current="page"]::before{
+    content:""!important;display:block!important;position:absolute;left:3px!important;top:22%!important;bottom:22%!important;width:3px!important;height:auto;
+    border-radius:3px!important;background:var(--azul,#004EAA)!important;box-shadow:0 0 10px rgba(0,78,170,.45)}
+  html:root:root:root:root:root:root:root:root[data-modo="oscuro"] .app .sidebar .sidenav a[aria-current="page"]::before{
+    background:#6FA8FF!important;box-shadow:0 0 12px rgba(111,168,255,.6)}
+
+  /* Botón plegar */
+  .side-toggle{display:grid;place-items:center;position:fixed;z-index:30;top:38px;left:220px;width:30px;height:30px;padding:0;
+    border-radius:10px;cursor:pointer;color:var(--label-2,#5b6472);background:rgba(16,24,40,.04);border:1px solid rgba(16,24,40,.08);
+    transition:left .3s cubic-bezier(.2,.8,.2,1),top .3s,background .15s,color .15s,transform .3s}
+  .side-toggle:hover{background:rgba(0,78,170,.1);color:var(--azul,#004EAA)}
+  .side-toggle:focus-visible{outline:2px solid var(--azul,#004EAA);outline-offset:2px}
+  html[data-modo="oscuro"] .side-toggle{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.75)}
+  html[data-modo="oscuro"] .side-toggle:hover{background:rgba(255,255,255,.14);color:#fff}
+
+  /* Modo plegado (solo íconos) */
+  html.side-mini:root:root:root:root:root:root:root:root{--side-w:92px}
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar{padding:22px 14px 14px!important}
+  html.side-mini .side-toggle{left:29px;top:auto;bottom:30px;transform:rotate(180deg)}
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar .brand{padding:4px 0 16px!important;justify-content:center!important}
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar .brand>span:last-child{display:none!important}
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar .searchbox{justify-content:center;padding:0!important;height:44px;cursor:pointer}
+  html.side-mini .sidebar .searchbox input,html.side-mini .kbd-hint{display:none!important}
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar .sidenav a{justify-content:center;padding:11px 0!important}
+  html.side-mini .sidebar .sidenav a .lbl,html.side-mini .sidebar .sidenav h6,html.side-mini .sidebar .side-foot{display:none!important}
+}
+
+/* ===== AJUSTES GENERALES: pie, hero, tarjetas, botones flotantes, carga ===== */
+:root{
+  --sh-1:0 1px 2px rgba(16,24,40,.05),0 4px 12px -4px rgba(16,24,40,.08);
+  --sh-2:0 2px 4px rgba(16,24,40,.05),0 12px 28px -8px rgba(16,24,40,.14);
+  --sh-3:0 4px 8px rgba(16,24,40,.06),0 24px 48px -12px rgba(16,24,40,.22);
+}
+html[data-modo="oscuro"]{
+  --sh-1:0 1px 2px rgba(0,0,0,.5),0 4px 12px -4px rgba(0,0,0,.5);
+  --sh-2:0 2px 4px rgba(0,0,0,.5),0 12px 28px -8px rgba(0,0,0,.6);
+  --sh-3:0 4px 8px rgba(0,0,0,.5),0 24px 48px -12px rgba(0,0,0,.7);
+}
+
+/* Hero: descripción corta y legible, chips con desvanecido al borde */
+html:root:root:root:root:root:root:root:root .hero-desc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:rgba(255,255,255,.86)!important}
+html:root:root:root:root:root:root:root:root .hero-sub{text-shadow:0 1px 12px rgba(0,20,60,.25)}
+html:root:root:root:root:root:root:root:root .hero-chips{
+  scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 44px),transparent)}
+html:root:root:root:root:root:root:root:root .hero-chips::-webkit-scrollbar{display:none}
+html:root:root:root:root:root:root:root:root section.hero#hero{box-shadow:var(--sh-3)!important}
+
+/* Tarjetas: sombra coherente y elevación al pasar el cursor */
+html:root:root:root:root:root:root:root:root .cv-card{box-shadow:var(--sh-1);transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s}
+html:root:root:root:root:root:root:root:root .cv-card:hover{transform:translateY(-4px);box-shadow:var(--sh-3)}
+html:root:root:root:root:root:root:root:root .cv-art{overflow:hidden}
+html:root:root:root:root:root:root:root:root .cv-glyph{transition:transform .4s cubic-bezier(.2,.8,.2,1)}
+html:root:root:root:root:root:root:root:root .cv-card:hover .cv-glyph{transform:scale(1.08)}
+html:root:root:root:root:root:root:root:root .get:active,html:root:root:root:root:root:root:root:root .hero-cta:active{transform:scale(.97)}
+
+/* Botones flotantes (campana y accesibilidad): sin chocar con el contenido */
+@media (min-width:1101px){
+  html:root:root:root:root:root:root:root:root main{padding-right:72px!important}
+  html:root:root:root:root:root:root:root:root #campana{top:16px!important;right:14px!important;width:44px!important;height:44px!important;box-shadow:var(--sh-2)!important}
+  html:root:root:root:root:root:root:root:root #acc-btn{right:16px!important;bottom:20px!important;width:44px!important;height:44px!important;box-shadow:var(--sh-2)!important}
+}
+
+/* Pie del panel: tarjeta de perfil compacta */
+html:root:root:root:root:root:root:root:root .app .sidebar .side-foot{padding-top:12px!important}
+html:root:root:root:root:root:root:root:root .app .sidebar .side-foot .mode{
+  display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:14px;font-size:13px!important;font-weight:600;
+  background:var(--bg-soft,#F7F8FA);border:1px solid rgba(16,24,40,.06);color:var(--label,#101828)!important}
+html:root:root:root:root:root:root:root:root[data-modo="oscuro"] .app .sidebar .side-foot .mode{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.08);color:#fff!important}
+.side-foot .mode::before{content:"";flex:none;width:30px;height:30px;border-radius:50%;
+  background:center/16px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21c0-4 4-6 8-6s8 2 8 6'/%3E%3C/svg%3E"),linear-gradient(135deg,#3B82D6,#004EAA);
+  box-shadow:0 0 0 2px var(--bg,#fff),0 0 0 3px rgba(0,78,170,.25)}
+@media (min-width:1101px){
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar .side-foot{display:block!important;border-top:0!important;margin-bottom:44px}
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar .side-foot .mode{font-size:0!important;padding:0;border:0;background:none;justify-content:center}
+}
+
+/* Carga: esqueleto en lugar del spinner */
+.loading .spin{display:none}
+.loading{display:block!important;place-items:initial;min-height:60vh;position:relative}
+.loading::before,.loading::after{content:"";display:block;border-radius:28px;
+  background:linear-gradient(100deg,rgba(128,140,160,.12) 30%,rgba(128,140,160,.24) 50%,rgba(128,140,160,.12) 70%) 0 0/300% 100%;animation:skel 1.4s ease-in-out infinite}
+.loading::before{height:300px;margin-bottom:28px}
+.loading::after{height:200px;border-radius:20px}
+@keyframes skel{from{background-position:100% 0}to{background-position:0 0}}
