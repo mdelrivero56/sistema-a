@@ -1,0 +1,76 @@
+/* ==========================================================================
+   26 · MODO OSCURO · REMATE (última capa)
+   Corrige lo que aún quedaba ilegible en oscuro: títulos azul-oscuro sobre
+   fondo oscuro en Inicio, textos secundarios apagados y botones «Solicitar».
+   Solo actúa con html[data-modo="oscuro"]; el modo claro no cambia.
+   Para quitarla: borra este archivo y ejecuta construir.sh.
+   ========================================================================== */
+html:root:root:root:root:root:root[data-modo="oscuro"]{
+  --ac-txt:#8FBFFF;
+  --label-2:#B4BDCD;
+  --label-3:#97A1B4;
+}
+/* CAUSA RAÍZ: en «Descubrir» (.dx) la hoja 22 redefinía los colores del modo claro con
+   más fuerza que los del oscuro (texto azul marino y acento #004EAA sobre fondo oscuro). */
+html:root:root:root:root:root:root[data-modo="oscuro"] .dx,
+html:root:root:root:root:root:root[data-modo="oscuro"] .fx{
+  --bg:#0C1320;--bg-soft:#101A2B;--bg-card:#111B2D;--bg-input:#0E1726;
+  --label:#EDF0F5;--label-2:#B4BDCD;--label-3:#97A1B4;
+  --sep:rgba(148,170,215,.14);--sep-strong:rgba(148,170,215,.26);
+  --azul:#5B9BFF;--azul-hover:#78AEFF;--azul-suave:rgba(91,155,255,.12);--azul-borde:rgba(91,155,255,.32);
+  --lila-texto:#C9A9F0;
+}
+/* Títulos y nombres que salían azul marino (#14233F) sobre fondo oscuro */
+html:root:root:root:root:root:root[data-modo="oscuro"] .sec-h,
+html:root:root:root:root:root:root[data-modo="oscuro"] .sec-h a,
+html:root:root:root:root:root:root[data-modo="oscuro"] .dx .sec-h,
+html:root:root:root:root:root:root[data-modo="oscuro"] .row-t b,
+html:root:root:root:root:root:root[data-modo="oscuro"] .row-main b,
+html:root:root:root:root:root:root[data-modo="oscuro"] .cv-t b,
+html:root:root:root:root:root:root[data-modo="oscuro"] .coll strong,
+html:root:root:root:root:root:root[data-modo="oscuro"] .coll b,
+html:root:root:root:root:root:root[data-modo="oscuro"] .how b,
+html:root:root:root:root:root:root[data-modo="oscuro"] .how li b,
+html:root:root:root:root:root:root[data-modo="oscuro"] .fx-steps li b,
+html:root:root:root:root:root:root[data-modo="oscuro"] .pagehead h1,
+html:root:root:root:root:root:root[data-modo="oscuro"] .rcard strong{
+  color:var(--label)!important}
+/* Texto secundario */
+html:root:root:root:root:root:root[data-modo="oscuro"] .row-sub,
+html:root:root:root:root:root:root[data-modo="oscuro"] .how p,
+html:root:root:root:root:root:root[data-modo="oscuro"] .row small,
+html:root:root:root:root:root:root[data-modo="oscuro"] .coll small,
+html:root:root:root:root:root:root[data-modo="oscuro"] .cv-card small,
+html:root:root:root:root:root:root[data-modo="oscuro"] small{
+  color:var(--label-2)!important}
+html:root:root:root:root:root:root[data-modo="oscuro"] .coll .eyebrow,
+html:root:root:root:root:root:root[data-modo="oscuro"] .cv-eyebrow{color:var(--ac-txt)!important}
+/* Números de los pasos */
+html:root:root:root:root:root:root[data-modo="oscuro"] .how .n,
+html:root:root:root:root:root:root[data-modo="oscuro"] ol.how li .n{
+  background:var(--ac-fill)!important;color:var(--ac-txt)!important}
+/* Botón «Solicitar» / «Agregar» (píldora azul): texto claro y legible */
+html:root:root:root:root:root:root[data-modo="oscuro"] .get:not(.big),
+html:root:root:root:root:root:root[data-modo="oscuro"] button.get:not(.big),
+html:root:root:root:root:root:root[data-modo="oscuro"] .get.sm,
+html:root:root:root:root:root:root[data-modo="oscuro"] .more{
+  color:var(--ac-txt)!important;font-weight:650}
+/* «Conocer el sistema» sobre la portada */
+html:root:root:root:root:root:root[data-modo="oscuro"] .hero-actions .hero-cta{
+  background:#8FBFFF!important;color:#06112A!important;border-color:#8FBFFF!important}
+html:root:root:root:root:root:root[data-modo="oscuro"] .hero-actions .hero-cta:hover{background:#B5D4FF!important}
+html:root:root:root:root:root:root[data-modo="oscuro"] .hero-cta .cta-dot{background:#06112A!important;color:#8FBFFF!important}
+/* Chips de categoría en la portada de escritorio */
+html:root:root:root:root:root:root[data-modo="oscuro"] .hero-chips .hchip,
+html:root:root:root:root:root:root[data-modo="oscuro"] .hero-chips a{
+  background:rgba(8,14,30,.62)!important;color:#EAF1FF!important;border:1px solid rgba(255,255,255,.26)!important}
+/* Buscador móvil (quedaba blanco) */
+html:root:root:root:root:root:root[data-modo="oscuro"] .disc-search,
+html:root:root:root:root:root:root[data-modo="oscuro"] a.disc-search{
+  background:var(--bg-input,#161A22)!important;color:var(--label-2)!important}
+/* Campos de formulario y elementos nativos */
+html:root:root:root:root:root:root[data-modo="oscuro"] input,
+html:root:root:root:root:root:root[data-modo="oscuro"] select,
+html:root:root:root:root:root:root[data-modo="oscuro"] textarea{color-scheme:dark}
+html:root:root:root:root:root:root[data-modo="oscuro"] ::placeholder{color:#8D97AA!important;opacity:1}
+html:root:root:root:root:root:root[data-modo="oscuro"] ::selection{background:#2C5FA8;color:#fff}

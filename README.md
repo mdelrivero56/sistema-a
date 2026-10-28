@@ -8,6 +8,7 @@ Sitio web estático para consultar y administrar el catálogo institucional de s
 - `catalogo.json`: datos del catálogo (categorías, sistemas y configuración inicial).
 - `css/`: hojas de estilo fuente (numeradas; las últimas tienen prioridad). `22-minimalista.css` es la capa final de diseño (estilo minimalista profesional con el logotipo `img/logo-gobhub.png`); para volver al diseño anterior borra ese archivo y ejecuta `./construir.sh`. **`css/estilos.css` es el archivo que carga la página** y se genera uniendo todas las hojas.
 - `fonts/`: tipografías (Plus Jakarta Sans y Archivo) alojadas en el sitio.
+- `css/26-oscuro-remate.css`: capa final del modo oscuro (corrige títulos invisibles y botones de baja legibilidad).
 - `construir.sh`: regenera `css/estilos.css` y `js/app.min.js` y actualiza el número de versión en `index.html`. Ejecútalo (requiere Node.js) cada vez que edites un CSS o JS fuente, y sube también los archivos generados.
 - `js/app.js`: lógica principal (fuente). La página carga `js/app.min.js`, versión minificada que incluye `app.js`, `demo-video.js`, `galeria-flechas.js` y `scroll-fx.js`.
 - `SEGURIDAD.md`: controles aplicados, pruebas y pendientes (Supabase RLS, GitHub, Vercel).

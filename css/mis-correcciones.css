@@ -1,0 +1,16 @@
+/* ==========================================================================
+   MIS CORRECCIONES  ·  el único archivo que necesitas editar para ajustes de color
+   --------------------------------------------------------------------------
+   · Se carga DESPUÉS de todo lo demás, así que lo que escribas aquí gana.
+   · Pega tus correcciones DEBAJO de la línea «AQUÍ EMPIEZAN TUS CORRECCIONES».
+   · Después de guardar, en index.html sube el número de «?v=» de la línea que
+     carga este archivo (por ejemplo de v=1 a v=2) para que los navegadores
+     descarguen la versión nueva.
+   · Plantilla (modo oscuro):
+       html:root:root:root:root:root:root:root:root[data-modo="oscuro"] .NOMBRE-DE-LA-CLASE{
+         color:#FFFFFF!important;
+       }
+   ========================================================================== */
+
+/* ===== AQUÍ EMPIEZAN TUS CORRECCIONES ===== */
+

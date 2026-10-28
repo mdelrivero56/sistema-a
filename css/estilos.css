@@ -4789,3 +4789,222 @@ html:root:root:root:root:root .auth-logo::after{bottom:14px!important;width:46%!
 html:root:root:root:root:root .auth-logo img{display:none!important}   /* la imagen oculta forzaba una caja cuadrada */
 /* El logo ya incluye el nombre: se oculta el "GobHub" repetido debajo (se conserva la organizacion). */
 html:root:root:root:root:root .auth-brand b{display:none!important}
+/* ==========================================================================
+   25 · MODO OSCURO FINAL  (última capa: remata el modo oscuro al 100 %)
+   --------------------------------------------------------------------------
+   Por qué existe: la capa 22 (minimalista) usa selectores muy específicos
+   (html:root:root:root:root …) y varias hojas anteriores pintan con colores
+   fijos de modo claro (#14233F, #fff, #EAF1FB…). En oscuro eso dejaba texto
+   oscuro sobre fondo oscuro, botones blancos y etiquetas con poco contraste.
+   Aquí se vuelve a decir, con la misma fuerza, cómo se ve cada cosa en oscuro.
+   Solo actúa con html[data-modo="oscuro"]; el modo claro no cambia.
+   Para volver al oscuro anterior: borra este archivo y ejecuta construir.sh
+   (o vuelve a unir las hojas como indica el README).
+   Reglas del sistema de color (contraste mínimo WCAG AA, 4.5:1 en texto):
+     · Texto sobre superficie ........ var(--label) / --label-2 / --label-3
+     · Acento como texto o etiqueta .. var(--ac-txt)  (azul aclarado)
+     · Botón principal ............... relleno azul + tinta oscura var(--ink)
+     · Botón secundario / fantasma ... cristal translúcido + texto claro
+     · Peligro ....................... cristal rojo + texto rojo claro
+   ========================================================================== */
+
+/* ---------- 1 · Tokens extra ---------- */
+html:root:root:root:root[data-modo="oscuro"]{
+  color-scheme:dark;
+  --ink:#06112A;
+  --ac-txt:color-mix(in srgb,var(--azul) 62%,#fff);
+  --ac-fill:color-mix(in srgb,var(--azul) 20%,#0B0D12);
+  --ok-txt:#8EE3B0; --warn-txt:#FFD27A; --bad-txt:#FFB0AA;
+  --label-3:#8F99AB!important;
+}
+
+/* ---------- 2 · Botones ---------- */
+/* Principal: relleno azul y tinta oscura (antes: blanco sobre azul claro = 3.6:1) */
+html:root:root:root:root[data-modo="oscuro"] .btn:not(.sec):not(.ghost):not(.danger),
+html:root:root:root:root[data-modo="oscuro"] button.btn:not(.sec):not(.ghost):not(.danger),
+html:root:root:root:root[data-modo="oscuro"] a.btn:not(.sec):not(.ghost):not(.danger),
+html:root:root:root:root[data-modo="oscuro"] .get.big:not(.dx .get){
+  background:var(--azul)!important;color:var(--ink)!important;border-color:var(--azul)!important;font-weight:700}
+html:root:root:root:root[data-modo="oscuro"] .btn:not(.sec):not(.ghost):not(.danger):hover,
+html:root:root:root:root[data-modo="oscuro"] .get.big:hover{
+  background:var(--azul-hover)!important;border-color:var(--azul-hover)!important;color:var(--ink)!important}
+html:root:root:root:root[data-modo="oscuro"] .btn:not(.sec):not(.ghost):not(.danger) .g,
+html:root:root:root:root[data-modo="oscuro"] .get.big .g{color:currentColor!important;stroke:currentColor!important}
+/* Peligro: cristal rojo (antes salía azul con texto blanco) */
+html:root:root:root:root[data-modo="oscuro"] .btn.danger,
+html:root:root:root:root[data-modo="oscuro"] button.btn.danger,
+html:root:root:root:root[data-modo="oscuro"] .btn.sec.danger,
+html:root:root:root:root[data-modo="oscuro"] .btn.ghost.danger{
+  background:rgba(255,99,92,.14)!important;color:var(--bad-txt)!important;border:1px solid rgba(255,120,112,.42)!important}
+html:root:root:root:root[data-modo="oscuro"] .btn.danger:hover{
+  background:rgba(255,99,92,.26)!important;border-color:rgba(255,140,132,.7)!important;color:#fff!important}
+/* Secundario y fantasma */
+html:root:root:root:root[data-modo="oscuro"] .btn.sec,
+html:root:root:root:root[data-modo="oscuro"] .btn.ghost{
+  background:rgba(255,255,255,.04)!important;color:var(--label)!important;border:1px solid var(--sep-strong)!important}
+html:root:root:root:root[data-modo="oscuro"] .btn.sec:hover,
+html:root:root:root:root[data-modo="oscuro"] .btn.ghost:hover{
+  background:color-mix(in srgb,var(--azul) 16%,transparent)!important;border-color:var(--azul)!important;color:#fff!important}
+/* Botones deshabilitados: se nota que lo están, pero se siguen leyendo */
+html:root:root:root:root[data-modo="oscuro"] .btn:disabled,
+html:root:root:root:root[data-modo="oscuro"] .get:disabled{opacity:.5!important;filter:none!important}
+
+/* ---------- 3 · Etiquetas, pastillas y navegación activa (acento como texto) ---------- */
+html:root:root:root:root[data-modo="oscuro"] .tipo-tag,
+html:root:root:root:root[data-modo="oscuro"] .tipo-tag.big,
+html:root:root:root:root[data-modo="oscuro"] .badge.acc{
+  background:var(--ac-fill)!important;color:var(--ac-txt)!important;border:1px solid color-mix(in srgb,var(--azul) 34%,transparent)!important}
+html:root:root:root:root[data-modo="oscuro"] .sidenav a[aria-current],
+html:root:root:root:root[data-modo="oscuro"] .sidenav-a[aria-current],
+html:root:root:root:root[data-modo="oscuro"] .sidebar a[aria-current="page"],
+html:root:root:root:root[data-modo="oscuro"] .tabbar a[aria-current],
+html:root:root:root:root[data-modo="oscuro"] .ed-nav button[aria-current],
+html:root:root:root:root[data-modo="oscuro"] .seg a[aria-current]{
+  background:var(--ac-fill)!important;color:var(--ac-txt)!important}
+html:root:root:root:root[data-modo="oscuro"] .sidenav a[aria-current] .g,
+html:root:root:root:root[data-modo="oscuro"] .sidenav-a[aria-current] .g,
+html:root:root:root:root[data-modo="oscuro"] .ed-nav button[aria-current] .g{color:currentColor!important;stroke:currentColor!important}
+html:root:root:root:root[data-modo="oscuro"] .steps .n,
+html:root:root:root:root[data-modo="oscuro"] li>.n,
+html:root:root:root:root[data-modo="oscuro"] .ed-nav button[aria-current] .n{
+  background:var(--ac-fill)!important;color:var(--ac-txt)!important}
+html:root:root:root:root[data-modo="oscuro"] .badge.ok,html:root:root:root:root[data-modo="oscuro"] .ac-count i.on{color:var(--ok-txt)!important}
+html:root:root:root:root[data-modo="oscuro"] .badge.warn,html:root:root:root:root[data-modo="oscuro"] .ac-count i.off{color:var(--warn-txt)!important}
+
+/* ---------- 4 · Texto secundario que quedaba oscuro o apagado ---------- */
+html:root:root:root:root[data-modo="oscuro"] small,
+html:root:root:root:root[data-modo="oscuro"] .row-sub,
+html:root:root:root:root[data-modo="oscuro"] .lede,
+html:root:root:root:root[data-modo="oscuro"] .grp-c,
+html:root:root:root:root[data-modo="oscuro"] .hint,
+html:root:root:root:root[data-modo="oscuro"] .muted{color:var(--label-2)!important}
+html:root:root:root:root[data-modo="oscuro"] .grp-c.vacio{color:var(--label-3)!important}
+html:root:root:root:root[data-modo="oscuro"] .sec-h,
+html:root:root:root:root[data-modo="oscuro"] .sec-h a,
+html:root:root:root:root[data-modo="oscuro"] .cv-t,
+html:root:root:root:root[data-modo="oscuro"] .cv-t b,
+html:root:root:root:root[data-modo="oscuro"] .cv-over b,
+html:root:root:root:root[data-modo="oscuro"] .coll strong,
+html:root:root:root:root[data-modo="oscuro"] .fc-t{color:var(--label)!important}
+html:root:root:root:root[data-modo="oscuro"] .cv-over b{color:#fff!important;text-shadow:0 1px 10px rgba(0,0,0,.55)}
+
+/* ---------- 5 · «Descubrir»: pastillas y botón de la portada ---------- */
+html:root:root:root:root[data-modo="oscuro"] .hero-badge,
+html:root:root:root:root[data-modo="oscuro"] .cv-eye{
+  background:rgba(8,14,30,.62)!important;color:#EAF1FF!important;border:1px solid rgba(255,255,255,.22)!important;
+  -webkit-backdrop-filter:blur(10px) saturate(140%);backdrop-filter:blur(10px) saturate(140%);box-shadow:none!important}
+html:root:root:root:root[data-modo="oscuro"] .hero-badge *,
+html:root:root:root:root[data-modo="oscuro"] .cv-eye *{color:inherit!important}
+html:root:root:root:root[data-modo="oscuro"] .hero-actions .hero-cta{
+  background:var(--azul)!important;color:var(--ink)!important;border:1px solid var(--azul)!important;box-shadow:0 10px 26px -12px color-mix(in srgb,var(--azul) 70%,transparent)!important}
+html:root:root:root:root[data-modo="oscuro"] .hero-actions .hero-cta:hover{background:var(--azul-hover)!important}
+html:root:root:root:root[data-modo="oscuro"] .hero-cta .cta-dot{background:var(--ink)!important;color:var(--azul)!important}
+html:root:root:root:root[data-modo="oscuro"] .hero-cta .cta-dot *{color:inherit!important;stroke:currentColor!important}
+html:root:root:root:root[data-modo="oscuro"] .hero-actions .hero-get{
+  background:rgba(255,255,255,.08)!important;color:#fff!important;border:1px solid rgba(255,255,255,.34)!important}
+
+/* ---------- 6 · Buscador y chips de la versión móvil ---------- */
+html:root:root:root:root[data-modo="oscuro"] .disc-bar-m{
+  background:rgba(11,13,18,.82)!important;border-color:var(--sep)!important;
+  -webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%)}
+html:root:root:root:root[data-modo="oscuro"] .disc-search{
+  background:var(--bg-input)!important;color:var(--label-2)!important;border:1px solid var(--sep-strong)!important;box-shadow:none!important}
+html:root:root:root:root[data-modo="oscuro"] .disc-search *{color:inherit!important}
+html:root:root:root:root[data-modo="oscuro"] .disc-chips .hchip,
+html:root:root:root:root[data-modo="oscuro"] .hchip{
+  background:rgba(255,255,255,.05)!important;color:var(--label)!important;border:1px solid var(--sep-strong)!important}
+
+/* ---------- 7 · Editor de sistemas (administración) ---------- */
+html:root:root:root:root[data-modo="oscuro"] .rt-tip{
+  background:var(--ac-fill)!important;color:var(--label-2)!important;border:1px solid color-mix(in srgb,var(--azul) 26%,transparent)!important}
+html:root:root:root:root[data-modo="oscuro"] .rt-tip b,
+html:root:root:root:root[data-modo="oscuro"] .rt-tip span,
+html:root:root:root:root[data-modo="oscuro"] .rt-more>summary{color:var(--ac-txt)!important}
+html:root:root:root:root[data-modo="oscuro"] .rt-more>summary{font-weight:650}
+html:root:root:root:root[data-modo="oscuro"] .rtb.rtb-simple button{
+  background:rgba(255,255,255,.05)!important;color:var(--label)!important;border:1.5px solid var(--sep-strong)!important}
+html:root:root:root:root[data-modo="oscuro"] .rtb.rtb-simple button:hover{background:color-mix(in srgb,var(--azul) 18%,transparent)!important;border-color:var(--azul)!important}
+html:root:root:root:root[data-modo="oscuro"] .grp-n{background:var(--ac-fill)!important;color:var(--ac-txt)!important;border:1px solid color-mix(in srgb,var(--azul) 40%,transparent)!important;box-shadow:none!important}
+html:root:root:root:root[data-modo="oscuro"] .grp-risk .grp-n{background:rgba(255,99,92,.18)!important;color:var(--bad-txt)!important;border-color:rgba(255,120,112,.45)!important}
+html:root:root:root:root[data-modo="oscuro"] .tipo-tag[class*="t-"],
+html:root:root:root:root[data-modo="oscuro"] .tipo-tag[class*="t-"] *{color:var(--ac-txt)!important}
+html:root:root:root:root[data-modo="oscuro"] .rtb button,
+html:root:root:root:root[data-modo="oscuro"] .rtb button b,
+html:root:root:root:root[data-modo="oscuro"] .rtb button i,
+html:root:root:root:root[data-modo="oscuro"] .rtb button u{color:var(--label)!important}
+/* ==========================================================================
+   26 · MODO OSCURO · REMATE (última capa)
+   Corrige lo que aún quedaba ilegible en oscuro: títulos azul-oscuro sobre
+   fondo oscuro en Inicio, textos secundarios apagados y botones «Solicitar».
+   Solo actúa con html[data-modo="oscuro"]; el modo claro no cambia.
+   Para quitarla: borra este archivo y ejecuta construir.sh.
+   ========================================================================== */
+html:root:root:root:root:root:root[data-modo="oscuro"]{
+  --ac-txt:#8FBFFF;
+  --label-2:#B4BDCD;
+  --label-3:#97A1B4;
+}
+/* CAUSA RAÍZ: en «Descubrir» (.dx) la hoja 22 redefinía los colores del modo claro con
+   más fuerza que los del oscuro (texto azul marino y acento #004EAA sobre fondo oscuro). */
+html:root:root:root:root:root:root[data-modo="oscuro"] .dx,
+html:root:root:root:root:root:root[data-modo="oscuro"] .fx{
+  --bg:#0C1320;--bg-soft:#101A2B;--bg-card:#111B2D;--bg-input:#0E1726;
+  --label:#EDF0F5;--label-2:#B4BDCD;--label-3:#97A1B4;
+  --sep:rgba(148,170,215,.14);--sep-strong:rgba(148,170,215,.26);
+  --azul:#5B9BFF;--azul-hover:#78AEFF;--azul-suave:rgba(91,155,255,.12);--azul-borde:rgba(91,155,255,.32);
+  --lila-texto:#C9A9F0;
+}
+/* Títulos y nombres que salían azul marino (#14233F) sobre fondo oscuro */
+html:root:root:root:root:root:root[data-modo="oscuro"] .sec-h,
+html:root:root:root:root:root:root[data-modo="oscuro"] .sec-h a,
+html:root:root:root:root:root:root[data-modo="oscuro"] .dx .sec-h,
+html:root:root:root:root:root:root[data-modo="oscuro"] .row-t b,
+html:root:root:root:root:root:root[data-modo="oscuro"] .row-main b,
+html:root:root:root:root:root:root[data-modo="oscuro"] .cv-t b,
+html:root:root:root:root:root:root[data-modo="oscuro"] .coll strong,
+html:root:root:root:root:root:root[data-modo="oscuro"] .coll b,
+html:root:root:root:root:root:root[data-modo="oscuro"] .how b,
+html:root:root:root:root:root:root[data-modo="oscuro"] .how li b,
+html:root:root:root:root:root:root[data-modo="oscuro"] .fx-steps li b,
+html:root:root:root:root:root:root[data-modo="oscuro"] .pagehead h1,
+html:root:root:root:root:root:root[data-modo="oscuro"] .rcard strong{
+  color:var(--label)!important}
+/* Texto secundario */
+html:root:root:root:root:root:root[data-modo="oscuro"] .row-sub,
+html:root:root:root:root:root:root[data-modo="oscuro"] .how p,
+html:root:root:root:root:root:root[data-modo="oscuro"] .row small,
+html:root:root:root:root:root:root[data-modo="oscuro"] .coll small,
+html:root:root:root:root:root:root[data-modo="oscuro"] .cv-card small,
+html:root:root:root:root:root:root[data-modo="oscuro"] small{
+  color:var(--label-2)!important}
+html:root:root:root:root:root:root[data-modo="oscuro"] .coll .eyebrow,
+html:root:root:root:root:root:root[data-modo="oscuro"] .cv-eyebrow{color:var(--ac-txt)!important}
+/* Números de los pasos */
+html:root:root:root:root:root:root[data-modo="oscuro"] .how .n,
+html:root:root:root:root:root:root[data-modo="oscuro"] ol.how li .n{
+  background:var(--ac-fill)!important;color:var(--ac-txt)!important}
+/* Botón «Solicitar» / «Agregar» (píldora azul): texto claro y legible */
+html:root:root:root:root:root:root[data-modo="oscuro"] .get:not(.big),
+html:root:root:root:root:root:root[data-modo="oscuro"] button.get:not(.big),
+html:root:root:root:root:root:root[data-modo="oscuro"] .get.sm,
+html:root:root:root:root:root:root[data-modo="oscuro"] .more{
+  color:var(--ac-txt)!important;font-weight:650}
+/* «Conocer el sistema» sobre la portada */
+html:root:root:root:root:root:root[data-modo="oscuro"] .hero-actions .hero-cta{
+  background:#8FBFFF!important;color:#06112A!important;border-color:#8FBFFF!important}
+html:root:root:root:root:root:root[data-modo="oscuro"] .hero-actions .hero-cta:hover{background:#B5D4FF!important}
+html:root:root:root:root:root:root[data-modo="oscuro"] .hero-cta .cta-dot{background:#06112A!important;color:#8FBFFF!important}
+/* Chips de categoría en la portada de escritorio */
+html:root:root:root:root:root:root[data-modo="oscuro"] .hero-chips .hchip,
+html:root:root:root:root:root:root[data-modo="oscuro"] .hero-chips a{
+  background:rgba(8,14,30,.62)!important;color:#EAF1FF!important;border:1px solid rgba(255,255,255,.26)!important}
+/* Buscador móvil (quedaba blanco) */
+html:root:root:root:root:root:root[data-modo="oscuro"] .disc-search,
+html:root:root:root:root:root:root[data-modo="oscuro"] a.disc-search{
+  background:var(--bg-input,#161A22)!important;color:var(--label-2)!important}
+/* Campos de formulario y elementos nativos */
+html:root:root:root:root:root:root[data-modo="oscuro"] input,
+html:root:root:root:root:root:root[data-modo="oscuro"] select,
+html:root:root:root:root:root:root[data-modo="oscuro"] textarea{color-scheme:dark}
+html:root:root:root:root:root:root[data-modo="oscuro"] ::placeholder{color:#8D97AA!important;opacity:1}
+html:root:root:root:root:root:root[data-modo="oscuro"] ::selection{background:#2C5FA8;color:#fff}
