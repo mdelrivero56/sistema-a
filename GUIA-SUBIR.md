@@ -23,7 +23,7 @@ Tu sitio ya está publicado en Vercel y conectado a Supabase. Estos cambios son 
 1. Entra a https://vercel.com e inicia sesión.
 2. Abre tu proyecto (sistema-a-silk).
 3. Pulsa la pestaña **Deployments**. En 1 a 2 minutos aparecerá un despliegue nuevo.
-4. Cuando diga **Ready** (verde), abre https://sistema-a-silk.vercel.app
+4. Cuando diga **Ready** (verde), abre https://gobhub.vercel.app
 5. Si ves lo anterior, recarga forzado: Windows `Ctrl + Shift + R`; Mac `Cmd + Shift + R`.
 
 Si NO aparece despliegue nuevo: en el proyecto entra a **Settings → Git** y revisa que esté conectado a tu repositorio y a la rama `main`.
@@ -32,7 +32,7 @@ Si NO aparece despliegue nuevo: en el proyecto entra a **Settings → Git** y re
 No se requiere ningún cambio. Para comprobar que todo sigue conectado:
 1. Entra a https://supabase.com → tu proyecto.
 2. En **Table Editor** confirma que ves tus tablas con datos.
-3. En **Authentication → URL Configuration**, confirma que **Site URL** sea `https://sistema-a-silk.vercel.app`.
+3. En **Authentication → URL Configuration**, confirma que **Site URL** sea `https://gobhub.vercel.app`.
 
 ## Cómo probar el modo oscuro
 En el sitio, pulsa el botón azul redondo de accesibilidad (abajo a la derecha) y elige el tema **Oscuro**. Revisa Inicio, Sistemas, una ficha y «Solicitar».
