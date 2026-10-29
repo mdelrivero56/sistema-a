@@ -34,7 +34,7 @@
   var btn = document.createElement("button");
   btn.type = "button"; btn.className = "side-toggle";
   btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
-  document.body.appendChild(btn);
+  side.appendChild(btn);
   function setMini(v) {
     root.classList.toggle("side-mini", v);
     btn.setAttribute("aria-expanded", String(!v));

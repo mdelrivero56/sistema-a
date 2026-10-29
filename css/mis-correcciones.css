@@ -186,3 +186,36 @@ html:root:root:root:root:root:root:root:root[data-modo="oscuro"] .app .sidebar .
 .loading::before{height:300px;margin-bottom:28px}
 .loading::after{height:200px;border-radius:20px}
 @keyframes skel{from{background-position:100% 0}to{background-position:0 0}}
+
+/* ===== AJUSTE: botón plegar integrado en el panel + panel compacto (solo íconos) ===== */
+@media (min-width:1101px){
+  /* Botón dentro del panel, acorde al tamaño de los íconos */
+  html:root:root:root:root:root:root:root:root .app .sidebar .side-toggle{
+    position:absolute!important;top:24px!important;right:12px!important;left:auto!important;bottom:auto!important;transform:none;
+    width:26px!important;height:26px!important;border-radius:8px!important;box-shadow:none}
+  .side-toggle svg{width:14px;height:14px}
+
+  /* Panel plegado: tarjeta estrecha que se ajusta a los botones */
+  html.side-mini:root:root:root:root:root:root:root:root{--side-w:80px}
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar{
+    height:auto!important;max-height:calc(100vh - 32px);align-self:start;padding:16px 10px 12px!important;gap:10px!important;border-radius:20px!important}
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar .brand{padding:2px 0 12px!important}
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar .brand .ico{width:38px!important;height:38px!important;--s:38px}
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar .searchbox{height:42px;border-radius:12px!important}
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar .sidenav{gap:6px}
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar .sidenav a{height:42px;padding:0!important;border-radius:12px!important;gap:0}
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar .sidenav a:hover{transform:none}
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar .sidenav a[aria-current="page"]::before{left:0!important;top:26%!important;bottom:26%!important}
+  /* Insignias (p. ej. el «1» de solicitudes) como puntito sobre el ícono */
+  html.side-mini .sidebar .sidenav a>:not(svg):not(.cdot):not(.lbl){
+    position:absolute;top:3px;right:3px;min-width:15px;height:15px;padding:0 4px;margin:0;display:grid;place-items:center;
+    font-size:9.5px!important;line-height:1;border-radius:8px}
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar .side-foot{margin:2px 0 0!important;padding:8px 0 0!important}
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar .side-foot .mode::before{width:34px;height:34px}
+  /* Botón expandir: en línea, al final, del tamaño de un ícono */
+  html.side-mini:root:root:root:root:root:root:root:root .app .sidebar .side-toggle{
+    position:static!important;margin:2px auto 0;width:34px!important;height:34px!important;border-radius:11px!important;transform:rotate(180deg)}
+}
+@media (min-width:1101px){
+  html.side-mini:root:root:root:root:root:root:root:root .app{grid-template-columns:80px minmax(0,1fr)!important}
+}
