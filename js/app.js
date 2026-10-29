@@ -133,7 +133,7 @@ function sistemaBase(o) {
   return Object.assign({
     id: uid("sis"), nombre: "", subtitulo: "", icono: { glifo: "app", color: "azul", imagen: "" }, portada: "",
     categorias: [], usos: [], estado: "Disponible", publicado: true, destacado: false, etiqueta: "", tipoSis: "", tipoOtro: "", ligados: [],
-    version: "1.0", actualizado: hoyISO(), area: "", contacto: { correo: "", telefono: "" },
+    version: "1.0", actualizado: hoyISO(), fechaRevision: "", area: "", contacto: { correo: "", telefono: "" },
     descripcion: "", plataforma: "Web", requisitos: [], pasos: [], enlaces: [], tecnica: [],
     dependencias: [], novedades: [], capturas: [], archivos: [], videos: [], videoDestacado: { url: "", data: "", nombre: "" }, descTam: "16", descColor: "", ejemplo: false
   }, o);
@@ -1860,6 +1860,15 @@ function vHome() {
   return `<div class="dx">
     ${bannerAviso()}
     ${vHero(feats, cats, cuando)}
+    <section class="gh-quick-actions" aria-labelledby="gh-quick-title">
+      <div class="gh-quick-head"><div><span class="eyebrow">Atajos para ti</span><h2 id="gh-quick-title" class="sec-h">¿Qué necesitas hacer?</h2><p>Entra directamente a la información que estás buscando.</p></div></div>
+      <div class="gh-quick-grid">
+        <a class="gh-quick-card" href="#/buscar"><span class="gh-quick-icon">${glifo("search")}</span><span><b>Buscar un sistema</b><small>Encuentra por nombre o palabra clave</small></span>${glifo("chev")}</a>
+        <a class="gh-quick-card" href="#/categorias"><span class="gh-quick-icon">${glifo("capas")}</span><span><b>Explorar categorías</b><small>Consulta los sistemas por tema</small></span>${glifo("chev")}</a>
+        <a class="gh-quick-card" href="#/ayuda"><span class="gh-quick-icon">${glifo("info")}</span><span><b>Cómo solicitar</b><small>Conoce los pasos y requisitos</small></span>${glifo("chev")}</a>
+        <a class="gh-quick-card gh-quick-primary" href="#/solicitar"><span class="gh-quick-icon">${glifo("send")}</span><span><b>Enviar una solicitud</b><small>Inicia tu solicitud de acceso</small></span>${glifo("chev")}</a>
+      </div>
+    </section>
     ${ver.length ? `<section class="sec sec-ver"><h2 class="sec-h"><a href="#/sistemas">También te podría interesar ${glifo("chev")}</a></h2><div class="cv-wrap"><button type="button" class="cv-arrow cv-prev" data-act="cv-prev" aria-label="Anterior" hidden>${glifo("back")}</button><div class="cv-grid">${ver.map(cardVer).join("")}</div><button type="button" class="cv-arrow cv-next" data-act="cv-next" aria-label="Siguiente" hidden>${glifo("chev")}</button></div></section>` : ""}
     <div class="duo ${lista.length > 3 ? "" : "solo"}"><section class="sec"><h2 class="sec-h"><a href="#/sistemas">Los más utilizados ${glifo("chev")}</a></h2><div class="rows paged">${top.map((s) => fila(s)).join("")}</div></section>
     ${lista.length > 3 ? `<section class="sec"><h2 class="sec-h"><a href="#/sistemas">Nuevos y actualizados ${glifo("chev")}</a></h2><div class="rows paged">${nuevos.map((s) => fila(s, `Versión ${s.version} · ${hace(s.actualizado)}`)).join("")}</div></section>` : ""}</div>
@@ -2653,7 +2662,24 @@ function vAdminBase(sub, id) {
   if (tab === "config") return cab + vAdminConfig(id);
   const l = S.cat.sistemas;
   const nPub = l.filter((s) => s.publicado).length;
-  return cab + `<div class="admbar" style="margin-top:0"><span class="ac-count"><b>${l.length}</b> ${plural(l.length, "sistema", "sistemas")}<i class="on">${nPub} ${plural(nPub, "publicado", "publicados")}</i>${l.length - nPub ? `<i class="off">${l.length - nPub} ${plural(l.length - nPub, "oculto", "ocultos")}</i>` : ""}</span><a class="btn" href="#/admin/editar/nuevo">${glifo("plus")}Agregar sistema</a></div>
+  const hoyISOAdmin = hoyISO();
+  const revisar = l.filter((x) => !x.fechaRevision || String(x.fechaRevision).slice(0, 10) <= hoyISOAdmin);
+  const pendientes = l.filter((x) => !x.publicado);
+  const recientes = [...l].filter((x) => x.actualizado).sort((a, b) => String(b.actualizado).localeCompare(String(a.actualizado))).slice(0, 4);
+  const panelControl = `<section class="gh-admin-dashboard" aria-label="Resumen de administración">
+    <div class="gh-admin-dash-head"><div><span class="eyebrow">Resumen de gestión</span><h2>Estado del catálogo</h2><p>Una vista rápida de lo que está publicado y lo que requiere atención.</p></div><a class="btn sm sec" href="#/admin/editar/nuevo">${glifo("plus")}Nuevo sistema</a></div>
+    <div class="gh-admin-metrics">
+      <article><span class="gh-metric-icon">${glifo("capas")}</span><small>Sistemas registrados</small><b>${l.length}</b></article>
+      <article><span class="gh-metric-icon is-ok">${glifo("check")}</span><small>Publicados</small><b>${nPub}</b></article>
+      <article><span class="gh-metric-icon is-warn">${glifo("eye")}</span><small>Ocultos</small><b>${pendientes.length}</b></article>
+      <article><span class="gh-metric-icon is-alert">${glifo("calendario")}</span><small>Por revisar</small><b>${revisar.length}</b></article>
+    </div>
+    <div class="gh-admin-dash-bottom">
+      <div class="gh-review-box"><h3>${glifo("calendario")} Revisiones pendientes</h3>${revisar.length ? `<p>${revisar.length} ${plural(revisar.length, "ficha necesita", "fichas necesitan")} revisión. Define una próxima fecha desde Editar → Clasificación y estado.</p><div class="gh-review-list">${revisar.slice(0,5).map(x=>`<a href="#/admin/editar/${enc(x.id)}"><span>${esc(x.nombre)}</span><small>${x.fechaRevision ? (String(x.fechaRevision).slice(0,10) < hoyISOAdmin ? "Vencida: " : "Revisar hoy: ")+esc(fmtFecha(String(x.fechaRevision).slice(0,10))) : "Sin fecha de revisión"}</small>${glifo("chev")}</a>`).join("")}</div>` : `<p class="gh-good-note">${glifo("check")} Todas las fichas tienen una fecha de revisión futura.</p>`}</div>
+      <div class="gh-recent-box"><h3>${glifo("reloj")} Últimas actualizaciones</h3>${recientes.length ? recientes.map(x=>`<a href="#/admin/editar/${enc(x.id)}"><span>${esc(x.nombre)}</span><small>${esc(hace(x.actualizado))}</small></a>`).join("") : `<p>Aún no hay fechas de actualización registradas.</p>`}</div>
+    </div>
+  </section>`;
+  return cab + panelControl + `<div class="admbar" style="margin-top:0"><span class="ac-count"><b>${l.length}</b> ${plural(l.length, "sistema", "sistemas")}<i class="on">${nPub} ${plural(nPub, "publicado", "publicados")}</i>${l.length - nPub ? `<i class="off">${l.length - nPub} ${plural(l.length - nPub, "oculto", "ocultos")}</i>` : ""}</span><a class="btn" href="#/admin/editar/nuevo">${glifo("plus")}Agregar sistema</a></div>
     ${l.length ? `<div class="ac-list">${l.map((s, i) => {
       const cn = s.categorias.map((c) => (catById(c) || {}).nombre).filter(Boolean).join(", ") || "Sin categoría", id = esc(s.id), nm = esc(s.nombre);
       return `<article class="acard${s.publicado ? "" : " is-off"}"><span class="ac-n" aria-hidden="true" title="Posición en el catálogo">${i + 1}</span>${icono(s, "s48")}
@@ -2819,6 +2845,7 @@ function vEditor(id) {
   return `${navbar({ right: `<span class="badge ${dr.nuevo ? "acc" : ""}">${dr.nuevo ? "Nuevo sistema" : "Editando"}</span>${dr.nuevo ? "" : `<a class="btn sm sec" href="#/sistema/${enc(s.id)}">${glifo("eye")}Ver ficha</a>`}` })}
   <header class="pagehead" style="padding-top:8px"><div><h1 class="large-title">${dr.nuevo ? "Nuevo sistema" : esc(s.nombre || "Editar sistema")}</h1><p class="lede">Lo que escribas aquí se muestra en la ficha del sistema.</p></div></header>
   ${dr.aviso ? `<div class="note info" style="margin-top:14px">${glifo("info")}<div>Recuperamos cambios que no habías guardado. <button class="btn ghost sm" data-act="e-descartar">Descartarlos</button></div></div>` : ""}
+  <aside class="gh-editor-guide" aria-label="Ayuda para editar fichas"><b>${glifo("info")} Guía rápida de edición</b><p>Completa las secciones que correspondan, revisa la vista previa y pulsa <strong>Guardar</strong> al terminar. La fecha de próxima revisión permite detectar fichas que necesitan actualizarse.</p><span>Consejo: empieza por Identidad, Descripción y Clasificación.</span></aside>
   <nav class="ed-nav" aria-label="Secciones del editor">${SEC_ED.map(([t, c], i) => `<button type="button" data-act="e-ir" data-to="ed-s${i}"><i>${i + 1}</i>${c}</button>`).join("")}</nav>
   <div class="ed-wrap">
   ${grp("Identidad", "El nombre y el icono son lo primero que ven las dependencias.", `<div class="fields">
@@ -2845,6 +2872,7 @@ function vEditor(id) {
       ${inp("plataforma", "Plataforma", { ph: "Ej. Web · Tablets · Teléfonos" })}
       ${inp("version", "Versión", { ph: "Ej. 1.0" })}
       ${inp("area", "Área responsable", { ph: "Ej. Coordinación de Política Digital" })}
+      ${inp("fechaRevision", "Próxima fecha de revisión", { tipo: "date", hint: "El panel administrativo avisará cuando esta fecha llegue o esté vencida." })}
       <div class="field full"><span class="lbl">Ligado con (opcional)</span><div class="selchips" role="group">${S.cat.sistemas.filter((x) => x.id !== s.id).map((x) => `<button type="button" class="chip txt" data-act="e-lig" data-id="${esc(x.id)}" aria-pressed="${(s.ligados || []).includes(x.id)}">${esc(x.nombre)} · ${esc(tipoNom(x))}</button>`).join("") || '<span class="muted">Aún no hay otros elementos.</span>'}</div><span class="muted" style="font-size:12.5px">Los que marques aparecen en la ficha como «Ligado con» (y en la ficha del otro también).</span></div>
       <div class="sub-h full"><b>Publicación</b><span>Controla quién lo ve y dónde se destaca.</span></div>
       <label class="chk full"><input type="checkbox" data-path="publicado" ${s.publicado ? "checked" : ""}><span><b>Publicado</b> — visible para todas las dependencias</span></label>
@@ -2972,6 +3000,7 @@ function guardarDraft() {
   if (s.contacto.correo && !correoOk(s.contacto.correo)) errs.push("El correo de contacto no es válido.");
   if (errs.length) { toast(errs[0]); return; }
   s.nombre = s.nombre.trim();
+  s.actualizado = hoyISO();
   s.pasos = s.pasos.map((x) => x.trim()).filter(Boolean);
   s.requisitos = s.requisitos.map((x) => x.trim()).filter(Boolean);
   s.tecnica = s.tecnica.filter((t) => t.k.trim() || t.v.trim());
