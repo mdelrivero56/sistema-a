@@ -1,8 +1,5 @@
 /* GobHub · mejoras de usabilidad 2026-10 */
-.gh-clear-search{display:grid;place-items:center;flex:none;width:30px;height:30px;margin-left:4px;border:0;border-radius:9px;background:var(--bg-soft,#eef3f9);color:var(--label-2,#475467);font-size:22px;line-height:1;cursor:pointer}
-.gh-clear-search[hidden]{display:none!important}.gh-clear-search:hover{background:var(--sel,#e7effb);color:var(--accent,#175cd3)}
-.bigsearch{position:relative}.bigsearch .gh-clear-search{position:absolute;right:8px;top:50%;transform:translateY(-50%)}.bigsearch input{padding-right:48px!important}
-.gh-search-status{min-height:18px;margin:10px 2px 0;color:var(--label-2,#667085);font-size:13px;line-height:1.5}
+.bigsearch{position:relative}.bigsearch .gh-search-status{min-height:18px;margin:10px 2px 0;color:var(--label-2,#667085);font-size:13px;line-height:1.5}
 .gh-ficha-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:18px 0 24px;padding:14px 16px;border:1px solid var(--line,rgba(100,116,139,.18));border-radius:16px;background:var(--card,rgba(255,255,255,.78))}
 .gh-ficha-nav-title{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--label-2,#667085);margin-right:4px}
 .gh-ficha-nav a{display:inline-flex;align-items:center;min-height:34px;padding:7px 11px;border-radius:10px;background:var(--bg-soft,#f5f7fa);color:var(--label,#344054);text-decoration:none;font-size:13px;font-weight:650}
@@ -15,6 +12,102 @@
 .gh-admin-tip{display:flex;align-items:flex-start;gap:12px;margin:0 0 18px;padding:14px 16px;border:1px solid color-mix(in srgb,var(--accent,#175cd3) 22%,transparent);border-radius:14px;background:color-mix(in srgb,var(--accent,#175cd3) 5%,var(--card,#fff))}
 .gh-admin-tip-icon{display:grid;place-items:center;flex:none;width:28px;height:28px;border-radius:9px;background:var(--accent,#175cd3);color:#fff;font-weight:800}.gh-admin-tip b{display:block;color:var(--label,#344054);font-size:14px}.gh-admin-tip p{margin:3px 0 0;color:var(--label-2,#667085);font-size:13px;line-height:1.5}
 .adm-flota .seg a{white-space:nowrap}.adm-flota .seg a[data-gh-group="catalogo"]{border-color:color-mix(in srgb,var(--accent,#175cd3) 16%,transparent)}
-@media(max-width:900px){.gh-ficha-nav{margin:14px 0 18px;padding:12px;gap:7px}.gh-ficha-nav-title{width:100%;margin:0 0 2px}.gh-ficha-nav a{min-height:38px;font-size:12.5px;padding:8px 10px}.gh-form-progress{position:relative;grid-template-columns:1fr;gap:5px;padding:8px;margin-bottom:14px}.gh-form-progress a{padding:7px 9px;min-height:42px}.gh-form-progress a b{font-size:14px}.gh-admin-tip{padding:12px}.adm-flota{align-items:stretch;gap:10px}.adm-flota .seg{display:flex;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding-bottom:4px}.adm-flota .seg a{flex:0 0 auto}.formgrid{grid-template-columns:minmax(0,1fr)!important;gap:16px!important}.formgrid>aside,.sticky-side{position:static!important;top:auto!important;order:2}#form-sol .get.big{width:100%;justify-content:center;min-height:48px}.fx-body,.fx-main,.fx-side{min-width:0}.docs li,.docs .acts{flex-wrap:wrap}.gh-clear-search{width:34px;height:34px}}
+@media(max-width:900px){.gh-ficha-nav{margin:14px 0 18px;padding:12px;gap:7px}.gh-ficha-nav-title{width:100%;margin:0 0 2px}.gh-ficha-nav a{min-height:38px;font-size:12.5px;padding:8px 10px}.gh-form-progress{position:relative;grid-template-columns:1fr;gap:5px;padding:8px;margin-bottom:14px}.gh-form-progress a{padding:7px 9px;min-height:42px}.gh-form-progress a b{font-size:14px}.gh-admin-tip{padding:12px}.adm-flota{align-items:stretch;gap:10px}.adm-flota .seg{display:flex;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding-bottom:4px}.adm-flota .seg a{flex:0 0 auto}.formgrid{grid-template-columns:minmax(0,1fr)!important;gap:16px!important}.formgrid>aside,.sticky-side{position:static!important;top:auto!important;order:2}#form-sol .get.big{width:100%;justify-content:center;min-height:48px}.fx-body,.fx-main,.fx-side{min-width:0}.docs li,.docs .acts{flex-wrap:wrap}}
 @media(max-width:480px){.gh-ficha-nav a{flex:1 1 auto;justify-content:center}.gh-form-progress a{width:100%}.gh-search-status{font-size:12.5px}.gh-admin-tip p{font-size:12.5px}}
 @media(prefers-reduced-motion:reduce){.gh-ficha-nav a,.gh-form-progress a{scroll-behavior:auto;transition:none!important}}
+
+/* Refuerzo azul para los accesos rápidos de las fichas */
+.gh-ficha-nav a{
+  background:color-mix(in srgb,var(--accent,#175cd3) 10%,var(--card,#fff));
+  border:1px solid color-mix(in srgb,var(--accent,#175cd3) 28%,transparent);
+  color:var(--accent,#175cd3);
+  font-weight:750;
+}
+.gh-ficha-nav a:hover,.gh-ficha-nav a:focus-visible{
+  background:color-mix(in srgb,var(--accent,#175cd3) 17%,var(--card,#fff));
+  border-color:color-mix(in srgb,var(--accent,#175cd3) 55%,transparent);
+  color:var(--accent,#175cd3);
+  box-shadow:0 2px 8px color-mix(in srgb,var(--accent,#175cd3) 12%,transparent);
+}
+
+
+/* Ronda 2 · móvil, formularios y accesibilidad */
+:root{scroll-padding-top:18px}
+html{scroll-behavior:smooth}
+#view{min-width:0;overflow-wrap:anywhere}
+#view img,#view video,#view canvas{max-width:100%;height:auto}
+#view table{max-width:100%;display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+#view input,#view select,#view textarea{max-width:100%;font:inherit}
+#view input:not([type=checkbox]):not([type=radio]):not([type=range]),#view select,#view textarea{min-height:42px}
+#view textarea{min-height:100px;resize:vertical}
+#view button,#view [role=button],#view a.button,#view .btn{touch-action:manipulation}
+#view :focus-visible,.sidebar :focus-visible,.tabbar :focus-visible,.gh-ficha-nav a:focus-visible,.gh-form-progress a:focus-visible{outline:3px solid #1d70d6!important;outline-offset:3px!important;box-shadow:0 0 0 3px rgba(29,112,214,.14)}
+#view [aria-invalid="true"],#form-sol .field.bad input,#form-sol .field.bad select,#form-sol .field.bad textarea{border-color:#b42318!important;box-shadow:0 0 0 2px rgba(180,35,24,.10)}
+#view .field.bad label,#form-sol .field.bad label{color:#b42318}
+.gh-ficha-nav{position:relative}
+.gh-ficha-nav a{min-height:40px;justify-content:center;text-align:center;overflow-wrap:anywhere}
+.gh-form-progress a[aria-current="step"]{background:color-mix(in srgb,var(--accent,#175cd3) 9%,var(--card,#fff));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent,#175cd3) 35%,transparent)}
+.gh-form-progress a[aria-current="step"] b{color:var(--accent,#175cd3)}
+.gh-form-error-summary{margin:0 0 16px;padding:12px 14px;border:1px solid #f0b4ae;border-left:4px solid #b42318;border-radius:12px;background:#fff7f6;color:#7a271a;font-size:14px;line-height:1.5}
+.gh-form-error-summary:empty{display:none}
+.gh-skip-link{position:fixed;z-index:10000;top:10px;left:10px;transform:translateY(-160%);padding:12px 16px;border-radius:10px;background:#123b70;color:#fff;font-weight:750;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.18)}
+.gh-skip-link:focus{transform:translateY(0);outline:3px solid #7db7ff;outline-offset:3px}
+@media(max-width:900px){
+  html{scroll-padding-top:12px}
+  .app,.col,#view{max-width:100%;min-width:0}
+  #view{padding-left:clamp(12px,3.5vw,22px);padding-right:clamp(12px,3.5vw,22px)}
+  #view .formgrid{grid-template-columns:minmax(0,1fr)!important}
+  #view .formgrid>*{min-width:0;max-width:100%}
+  #view .formgrid input,#view .formgrid select,#view .formgrid textarea{width:100%;min-width:0}
+  #view .gh-ficha-nav{align-items:stretch}
+  #view .gh-ficha-nav a{flex:1 1 calc(50% - 8px);min-width:0}
+  #view .gh-form-progress{grid-template-columns:repeat(3,minmax(0,1fr));}
+  #view .gh-form-progress a{min-width:0;justify-content:flex-start;gap:7px}
+  #view .gh-form-progress a b{overflow-wrap:anywhere}
+  #view .gh-form-progress a span{width:28px;height:28px}
+  #view .docs li,#view .docs .acts{gap:8px}
+}
+@media(max-width:600px){
+  #view .gh-form-progress{grid-template-columns:1fr}
+  #view .gh-form-progress a{min-height:44px}
+  #view .gh-ficha-nav a{flex:1 1 100%;justify-content:flex-start;text-align:left}
+  #view .gh-form-help{font-size:14px}
+  #view button,#view [role=button],#view a.button,#view .btn{min-height:42px}
+  #view .gh-form-error-summary{font-size:13px}
+}
+@media(hover:none){
+  #view button,#view [role=button],#view a.button,#view .btn,.gh-ficha-nav a,.gh-form-progress a{ -webkit-tap-highlight-color:rgba(29,112,214,.16)}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+@media(forced-colors:active){#view :focus-visible,.gh-ficha-nav a:focus-visible,.gh-form-progress a:focus-visible{outline:2px solid Highlight!important} .gh-form-error-summary{border:2px solid Mark}}
+
+/* Ronda 3 · contraste del panel «En esta ficha» en modo oscuro */
+html[data-modo="oscuro"] .gh-ficha-nav,
+html[data-modo="oscuro"] #view .gh-ficha-nav,
+html[data-modo="oscuro"] .fx-body .gh-ficha-nav{
+  background:linear-gradient(135deg,rgba(23,78,145,.24),rgba(15,27,48,.96))!important;
+  border:1px solid rgba(106,166,245,.34)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 8px 22px rgba(0,0,0,.16)!important;
+}
+html[data-modo="oscuro"] .gh-ficha-nav-title,
+html[data-modo="oscuro"] #view .gh-ficha-nav-title{
+  color:#B8C9E2!important;
+  text-shadow:none!important;
+}
+html[data-modo="oscuro"] .gh-ficha-nav a,
+html[data-modo="oscuro"] #view .gh-ficha-nav a,
+html[data-modo="oscuro"] .fx-body .gh-ficha-nav a{
+  background:rgba(33,91,161,.25)!important;
+  color:#DCEBFF!important;
+  border:1px solid rgba(111,173,255,.38)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045)!important;
+}
+html[data-modo="oscuro"] .gh-ficha-nav a:hover,
+html[data-modo="oscuro"] .gh-ficha-nav a:focus-visible,
+html[data-modo="oscuro"] #view .gh-ficha-nav a:hover,
+html[data-modo="oscuro"] #view .gh-ficha-nav a:focus-visible{
+  background:#174E91!important;
+  color:#FFFFFF!important;
+  border-color:#80B8FF!important;
+  box-shadow:0 0 0 2px rgba(91,158,245,.2),0 4px 12px rgba(0,0,0,.18)!important;
+}
